@@ -73,7 +73,10 @@
 	},
 	"type": "module",
 	"dependencies": {
+		"@modelcontextprotocol/sdk": "^1.26.0",
+		"croner": "^10.0.1",
 		"is-unicode-supported": "^2.1.0",
-		"typebox": "^1.0.81"
+		"typebox": "^1.0.81",
+		"zod": "^4.3.6"
 	}
 }

@@ -3,7 +3,8 @@
 
 // TypeBox schema builder (re-exported as `t`)
 export { default as t } from 'typebox'
-
+export * from './auth/password.ts'
+export * from './auth/session.ts'
 // Action + Module primitives
 export { ActionValidationError, action } from './core/action.ts'
 export { module } from './core/module.ts'
@@ -25,6 +26,7 @@ export type {
     TriggerConfig,
     WebhookTriggerConfig,
 } from './core/types.ts'
+export * from './guards/index.ts'
 // Logger
 export { Logger, LoggerSession } from './logger/index.ts'
 export type {
@@ -32,11 +34,18 @@ export type {
     RunEntry,
     WriteBufferOptions,
 } from './persistence/types.ts'
-
-// Persistence
-export { WriteBuffer } from './persistence/write-buffer.ts'
+export * from './persistence/write-buffer.ts'
 export { loadActions } from './runtime/loader.ts'
+export * from './runtime/mcp-server.ts'
+export * from './runtime/queue.ts'
+export * from './runtime/scheduler.ts'
 // Runtime
 export { BunbaseServer } from './runtime/server.ts'
+export * from './saas/organizations.ts'
+export * from './saas/plans.ts'
+export * from './saas/role-sets.ts'
+export * from './saas/roles.ts'
+export * from './saas/subscriptions.ts'
+export * from './saas/types.ts'
 // Trigger builders
 export { triggers } from './triggers/index.ts'

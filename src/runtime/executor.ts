@@ -1,9 +1,9 @@
-import { ActionValidationError } from '../core/action.ts'
 import type { RegisteredAction } from '../core/registry.ts'
 import type { ActionContext } from '../core/types.ts'
 import type { Logger } from '../logger/index.ts'
 import type { RunEntry } from '../persistence/types.ts'
 import type { WriteBuffer } from '../persistence/write-buffer.ts'
+import { eventBus } from './event-bus.ts'
 
 /**
  * Executes a registered action through the full pipeline:
@@ -21,6 +21,16 @@ export async function executeAction(
         logger: Logger
         writeBuffer: WriteBuffer
         db?: unknown
+        auth?: {
+            userId?: string
+            role?: string
+            permissions?: string[]
+            [key: string]: unknown
+        },
+        response?: {
+            headers: Headers
+            setCookie: (name: string, value: string, opts?: any) => void
+        }
     },
 ): Promise<{ success: boolean; data?: unknown; error?: string }> {
     const traceId = generateTraceId()
@@ -35,16 +45,17 @@ export async function executeAction(
 
     // Build context
     const ctx: ActionContext = {
-        db: opts.db ?? null,
+        db: (opts.db ?? null) as any,
         logger: actionLogger,
         traceId,
         event: {
-            emit: (_name: string, _payload?: unknown) => {
-                // Event bus will be wired in Phase 2
+            emit: (name: string, payload?: unknown) => {
+                eventBus.emit(name, payload)
             },
         },
-        auth: {},
+        auth: opts.auth ?? {},
         module: action.moduleName ? { name: action.moduleName } : undefined,
+        response: opts.response,
         request: opts.request,
     }
 
@@ -96,7 +107,7 @@ export async function executeAction(
         opts.writeBuffer.pushRun(runEntry)
 
         // Determine HTTP status
-        const status = err instanceof ActionValidationError ? 400 : 500
+        // const status = err instanceof ActionValidationError ? 400 : 500
 
         return { success: false, error: errorMessage }
     }

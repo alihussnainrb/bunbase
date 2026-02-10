@@ -1,6 +1,6 @@
 import type { Static, TSchema } from 'typebox'
-import type { Logger } from '../logger/index.ts'
 import type { DatabaseClient } from '../db/client.ts'
+import type { Logger } from '../logger/index.ts'
 
 // ── Trigger Types ────────────────────────────────────────
 
@@ -74,9 +74,38 @@ export interface ActionContext {
         permissions?: string[]
     }
 
-    /** Module metadata (populated if action belongs to a module) */
+    /**
+     * Org context (populated by inOrg guard)
+     */
+    org?: {
+        id: string
+        slug: string
+        name: string
+        plan: string
+        features: string[]
+        memberCount: number
+    }
+
+    /**
+     * Module context (if action is part of a module)
+     */
     module?: {
         name: string
+        config?: unknown
+    }
+
+    /**
+     * HTTP Response manipulation (only for API/Webhook triggers)
+     */
+    response?: {
+        headers: Headers
+        /**
+         * Set a cookie
+         * @param name Cookie name
+         * @param value Cookie value
+         * @param opts Cookie options
+         */
+        setCookie: (name: string, value: string, opts?: any) => void
     }
 
     /** Raw request (only for API/webhook triggers) */

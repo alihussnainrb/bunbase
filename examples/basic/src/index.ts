@@ -1,26 +1,17 @@
-// src/index.ts
+import { ActionRegistry, BunbaseServer, Logger, loadActions, WriteBuffer } from 'bunbase'
+import { resolve } from 'path'
 
-import { action, t } from 'bunbase'
+const logger = new Logger({ level: 'debug' })
+const registry = new ActionRegistry()
+const writeBuffer = new WriteBuffer()
 
-const createUser = action({
-    name: "createUser",
-    input: t.Object({
-        name: t.String(),
-        email: t.String({ format: "email" }),
-    }),
-    output: t.Object({
-        id: t.String(),
-        name: t.String(),
-        email: t.String({ format: "email" }),
-    }),
-}, async (input, ctx) => {
-    const data = await ctx.db.from('users').insert(input)
-    if (data === null) {
-        throw new Error("Failed to create user")
-    }
-    return {
-        id: data.id,
-        name: data.name,
-        email: data.email
-    }
-})
+// Load actions
+const actionsDir = resolve(process.cwd(), 'src/actions')
+console.log(`Loading actions from ${actionsDir}`)
+
+await loadActions(actionsDir, registry)
+
+const server = new BunbaseServer(registry, logger, writeBuffer)
+
+console.log('Starting server on port 3000...')
+server.start({ port: 3000 })

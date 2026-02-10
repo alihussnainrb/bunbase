@@ -28,7 +28,7 @@ type InferTables<DB extends Database> = DB['public']['Tables']
 type InferTable<DB extends Database, T extends keyof InferTables<DB>> = InferTables<DB>[T]
 
 
-type DatabaseClient<DB extends Database = Database> = {
+export type DatabaseClient<DB extends Database = Database> = {
     from: <T extends keyof InferTables<DB>>(
         table: T,
     ) => TypedQueryBuilder<InferTable<DB, T>>

@@ -1,5 +1,6 @@
 import type { Static, TSchema } from 'typebox'
 import type { Logger } from '../logger/index.ts'
+import type { DatabaseClient } from '../db/client.ts'
 
 // ── Trigger Types ────────────────────────────────────────
 
@@ -52,7 +53,7 @@ export type GuardFn = (ctx: ActionContext) => void | Promise<void>
 
 export interface ActionContext {
     /** Typed database client */
-    db: unknown // will be DatabaseClient once we wire it
+    db: DatabaseClient // will be DatabaseClient once we wire it
 
     /** Child logger scoped to this action + traceId */
     logger: Logger

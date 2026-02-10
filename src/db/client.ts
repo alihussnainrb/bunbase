@@ -1,29 +1,48 @@
 // src/db/client.ts
 
-import type { SQL } from 'bun'
 import { sqlPool } from './pool'
 import { setRLSContext } from './session-vars'
-import type { Database } from './types'
 
 /**
  * Typed DB client — generic over your Database schema
  */
 
+
+interface TableDef {
+    Row: Record<string, any>
+    Insert: Record<string, any>
+    Update: Record<string, any>
+    Relationships: any[]
+}
+
+type Database = {
+    public: {
+        Tables: {
+            [key: string]: TableDef
+        }
+    }
+}
+
+type InferTables<DB extends Database> = DB['public']['Tables']
+
+type InferTable<DB extends Database, T extends keyof InferTables<DB>> = InferTables<DB>[T]
+
+
 type DatabaseClient<DB extends Database = Database> = {
-    from: <T extends keyof DB['public']['Tables']>(
+    from: <T extends keyof InferTables<DB>>(
         table: T,
-    ) => TypedQueryBuilder<DB['public']['Tables'][T]>
+    ) => TypedQueryBuilder<InferTable<DB, T>>
 
     raw: (strings: TemplateStringsArray, ...values: any[]) => Promise<any[]>
     // transaction: <T>(cb: (tx: DatabaseClient<DB>) => Promise<T>) => Promise<T>
 }
 
 export function createDB<DB extends Database = Database>(): DatabaseClient<DB> {
-    type Tables = DB['public']['Tables']
+    type Tables = InferTables<DB>
 
     return {
         from: <T extends keyof Tables>(table: T) =>
-            new TypedQueryBuilder<Tables[T]>(table as string),
+            new TypedQueryBuilder<Tables[T]>(table as string) as any,
 
         raw: (strings: TemplateStringsArray, ...values: any[]) =>
             sqlPool(strings, ...values),
@@ -34,7 +53,8 @@ export function createDB<DB extends Database = Database>(): DatabaseClient<DB> {
     }
 }
 
-class TypedQueryBuilder<Table extends Database['public']['Tables'][string]> {
+
+class TypedQueryBuilder<Table extends TableDef> {
     private table: string
     private selects: (keyof Table['Row'])[] | ['*'] = ['*']
     private wheres: Array<{ col: keyof Table['Row']; op: string; val: any }> = []
@@ -53,7 +73,7 @@ class TypedQueryBuilder<Table extends Database['public']['Tables'][string]> {
     >(
         ...fields: Fields[]
     ): TypedQueryBuilder<Table> & { exec: () => Promise<Result[]> } {
-        this.selects = fields.length ? (fields as string[]) : ['*']
+        this.selects = (fields.length ? fields : ['*']) as any
         return this as any
     }
 
@@ -100,10 +120,19 @@ class TypedQueryBuilder<Table extends Database['public']['Tables'][string]> {
                 if (w.op === 'IN') {
                     return sqlPool`${sqlPool(w.col)} IN (${sqlPool(w.val)})`
                 }
-                return sqlPool`${sqlPool(w.col)} ${sqlPool.raw(w.op)} ${w.val}`
+                if (w.op === 'IN') {
+                    return sqlPool`${sqlPool(w.col)} IN (${sqlPool(w.val)})`
+                }
+                const op = sqlPool.unsafe(w.op)
+                return sqlPool`${sqlPool(w.col)} ${op} ${w.val}`
             })
 
-            query = sqlPool`${query} WHERE ${sqlPool.join(conditions, ' AND ')}`
+            const whereClause = conditions.reduce((acc, curr, i) => {
+                if (i === 0) return curr
+                return sqlPool`${acc} AND ${curr}`
+            }, sqlPool``)
+
+            query = sqlPool`${query} WHERE ${whereClause}`
         }
 
         if (this.limitNum !== null) {
@@ -147,9 +176,19 @@ class TypedQueryBuilder<Table extends Database['public']['Tables'][string]> {
                 if (w.op === 'IN') {
                     return sqlPool`${sqlPool(w.col)} IN (${sqlPool(w.val)})`
                 }
-                return sqlPool`${sqlPool(w.col)} ${sqlPool.raw(w.op)} ${w.val}`
+                if (w.op === 'IN') {
+                    return sqlPool`${sqlPool(w.col)} IN (${sqlPool(w.val)})`
+                }
+                const op = sqlPool.unsafe(w.op)
+                return sqlPool`${sqlPool(w.col)} ${op} ${w.val}`
             })
-            q = sqlPool`${q} WHERE ${sqlPool.join(conditions, ' AND ')}`
+
+            const whereClause = conditions.reduce((acc, curr, i) => {
+                if (i === 0) return curr
+                return sqlPool`${acc} AND ${curr}`
+            }, sqlPool``)
+
+            q = sqlPool`${q} WHERE ${whereClause}`
         }
 
         if (this.returningFields) {
@@ -172,9 +211,16 @@ class TypedQueryBuilder<Table extends Database['public']['Tables'][string]> {
                 if (w.op === 'IN') {
                     return sqlPool`${sqlPool(w.col)} IN (${sqlPool(w.val)})`
                 }
-                return sqlPool`${sqlPool(w.col)} ${sqlPool(w.op)} ${w.val}`
+                const op = sqlPool.unsafe(w.op)
+                return sqlPool`${sqlPool(w.col)} ${op} ${w.val}`
             })
-            q = sqlPool`${q} WHERE ${sqlPool.join(conditions, ' AND ')}`
+
+            const whereClause = conditions.reduce((acc, curr, i) => {
+                if (i === 0) return curr
+                return sqlPool`${acc} AND ${curr}`
+            }, sqlPool``)
+
+            q = sqlPool`${q} WHERE ${whereClause}`
         }
 
         if (this.returningFields) {

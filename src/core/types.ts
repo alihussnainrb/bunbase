@@ -1,0 +1,125 @@
+import type { Static, TSchema } from 'typebox'
+import type { Logger } from '../logger/index.ts'
+
+// ── Trigger Types ────────────────────────────────────────
+
+export type HttpMethod = 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE'
+
+export interface ApiTriggerConfig {
+    readonly type: 'api'
+    readonly method: HttpMethod
+    readonly path: string
+    readonly map?: (req: Request) => unknown | Promise<unknown>
+}
+
+export interface EventTriggerConfig {
+    readonly type: 'event'
+    readonly event: string
+    readonly map?: (payload: unknown) => unknown
+}
+
+export interface CronTriggerConfig {
+    readonly type: 'cron'
+    readonly schedule: string
+    readonly input?: () => unknown
+}
+
+export interface ToolTriggerConfig {
+    readonly type: 'tool'
+    readonly name: string
+    readonly description: string
+}
+
+export interface WebhookTriggerConfig {
+    readonly type: 'webhook'
+    readonly path: string
+    readonly verify?: (req: Request) => boolean | Promise<boolean>
+    readonly map?: (body: unknown) => unknown
+}
+
+export type TriggerConfig =
+    | ApiTriggerConfig
+    | EventTriggerConfig
+    | CronTriggerConfig
+    | ToolTriggerConfig
+    | WebhookTriggerConfig
+
+// ── Guard Types ──────────────────────────────────────────
+
+export type GuardFn = (ctx: ActionContext) => void | Promise<void>
+
+// ── Action Context ───────────────────────────────────────
+
+export interface ActionContext {
+    /** Typed database client */
+    db: unknown // will be DatabaseClient once we wire it
+
+    /** Child logger scoped to this action + traceId */
+    logger: Logger
+
+    /** Unique trace ID for this invocation */
+    traceId: string
+
+    /** Emit an event on the internal event bus */
+    event: {
+        emit: (name: string, payload?: unknown) => void
+    }
+
+    /** Auth context (populated by auth guards) */
+    auth: {
+        userId?: string
+        orgId?: string
+        role?: string
+        permissions?: string[]
+    }
+
+    /** Module metadata (populated if action belongs to a module) */
+    module?: {
+        name: string
+    }
+
+    /** Raw request (only for API/webhook triggers) */
+    request?: Request
+    headers?: Record<string, string>
+}
+
+// ── Action Config ────────────────────────────────────────
+
+export interface ActionConfig<
+    TInput extends TSchema = TSchema,
+    TOutput extends TSchema = TSchema,
+> {
+    readonly name: string
+    readonly description?: string
+    readonly input: TInput
+    readonly output: TOutput
+    readonly triggers?: TriggerConfig[]
+    readonly guards?: GuardFn[]
+}
+
+export type ActionHandler<
+    TInput extends TSchema = TSchema,
+    TOutput extends TSchema = TSchema,
+> = (input: Static<TInput>, ctx: ActionContext) => Promise<Static<TOutput>>
+
+export interface ActionDefinition<
+    TInput extends TSchema = TSchema,
+    TOutput extends TSchema = TSchema,
+> {
+    readonly config: ActionConfig<TInput, TOutput>
+    readonly handler: ActionHandler<TInput, TOutput>
+}
+
+// ── Module Config ────────────────────────────────────────
+
+export interface ModuleConfig {
+    readonly name: string
+    readonly description?: string
+    readonly apiPrefix?: string
+    readonly guards?: GuardFn[]
+    readonly actions: ActionDefinition[]
+}
+
+export interface ModuleDefinition {
+    readonly config: ModuleConfig
+}

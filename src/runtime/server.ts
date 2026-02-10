@@ -110,6 +110,11 @@ export class BunbaseServer {
         this.registerEventListeners()
         this.scheduler.start()
 
+        // Debug: Log all routes
+        for (const headers of this.routes.keys()) {
+            this.logger.debug(`Registered route: ${headers}`)
+        }
+
         if (mcp) {
             this.mcp.start().catch((err) => {
                 this.logger.error('Failed to start MCP server:', err)
@@ -155,9 +160,10 @@ export class BunbaseServer {
         const method = req.method.toUpperCase()
         const pathname = url.pathname
 
-        // Find matching route
         const routeKey = `${method}:${pathname}`
         const route = this.routes.get(routeKey)
+
+        this.logger.debug(`[Request] ${method} ${pathname} -> ${route ? 'MATCH' : 'MISS'}`)
 
         if (!route) {
             return Response.json(

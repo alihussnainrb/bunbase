@@ -12,6 +12,7 @@ import { Scheduler } from './scheduler.ts'
 import { generateOpenAPISpec, generateScalarDocs } from '../openapi/generator.ts'
 import type { BunbaseConfig } from '../config/types.ts'
 import { studioModule } from '../studio/module.ts'
+import { BunbaseError } from '../utils/errors.ts'
 
 interface Route {
 	method: string
@@ -428,8 +429,14 @@ export class BunbaseServer {
 
 			return Response.json({ error: result.error }, { status, headers })
 		} catch (err: any) {
-			const message =
-				err instanceof Error ? err.message : 'Internal server error'
+			// Handle BunbaseError instances with their specific status codes
+			if (err instanceof BunbaseError) {
+				this.logger.error(`Action error: ${err.message}`)
+				return Response.json({ error: err.message }, { status: err.statusCode })
+			}
+
+			// Handle other errors as internal server errors
+			const message = err instanceof Error ? err.message : 'Internal server error'
 			this.logger.error(`Unhandled error: ${message}`)
 			return Response.json({ error: message }, { status: 500 })
 		}

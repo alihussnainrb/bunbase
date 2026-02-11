@@ -48,6 +48,4 @@ export * from './saas/subscriptions.ts'
 export * from './saas/types.ts'
 // Trigger builders
 export { triggers } from './triggers/index.ts'
-// View primitives
-export { html, renderJSX, view } from './views/view.ts'
-export { ViewRegistry } from './views/view-registry.ts'
+export * from './utils/errors.ts'

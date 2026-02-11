@@ -1,4 +1,4 @@
-import { action, t, triggers, type ActionDefinition } from '../../'
+import { action, t, triggers, type ActionDefinition, NotFound } from '../../'
 
 
 // Get run details by ID
@@ -19,7 +19,11 @@ export const getRunDetails: ActionDefinition = action({
   }),
   triggers: [triggers.api('GET', '/_studio/api/runs/:id')],
 }, async (input, ctx) => {
-  // Mock implementation
+  // Mock implementation - in real implementation, fetch from database
+  if (input.id !== '1' && input.id !== '2' && input.id !== '3') {
+    throw new NotFound(`Run with id '${input.id}' not found`)
+  }
+
   const run = {
     id: input.id,
     action: 'user.create',

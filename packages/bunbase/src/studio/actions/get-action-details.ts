@@ -1,4 +1,4 @@
-import { action, t, triggers, type ActionDefinition } from '../../'
+import { action, t, triggers, type ActionDefinition, NotFound } from '../../'
 
 // Get action details by ID
 export const getActionDetails: ActionDefinition = action({
@@ -24,6 +24,11 @@ export const getActionDetails: ActionDefinition = action({
   triggers: [triggers.api('GET', '/_studio/api/actions/:id')],
 }, async (input, ctx) => {
   // Mock implementation - fetch from registry
+  // In real implementation, this would query the action registry
+  if (input.id !== '1' && input.id !== '2' && input.id !== '3') {
+    throw new NotFound(`Action with id '${input.id}' not found`)
+  }
+
   const action = {
     id: input.id,
     name: 'user.create',

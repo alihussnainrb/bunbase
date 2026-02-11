@@ -1,15 +1,18 @@
 // ── Public API ───────────────────────────────────────────
-// import { action, module, t, triggers } from 'bunbase'
+// import { action, module, t, triggers, guards, defineConfig } from 'bunbase'
 
 // TypeBox schema builder (re-exported as `t`)
 export { default as t } from 'typebox'
-export * from './auth/password.ts'
-export * from './auth/session.ts'
+
+// Config
+export { defineConfig } from './config/types.ts'
+export type { BunbaseConfig } from './config/types.ts'
+
 // Action + Module primitives
 export { ActionValidationError, action } from './core/action.ts'
 export { module } from './core/module.ts'
-export { ActionRegistry } from './core/registry.ts'
-// Types
+
+// Types (used by action/module authors)
 export type {
 	ActionConfig,
 	ActionContext,
@@ -26,26 +29,27 @@ export type {
 	TriggerConfig,
 	WebhookTriggerConfig,
 } from './core/types.ts'
+
+// Guards
 export * from './guards/index.ts'
-// Logger
-export { Logger, LoggerSession } from './logger/index.ts'
-export type {
-	LogEntry,
-	RunEntry,
-	WriteBufferOptions,
-} from './persistence/types.ts'
-export * from './persistence/write-buffer.ts'
-export { loadActions } from './runtime/loader.ts'
-export * from './runtime/mcp-server.ts'
-export * from './runtime/scheduler.ts'
-// Runtime
-export { BunbaseServer } from './runtime/server.ts'
+
+// Trigger builders
+export { triggers } from './triggers/index.ts'
+
+// Auth utilities (used in action handlers for session management)
+export * from './auth/password.ts'
+export * from './auth/session.ts'
+
+// Error classes
+export * from './utils/errors.ts'
+
+// SaaS services (used in action handlers)
 export * from './saas/organizations.ts'
 export * from './saas/plans.ts'
 export * from './saas/role-sets.ts'
 export * from './saas/roles.ts'
 export * from './saas/subscriptions.ts'
 export * from './saas/types.ts'
-// Trigger builders
-export { triggers } from './triggers/index.ts'
-export * from './utils/errors.ts'
+
+// Logger (useful for custom logging in action handlers)
+export { Logger, LoggerSession } from './logger/index.ts'

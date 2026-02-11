@@ -9,9 +9,10 @@ Bunbase is a type-safe backend framework for Bun built around three core primiti
 - **Modules**: Logical groupings of actions with shared configuration
 - **Triggers**: Entry points connecting actions to different invocation mechanisms (API, cron, event, webhook, MCP tools)
 
-This is a monorepo with two main packages:
+This is a monorepo with:
 - `packages/bunbase`: Core framework (published to NPM)
 - `packages/studio`: React-based development UI (private, uses Vite)
+- `examples/basic`: Working example app demonstrating all features
 
 ## Development Commands
 
@@ -40,7 +41,23 @@ bun run type-check    # TypeScript checking across all packages
 bun run release       # Version bump, commit, tag, and push
 ```
 
-## Core Architecture
+## Developer Experience (End-User Workflow)
+
+Developers using bunbase do NOT interact with framework internals (ActionRegistry, BunbaseServer, Logger, WriteBuffer, etc.). The workflow is:
+
+1. Create a `bunbase.config.ts` in the project root (uses `defineConfig()` for type safety)
+2. Write actions and modules under `src/`
+3. Run `bunbase dev` — the CLI loads config, discovers actions/modules, and starts the server
+
+The `bunbase dev` command (in `src/cli/commands/dev.ts`) handles all wiring:
+- Reads `bunbase.config.ts` (or `bunbase.ts`, `src/bunbase.config.ts`, `src/bunbase.ts`)
+- Creates Logger, WriteBuffer, ActionRegistry internally
+- Calls `loadActions()` to discover modules and standalone actions
+- Creates and starts BunbaseServer with the config
+
+There is no `main.ts` or manual server setup in user projects. See `examples/basic/` for a complete working example.
+
+## Core Architecture (Framework Internals)
 
 ### Action → Module → Registry Flow
 
@@ -99,7 +116,7 @@ bun run release       # Version bump, commit, tag, and push
 
 **TypedQueryBuilder** (`packages/bunbase/src/db/client.ts`):
 - Fluent, chainable API with type safety
-- Methods: `select()`, `eq()`, `in()`, `limit()`, `returning()`, `insert()`, `update()`, `delete()`
+- Methods: `select()`, `eq()`, `neq()`, `gt()`, `gte()`, `lt()`, `lte()`, `in()`, `like()`, `ilike()`, `isNull()`, `isNotNull()`, `limit()`, `offset()`, `orderBy()`, `returning()`, `insert()`, `update()`, `delete()`, `single()`, `maybeSingle()`, `exec()`, `count()`
 - Uses Bun's SQL template tag for parameterization
 - Example: `db.from('users').eq('id', 123).select('id', 'email').single()`
 
@@ -204,10 +221,13 @@ Follow Conventional Commits:
 ## Package Exports
 
 The main `bunbase` package exports:
-- `./` - Core action/module primitives
-- `./db` - Database client
-- `./logger` - Logging utilities
+
+- `./` - Core primitives (`action`, `module`, `triggers`, `guards`, `t`, `defineConfig`, `BunbaseConfig`), auth utilities, SaaS services, error classes
+- `./db` - Database client (`TypedQueryBuilder`)
+- `./logger` - Logging utilities (`Logger`, `LoggerSession`)
 - `./cli` - CLI tooling (bin: `bunbase`)
+
+> Runtime internals (`BunbaseServer`, `ActionRegistry`, `loadActions`, `WriteBuffer`, `Scheduler`, `McpService`) are NOT exported. They are initialized internally by the `bunbase dev` CLI command.
 
 ## CLI Tool
 
@@ -246,8 +266,10 @@ The main `bunbase` package exports:
 - Configure retries and priorities as needed
 
 ### When Building HTTP APIs
-- Use `triggers.api({ method, path })` with optional `toInput` for request mapping
+
+- Use `triggers.api(method, path)` with optional `{ map }` for custom request mapping
 - Routes automatically include module API prefix
+- Path parameters supported: `triggers.api('GET', '/users/:id')`
 - Session cookies handled automatically
 - Return objects are JSON-serialized
 

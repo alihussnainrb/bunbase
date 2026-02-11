@@ -34,4 +34,5 @@ program
 		await generateCommand(type, name)
 	})
 
-// Export program to be called by bin entry
+// Parse CLI arguments when run directly (bin entry)
+program.parse(process.argv)

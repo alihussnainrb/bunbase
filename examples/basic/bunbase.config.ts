@@ -1,7 +1,21 @@
-import { defineConfig } from '../../packages/bunbase/src/config/types.ts'
+import { defineConfig } from 'bunbase'
 
 export default defineConfig({
-	port: 3003,
+	port: 3000,
 	actionsDir: 'src',
-	mcp: true,
+	auth: {
+		sessionSecret: 'dev-secret-change-me-in-production',
+	},
+	openapi: {
+		enabled: true,
+		path: '/api/openapi.json',
+		title: 'Bunbase Basic Example',
+		version: '0.1.0',
+	},
+	studio: {
+		enabled: true,
+	},
+	persistence: {
+		enabled: true,
+	},
 })

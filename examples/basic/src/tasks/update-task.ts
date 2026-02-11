@@ -1,52 +1,52 @@
 import { action, t, triggers } from 'bunbase'
-import { getTask, updateTask } from '../lib/store.ts'
 
 /**
- * Update a task (change status, title, or assignee).
- * Demonstrates: PUT trigger, path parameters, partial updates, event emission.
+ * Update a task.
+ * Demonstrates: PATCH trigger, partial updates, database updates, event emission.
  */
 export const updateTaskAction = action(
 	{
 		name: 'updateTask',
-		description: 'Update a task by ID',
+		description: 'Update a task',
 		input: t.Object({
 			id: t.String(),
-			title: t.Optional(t.String({ minLength: 1 })),
+			title: t.Optional(t.String({ minLength: 1, maxLength: 200 })),
 			description: t.Optional(t.String()),
-			status: t.Optional(
-				t.Union([
-					t.Literal('pending'),
-					t.Literal('in_progress'),
-					t.Literal('completed'),
-				]),
-			),
-			assigneeId: t.Optional(t.Union([t.String(), t.Null()])),
+			status: t.Optional(t.Union([t.Literal('pending'), t.Literal('in_progress'), t.Literal('completed')])),
+			assigneeId: t.Optional(t.String()),
 		}),
 		output: t.Object({
 			id: t.String(),
 			title: t.String(),
 			status: t.String(),
-			assigneeId: t.Union([t.String(), t.Null()]),
-			completedAt: t.Union([t.String(), t.Null()]),
 		}),
-		triggers: [triggers.api('PUT', '/:id')],
+		triggers: [triggers.api('PATCH', '/:id')],
 	},
 	async (input, ctx) => {
-		const existing = getTask(input.id)
+		ctx.logger.info('Updating task', { taskId: input.id })
+
+		// Check if task exists
+		const existing = await ctx.db
+			.from('tasks')
+			.eq('id', input.id)
+			.select('id', 'status')
+			.single()
+
 		if (!existing) {
-			throw new Error(`Task not found: ${input.id}`)
+			throw new Error(`Task ${input.id} not found`)
 		}
 
-		const updates: Record<string, unknown> = {}
+		// Build update object
+		const updates: any = {}
 		if (input.title !== undefined) updates.title = input.title
 		if (input.description !== undefined) updates.description = input.description
-		if (input.assigneeId !== undefined) updates.assigneeId = input.assigneeId
+		if (input.assigneeId !== undefined) updates.assignee_id = input.assigneeId
 
 		// Handle status transitions
 		if (input.status !== undefined) {
 			updates.status = input.status
 			if (input.status === 'completed' && existing.status !== 'completed') {
-				updates.completedAt = new Date()
+				updates.completed_at = new Date().toISOString()
 				// Emit completion event
 				ctx.event.emit('task.completed', {
 					taskId: input.id,
@@ -56,14 +56,19 @@ export const updateTaskAction = action(
 			}
 		}
 
-		const task = updateTask(input.id, updates as any)!
+		const updated = await ctx.db
+			.from('tasks')
+			.eq('id', input.id)
+			.update(updates)
+			.returning('id', 'title', 'status')
+			.single()
+
+		ctx.logger.info('Task updated', { taskId: input.id })
 
 		return {
-			id: task.id,
-			title: task.title,
-			status: task.status,
-			assigneeId: task.assigneeId,
-			completedAt: task.completedAt?.toISOString() ?? null,
+			id: updated.id,
+			title: updated.title,
+			status: updated.status,
 		}
 	},
 )

@@ -1,6 +1,8 @@
 import type { Static, TSchema } from 'typebox'
 import type { DatabaseClient } from '../db/client.ts'
+import type { KVStore } from '../kv/types.ts'
 import type { Logger } from '../logger/index.ts'
+import type { StorageAdapter } from '../storage/types.ts'
 import type { ActionRegistry } from './registry.ts'
 
 // ── Trigger Types ────────────────────────────────────────
@@ -54,7 +56,13 @@ export type GuardFn = (ctx: ActionContext) => void | Promise<void>
 
 export interface ActionContext {
 	/** Typed database client */
-	db: DatabaseClient // will be DatabaseClient once we wire it
+	db: DatabaseClient
+
+	/** File storage (S3 or local filesystem) */
+	storage: StorageAdapter
+
+	/** Key-value store (Postgres-backed) */
+	kv: KVStore
 
 	/** Child logger scoped to this action + traceId */
 	logger: Logger

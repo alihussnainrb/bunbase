@@ -340,6 +340,21 @@ export interface Database {
 				Update: Partial<Database['public']['Tables']['job_failures']['Insert']>
 				Relationships: []
 			}
+
+			kv_store: {
+				Row: {
+					key: string
+					value: unknown
+					expires_at: string | null
+				}
+				Insert: {
+					key: string
+					value: unknown
+					expires_at?: string | null
+				}
+				Update: Partial<Database['public']['Tables']['kv_store']['Insert']>
+				Relationships: []
+			}
 		}
 
 		Views: {}

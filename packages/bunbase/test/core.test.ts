@@ -3,7 +3,7 @@ import { t } from '../src'
 import { action } from '../src/core/action.ts'
 import { module } from '../src/core/module.ts'
 import { ActionRegistry } from '../src/core/registry.ts'
-import { triggers } from '../src/triggers/index.ts'
+import { triggers } from '../src/core/triggers/index.ts'
 
 describe('action()', () => {
 	it('should create an action definition with config and handler', () => {
@@ -46,6 +46,8 @@ describe('action()', () => {
 
 		const mockCtx = {
 			db: {} as any,
+			storage: {} as any,
+			kv: {} as any,
 			logger: {
 				info: () => {},
 				error: () => {},
@@ -80,6 +82,8 @@ describe('action()', () => {
 
 		const mockCtx = {
 			db: {} as any,
+			storage: {} as any,
+			kv: {} as any,
 			logger: {
 				info: () => {},
 				error: () => {},
@@ -118,6 +122,8 @@ describe('action()', () => {
 
 		const mockCtx = {
 			db: {} as any,
+			storage: {} as any,
+			kv: {} as any,
 			logger: {
 				info: () => {},
 				error: () => {},

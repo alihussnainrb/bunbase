@@ -4,7 +4,10 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "bunbase dev"
+    "dev": "bunbase dev",
+    "migrate": "bunbase migrate",
+    "migrate:new": "bunbase migrate new",
+    "migrate:status": "bunbase migrate status"
   },
   "dependencies": {
     "bunbase": "workspace:*"

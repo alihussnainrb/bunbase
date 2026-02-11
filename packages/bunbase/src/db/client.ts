@@ -1,7 +1,8 @@
 // src/db/client.ts
 
-import { sqlPool } from './pool'
-import { setRLSContext } from './session-vars'
+import type { SQL } from 'bun'
+import { getSQLPool } from './pool.ts'
+import { setRLSContext } from './session-vars.ts'
 
 /**
  * Typed DB client — generic over your Database schema
@@ -38,24 +39,22 @@ export type DatabaseClient<DB extends Database = Database> = {
 	// transaction: <T>(cb: (tx: DatabaseClient<DB>) => Promise<T>) => Promise<T>
 }
 
-export function createDB<DB extends Database = Database>(): DatabaseClient<DB> {
+export function createDB<DB extends Database = Database>(sql?: SQL): DatabaseClient<DB> {
 	type Tables = InferTables<DB>
+	const pool = sql ?? getSQLPool()
 
 	return {
 		from: <T extends keyof Tables>(table: T) =>
-			new TypedQueryBuilder<Tables[T]>(table as string) as any,
+			new TypedQueryBuilder<Tables[T]>(table as string, pool) as any,
 
 		raw: (strings: TemplateStringsArray, ...values: any[]) =>
-			sqlPool(strings, ...values),
-
-		// transaction: sqlPool.begin((tx) => {
-
-		// }),
+			pool(strings, ...values),
 	}
 }
 
 class TypedQueryBuilder<Table extends TableDef> {
 	private table: string
+	private sql: SQL
 	private selects: (keyof Table['Row'])[] | ['*'] = ['*']
 	private wheres: Array<{ col: keyof Table['Row']; op: string; val: any }> = []
 	private limitNum: number | null = null
@@ -64,8 +63,9 @@ class TypedQueryBuilder<Table extends TableDef> {
 	private orderByDir: 'ASC' | 'DESC' = 'ASC'
 	private returningFields: (keyof Table['Row'])[] | null = null
 
-	constructor(table: string) {
+	constructor(table: string, sql: SQL) {
 		this.table = table
+		this.sql = sql
 	}
 
 	select<
@@ -168,13 +168,13 @@ class TypedQueryBuilder<Table extends TableDef> {
 	}
 
 	async count(ctx?: { session?: any }): Promise<number> {
-		if (ctx) await setRLSContext(sqlPool, ctx)
+		if (ctx) await setRLSContext(this.sql, ctx)
 
-		let query = sqlPool`SELECT COUNT(*) as count FROM ${sqlPool(this.table)}`
+		let query = this.sql`SELECT COUNT(*) as count FROM ${this.sql(this.table)}`
 
 		if (this.wheres.length > 0) {
 			const whereClause = this.buildWhereClause()
-			query = sqlPool`${query} WHERE ${whereClause}`
+			query = this.sql`${query} WHERE ${whereClause}`
 		}
 
 		const result = await query
@@ -184,45 +184,45 @@ class TypedQueryBuilder<Table extends TableDef> {
 	private buildWhereClause() {
 		const conditions = this.wheres.map((w) => {
 			if (w.op === 'IN') {
-				return sqlPool`${sqlPool(w.col)} IN (${sqlPool(w.val)})`
+				return this.sql`${this.sql(w.col)} IN (${this.sql(w.val)})`
 			}
 			if (w.op === 'IS NULL') {
-				return sqlPool`${sqlPool(w.col)} IS NULL`
+				return this.sql`${this.sql(w.col)} IS NULL`
 			}
 			if (w.op === 'IS NOT NULL') {
-				return sqlPool`${sqlPool(w.col)} IS NOT NULL`
+				return this.sql`${this.sql(w.col)} IS NOT NULL`
 			}
-			const op = sqlPool.unsafe(w.op)
-			return sqlPool`${sqlPool(w.col)} ${op} ${w.val}`
+			const op = this.sql.unsafe(w.op)
+			return this.sql`${this.sql(w.col)} ${op} ${w.val}`
 		})
 
 		return conditions.reduce((acc, curr, i) => {
 			if (i === 0) return curr
-			return sqlPool`${acc} AND ${curr}`
-		}, sqlPool``)
+			return this.sql`${acc} AND ${curr}`
+		}, this.sql``)
 	}
 
 	async exec(ctx?: { session?: any }): Promise<Table['Row'][]> {
-		if (ctx) await setRLSContext(sqlPool, ctx)
+		if (ctx) await setRLSContext(this.sql, ctx)
 
-		let query = sqlPool`SELECT ${sqlPool(this.selects)} FROM ${sqlPool(this.table)}`
+		let query = this.sql`SELECT ${this.sql(this.selects)} FROM ${this.sql(this.table)}`
 
 		if (this.wheres.length > 0) {
 			const whereClause = this.buildWhereClause()
-			query = sqlPool`${query} WHERE ${whereClause}`
+			query = this.sql`${query} WHERE ${whereClause}`
 		}
 
 		if (this.orderByCol !== null) {
-			const dir = sqlPool.unsafe(this.orderByDir)
-			query = sqlPool`${query} ORDER BY ${sqlPool(this.orderByCol)} ${dir}`
+			const dir = this.sql.unsafe(this.orderByDir)
+			query = this.sql`${query} ORDER BY ${this.sql(this.orderByCol)} ${dir}`
 		}
 
 		if (this.limitNum !== null) {
-			query = sqlPool`${query} LIMIT ${this.limitNum}`
+			query = this.sql`${query} LIMIT ${this.limitNum}`
 		}
 
 		if (this.offsetNum !== null) {
-			query = sqlPool`${query} OFFSET ${this.offsetNum}`
+			query = this.sql`${query} OFFSET ${this.offsetNum}`
 		}
 
 		const result = await query
@@ -233,14 +233,14 @@ class TypedQueryBuilder<Table extends TableDef> {
 		data: Table['Insert'],
 		ctx?: { session?: any },
 	): Promise<Table['Row'] | null> {
-		if (ctx) await setRLSContext(sqlPool, ctx)
+		if (ctx) await setRLSContext(this.sql, ctx)
 
-		let q = sqlPool`INSERT INTO ${sqlPool(this.table)} ${sqlPool(data)}`
+		let q = this.sql`INSERT INTO ${this.sql(this.table)} ${this.sql(data)}`
 
 		if (this.returningFields) {
-			q = sqlPool`${q} RETURNING ${sqlPool(this.returningFields)}`
+			q = this.sql`${q} RETURNING ${this.sql(this.returningFields)}`
 		} else {
-			q = sqlPool`${q} RETURNING *`
+			q = this.sql`${q} RETURNING *`
 		}
 
 		const result = await q
@@ -251,19 +251,19 @@ class TypedQueryBuilder<Table extends TableDef> {
 		data: Table['Update'],
 		ctx?: { session?: any },
 	): Promise<Table['Row'][]> {
-		if (ctx) await setRLSContext(sqlPool, ctx)
+		if (ctx) await setRLSContext(this.sql, ctx)
 
-		let q = sqlPool`UPDATE ${sqlPool(this.table)} SET ${sqlPool(data)}`
+		let q = this.sql`UPDATE ${this.sql(this.table)} SET ${this.sql(data)}`
 
 		if (this.wheres.length > 0) {
 			const whereClause = this.buildWhereClause()
-			q = sqlPool`${q} WHERE ${whereClause}`
+			q = this.sql`${q} WHERE ${whereClause}`
 		}
 
 		if (this.returningFields) {
-			q = sqlPool`${q} RETURNING ${sqlPool(this.returningFields)}`
+			q = this.sql`${q} RETURNING ${this.sql(this.returningFields)}`
 		} else {
-			q = sqlPool`${q} RETURNING *`
+			q = this.sql`${q} RETURNING *`
 		}
 
 		const result = await q
@@ -271,19 +271,19 @@ class TypedQueryBuilder<Table extends TableDef> {
 	}
 
 	async delete(ctx?: { session?: any }): Promise<Table['Row'][]> {
-		if (ctx) await setRLSContext(sqlPool, ctx)
+		if (ctx) await setRLSContext(this.sql, ctx)
 
-		let q = sqlPool`DELETE FROM ${sqlPool(this.table)}`
+		let q = this.sql`DELETE FROM ${this.sql(this.table)}`
 
 		if (this.wheres.length > 0) {
 			const whereClause = this.buildWhereClause()
-			q = sqlPool`${q} WHERE ${whereClause}`
+			q = this.sql`${q} WHERE ${whereClause}`
 		}
 
 		if (this.returningFields) {
-			q = sqlPool`${q} RETURNING ${sqlPool(this.returningFields)}`
+			q = this.sql`${q} RETURNING ${this.sql(this.returningFields)}`
 		} else {
-			q = sqlPool`${q} RETURNING *`
+			q = this.sql`${q} RETURNING *`
 		}
 
 		const result = await q

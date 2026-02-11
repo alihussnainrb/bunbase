@@ -1,8 +1,11 @@
 import type { ActionRegistry, RegisteredAction } from '../core/registry.ts'
 import type { ActionContext } from '../core/types.ts'
+import type { DatabaseClient } from '../db/client.ts'
+import type { KVStore } from '../kv/types.ts'
 import type { Logger } from '../logger/index.ts'
 import type { RunEntry } from '../persistence/types.ts'
 import type { WriteBuffer } from '../persistence/write-buffer.ts'
+import type { StorageAdapter } from '../storage/types.ts'
 import { eventBus } from './event-bus.ts'
 
 import type { Queue } from './queue.ts'
@@ -23,7 +26,9 @@ export async function executeAction(
 		request?: Request
 		logger: Logger
 		writeBuffer: WriteBuffer
-		db?: unknown
+		db?: DatabaseClient
+		storage?: StorageAdapter
+		kv?: KVStore
 		queue?: Queue
 		scheduler?: Scheduler
 		registry?: ActionRegistry
@@ -54,6 +59,8 @@ export async function executeAction(
 	const scheduler = opts.scheduler
 	const ctx: ActionContext = {
 		db: (opts.db ?? null) as any,
+		storage: (opts.storage ?? null) as any,
+		kv: (opts.kv ?? null) as any,
 		logger: actionLogger,
 		traceId,
 		event: {

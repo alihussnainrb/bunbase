@@ -1,9 +1,8 @@
 import { action, t, triggers, guards } from 'bunbase'
-import { findUserById } from '../lib/store.ts'
 
 /**
  * Me action — returns the current authenticated user's profile.
- * Demonstrates: authenticated guard, reading auth context.
+ * Demonstrates: authenticated guard, reading auth context, database query.
  */
 export const me = action(
 	{
@@ -19,7 +18,13 @@ export const me = action(
 		guards: [guards.authenticated()],
 	},
 	async (_input, ctx) => {
-		const user = findUserById(ctx.auth.userId!)
+		// Query user from database
+		const user = await ctx.db
+			.from('users')
+			.eq('id', ctx.auth.userId!)
+			.select('id', 'email', 'name')
+			.single()
+
 		if (!user) {
 			throw new Error('User not found')
 		}

@@ -7,6 +7,16 @@ export interface BunbaseConfig {
 	/** Directory to scan for actions and modules (default: src/actions) */
 	actionsDir?: string
 
+	/** Database configuration */
+	database?: {
+		/** PostgreSQL connection URL. Falls back to DATABASE_URL env var */
+		url?: string
+		/** Max pool connections (default: 20) */
+		maxConnections?: number
+		/** Idle timeout in ms (default: 30000) */
+		idleTimeout?: number
+	}
+
 	/** Auth configuration */
 	auth?: {
 		sessionSecret: string
@@ -19,6 +29,31 @@ export interface BunbaseConfig {
 		enabled?: boolean
 		flushIntervalMs?: number
 		maxBufferSize?: number
+	}
+
+	/** Migrations configuration */
+	migrations?: {
+		/** Directory containing migration SQL files (default: migrations) */
+		directory?: string
+	}
+
+	/** File storage configuration */
+	storage?: {
+		/** Storage adapter (default: local) */
+		adapter?: 'local' | 's3'
+		/** Local filesystem storage options */
+		local?: {
+			/** Base directory for file storage (default: .storage) */
+			directory?: string
+		}
+		/** S3-compatible storage options */
+		s3?: {
+			bucket: string
+			region?: string
+			endpoint?: string
+			accessKeyId: string
+			secretAccessKey: string
+		}
 	}
 
 	/** Enable SaaS features (Organizations, Billing) */

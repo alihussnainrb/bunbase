@@ -1,0 +1,27 @@
+export type { StorageAdapter, UploadOptions } from './types.ts'
+export { LocalStorageAdapter } from './local-adapter.ts'
+export { S3StorageAdapter, type S3Config } from './s3-adapter.ts'
+
+import type { StorageAdapter } from './types.ts'
+import { LocalStorageAdapter } from './local-adapter.ts'
+import { S3StorageAdapter, type S3Config } from './s3-adapter.ts'
+
+export interface StorageConfig {
+	adapter?: 'local' | 's3'
+	local?: { directory?: string }
+	s3?: S3Config
+}
+
+export function createStorage(config?: StorageConfig): StorageAdapter {
+	if (!config || config.adapter === 'local' || !config.adapter) {
+		const dir = config?.local?.directory ?? '.storage'
+		return new LocalStorageAdapter(dir)
+	}
+
+	if (config.adapter === 's3') {
+		if (!config.s3) throw new Error('S3 config required when adapter is "s3"')
+		return new S3StorageAdapter(config.s3)
+	}
+
+	throw new Error(`Unknown storage adapter: ${config.adapter}`)
+}

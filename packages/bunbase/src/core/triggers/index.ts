@@ -5,7 +5,7 @@ import type {
 	HttpMethod,
 	ToolTriggerConfig,
 	WebhookTriggerConfig,
-} from '../core/types.ts'
+} from '../types.ts'
 
 /**
  * Trigger builders — declarative bindings that connect actions to entry points.

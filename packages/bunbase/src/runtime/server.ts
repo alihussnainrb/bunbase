@@ -3,8 +3,11 @@ import { type SessionConfig, SessionManager } from '../auth/session.ts'
 import type { ActionRegistry, RegisteredAction } from '../core/registry.ts'
 import type { ApiTriggerConfig, WebhookTriggerConfig } from '../core/types.ts'
 import { parsePathParams, matchViewPath } from '../core/url-parser.ts'
+import type { DatabaseClient } from '../db/client.ts'
+import type { KVStore } from '../kv/types.ts'
 import type { Logger } from '../logger/index.ts'
 import type { WriteBuffer } from '../persistence/write-buffer.ts'
+import type { StorageAdapter } from '../storage/types.ts'
 import { eventBus } from './event-bus.ts'
 import { executeAction } from './executor.ts'
 import { McpService } from './mcp-server.ts'
@@ -14,7 +17,13 @@ import { generateOpenAPISpec, generateScalarDocs } from '../openapi/generator.ts
 import type { BunbaseConfig } from '../config/types.ts'
 import { studioModule } from '../studio/module.ts'
 import { BunbaseError } from '../utils/errors.ts'
-import { GuardError } from '../guards/types.ts'
+import { GuardError } from '../core/guards/types.ts'
+
+export interface ServerServices {
+	db?: DatabaseClient
+	storage?: StorageAdapter
+	kv?: KVStore
+}
 
 interface Route {
 	method: string
@@ -41,7 +50,8 @@ export class BunbaseServer {
 		private readonly registry: ActionRegistry,
 		private readonly logger: Logger,
 		private readonly writeBuffer: WriteBuffer,
-		config?: BunbaseConfig,
+		config: BunbaseConfig | undefined,
+		private readonly services: ServerServices | undefined,
 	) {
 		this.mcp = new McpService(registry, logger, writeBuffer)
 		this.openapiConfig = config?.openapi
@@ -95,6 +105,9 @@ export class BunbaseServer {
 								triggerType: 'event',
 								logger: this.logger,
 								writeBuffer: this.writeBuffer,
+								db: this.services?.db,
+								storage: this.services?.storage,
+								kv: this.services?.kv,
 								registry: this.registry,
 							})
 						} catch (err: any) {
@@ -359,6 +372,9 @@ export class BunbaseServer {
 				request: req,
 				logger: this.logger,
 				writeBuffer: this.writeBuffer,
+				db: this.services?.db,
+				storage: this.services?.storage,
+				kv: this.services?.kv,
 				queue: this.queue,
 				scheduler: this.scheduler,
 				auth: authContext,

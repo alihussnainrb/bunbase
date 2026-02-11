@@ -1,4 +1,4 @@
-import type { ActionContext } from '../core/types.ts'
+import type { ActionContext } from '../types.ts'
 import { saasGuards } from './saas.ts'
 import { GuardError, type GuardFn, type RateLimitOptions } from './types.ts'
 

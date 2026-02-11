@@ -3,10 +3,10 @@ import { t } from '../src'
 import { action } from '../src/core/action.ts'
 import { module } from '../src/core/module.ts'
 import { ActionRegistry } from '../src/core/registry.ts'
-import { guards } from '../src/guards/index.ts'
+import { guards } from '../src/core/guards/index.ts'
 import type { WriteBuffer } from '../src/persistence/write-buffer.ts'
 import { executeAction } from '../src/runtime/executor.ts'
-import { triggers } from '../src/triggers/index.ts'
+import { triggers } from '../src/core/triggers/index.ts'
 
 // Mock WriteBuffer
 function createMockWriteBuffer(): WriteBuffer {

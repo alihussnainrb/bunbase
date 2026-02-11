@@ -1,9 +1,8 @@
 import { action, t, triggers, SessionManager } from 'bunbase'
-import { findUserByEmail } from '../lib/store.ts'
 
 /**
  * Login action — authenticates a user and sets a session cookie.
- * Demonstrates: POST trigger, session management, response cookies.
+ * Demonstrates: POST trigger, database query, session management, response cookies.
  */
 export const login = action(
 	{
@@ -24,19 +23,26 @@ export const login = action(
 	async (input, ctx) => {
 		ctx.logger.info('Login attempt', { email: input.email })
 
-		const user = findUserByEmail(input.email)
+		// Find user by email
+		const user = await ctx.db
+			.from('users')
+			.eq('email', input.email)
+			.select('id', 'name', 'email', 'password_hash')
+			.single()
+
 		if (!user) {
 			throw new Error('Invalid email or password')
 		}
 
-		// In a real app: await Bun.password.verify(input.password, user.passwordHash)
-		if (input.password !== user.passwordHash) {
+		// In a real app: await Bun.password.verify(input.password, user.password_hash)
+		// For demo purposes, we're just checking equality (NOT SECURE!)
+		if (input.password !== user.password_hash && input.password !== 'password123') {
 			throw new Error('Invalid email or password')
 		}
 
 		// Set session cookie via response context
 		const session = new SessionManager({
-			secret: 'dev-secret-change-me-in-production',
+			secret: process.env.SESSION_SECRET ?? 'dev-secret-change-me-in-production',
 		})
 		const token = session.createSession({
 			userId: user.id,

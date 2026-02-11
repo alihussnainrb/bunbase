@@ -1,23 +1,37 @@
 import { SQL } from 'bun'
 
+export interface PoolConfig {
+	url?: string
+	max?: number
+	idleTimeout?: number
+	connectionTimeout?: number
+	maxLifetime?: number
+}
+
 /**
- * Creates and exports a shared Bun.sql connection pool.
- * Uses DATABASE_URL from environment or falls back to a local default.
+ * Creates a new Bun.sql connection pool with the given configuration.
+ * Uses DATABASE_URL from environment if no URL is provided.
  */
-export function createSQLPool(): SQL {
+export function createSQLPool(config?: PoolConfig): SQL {
 	const url =
+		config?.url ||
 		process.env.DATABASE_URL ||
 		'postgresql://postgres:postgres@localhost:5432/bunbase'
 
 	return new SQL(url, {
-		// Recommended production-like settings
-		max: 20, // max connections in pool
-		idleTimeout: 30000, // close idle connections after 30s
-		connectionTimeout: 10000, // fail after 10s if no connection
-		maxLifetime: 3600000, // recycle connections after 1 hour
-		// ssl: process.env.NODE_ENV === 'production' ? 'require' : undefined,
+		max: config?.max ?? 20,
+		idleTimeout: config?.idleTimeout ?? 30000,
+		connectionTimeout: config?.connectionTimeout ?? 10000,
+		maxLifetime: config?.maxLifetime ?? 3600000,
 	})
 }
 
-// Singleton pool — most apps only need one
-export const sqlPool: SQL = createSQLPool()
+// Lazy singleton — created on first access
+let _pool: SQL | null = null
+
+export function getSQLPool(config?: PoolConfig): SQL {
+	if (!_pool) {
+		_pool = createSQLPool(config)
+	}
+	return _pool
+}

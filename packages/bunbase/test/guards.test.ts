@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'bun:test'
 import type { ActionContext } from '../src/core/types.ts'
-import { guards } from '../src/guards/index.ts'
-import { GuardError } from '../src/guards/types.ts'
+import { guards } from '../src/core/guards/index.ts'
+import { GuardError } from '../src/core/guards/types.ts'
 
 // Helper to create mock context
 function createMockContext(
@@ -9,6 +9,8 @@ function createMockContext(
 ): ActionContext {
 	return {
 		db: {} as any,
+		storage: {} as any,
+		kv: {} as any,
 		logger: {
 			info: () => {},
 			error: () => {},

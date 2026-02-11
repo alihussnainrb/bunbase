@@ -1,12 +1,8 @@
 import { action, t, triggers } from 'bunbase'
-import { createTask } from '../lib/store.ts'
 
 /**
- * Create a new task.
- * Demonstrates: POST trigger, input validation, event emission, logging.
- *
- * After creating the task, emits a 'task.created' event which triggers
- * the onTaskCreated action (see on-task-created.ts).
+ * Create a new task using the database.
+ * Demonstrates: POST trigger, ctx.db usage, input validation, event emission.
  */
 export const createTaskAction = action(
 	{
@@ -14,7 +10,7 @@ export const createTaskAction = action(
 		description: 'Create a new task',
 		input: t.Object({
 			title: t.String({ minLength: 1, maxLength: 200 }),
-			description: t.String({ default: '' }),
+			description: t.Optional(t.String()),
 			assigneeId: t.Optional(t.String()),
 		}),
 		output: t.Object({
@@ -30,18 +26,24 @@ export const createTaskAction = action(
 	async (input, ctx) => {
 		ctx.logger.info('Creating task', { title: input.title })
 
-		const task = createTask({
-			title: input.title,
-			description: input.description ?? '',
-			createdBy: ctx.auth.userId!,
-			assigneeId: input.assigneeId,
-		})
+		// Insert task into database
+		const task = await ctx.db
+			.from('tasks')
+			.insert({
+				title: input.title,
+				description: input.description ?? '',
+				created_by: ctx.auth.userId!,
+				assignee_id: input.assigneeId,
+				status: 'pending',
+			})
+			.returning('id', 'title', 'status', 'created_by', 'created_at')
+			.single()
 
 		// Emit event — this triggers onTaskCreated action
 		ctx.event.emit('task.created', {
 			taskId: task.id,
 			title: task.title,
-			createdBy: task.createdBy,
+			createdBy: task.created_by,
 		})
 
 		ctx.logger.info('Task created', { taskId: task.id })
@@ -50,8 +52,8 @@ export const createTaskAction = action(
 			id: task.id,
 			title: task.title,
 			status: task.status,
-			createdBy: task.createdBy,
-			createdAt: task.createdAt.toISOString(),
+			createdBy: task.created_by,
+			createdAt: task.created_at,
 		}
 	},
 )

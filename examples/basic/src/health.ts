@@ -1,9 +1,8 @@
 import { action, t, triggers } from 'bunbase'
-import { getTaskStats } from './lib/store.ts'
 
 /**
  * Standalone action (not part of any module).
- * Demonstrates: basic action, API trigger, no guards (public endpoint).
+ * Demonstrates: basic action, API trigger, no guards (public endpoint), database stats.
  */
 export default action(
 	{
@@ -26,10 +25,20 @@ export default action(
 	async (_input, ctx) => {
 		ctx.logger.info('Health check requested')
 
+		// Query task statistics from database
+		const tasks = await ctx.db.from('tasks').select('status').exec()
+
+		const stats = {
+			total: tasks.length,
+			pending: tasks.filter((t: any) => t.status === 'pending').length,
+			inProgress: tasks.filter((t: any) => t.status === 'in_progress').length,
+			completed: tasks.filter((t: any) => t.status === 'completed').length,
+		}
+
 		return {
 			status: 'ok',
 			uptime: process.uptime(),
-			stats: getTaskStats(),
+			stats,
 		}
 	},
 )

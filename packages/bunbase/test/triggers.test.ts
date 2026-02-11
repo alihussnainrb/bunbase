@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'bun:test'
-import { triggers } from '../src/triggers/index.ts'
+import { triggers } from '../src/core/triggers/index.ts'
 
 describe('triggers.api()', () => {
 	it('should create API trigger with method and path', () => {

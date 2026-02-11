@@ -1,4 +1,4 @@
-import type { ActionContext } from '../core/types.ts'
+import type { ActionContext } from '../types.ts'
 
 export type GuardFn = (ctx: ActionContext) => void | Promise<void>
 

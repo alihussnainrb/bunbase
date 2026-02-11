@@ -1,14 +1,13 @@
 import { action, t, triggers } from 'bunbase'
-import { getTask } from '../lib/store.ts'
 
 /**
  * Get a single task by ID.
- * Demonstrates: path parameters (:id), single resource lookup.
+ * Demonstrates: Path parameters, single record query, 404 handling.
  */
 export const getTaskAction = action(
 	{
 		name: 'getTask',
-		description: 'Get a task by its ID',
+		description: 'Get a task by ID',
 		input: t.Object({
 			id: t.String(),
 		}),
@@ -25,11 +24,16 @@ export const getTaskAction = action(
 		triggers: [triggers.api('GET', '/:id')],
 	},
 	async (input, ctx) => {
-		ctx.logger.debug('Getting task', { id: input.id })
+		ctx.logger.info('Getting task', { taskId: input.id })
 
-		const task = getTask(input.id)
+		const task = await ctx.db
+			.from('tasks')
+			.eq('id', input.id)
+			.select('*')
+			.single()
+
 		if (!task) {
-			throw new Error(`Task not found: ${input.id}`)
+			throw new Error(`Task ${input.id} not found`)
 		}
 
 		return {
@@ -37,10 +41,10 @@ export const getTaskAction = action(
 			title: task.title,
 			description: task.description,
 			status: task.status,
-			assigneeId: task.assigneeId,
-			createdBy: task.createdBy,
-			createdAt: task.createdAt.toISOString(),
-			completedAt: task.completedAt?.toISOString() ?? null,
+			assigneeId: task.assignee_id,
+			createdBy: task.created_by,
+			createdAt: task.created_at,
+			completedAt: task.completed_at,
 		}
 	},
 )

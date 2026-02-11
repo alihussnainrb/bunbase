@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, spyOn } from 'bun:test'
 import type { ActionContext } from '../src/core/types.ts'
-import { saasGuards } from '../src/guards/saas.ts'
-import type { GuardError } from '../src/guards/types.ts'
+import { saasGuards } from '../src/core/guards/saas.ts'
+import type { GuardError } from '../src/core/guards/types.ts'
 
 // Mock database using chainable API matching TypedQueryBuilder
 function createMockDb(overrides: any = {}) {
@@ -46,6 +46,8 @@ function createMockContext(
 ): ActionContext {
 	return {
 		db: createMockDb(),
+		storage: {} as any,
+		kv: {} as any,
 		logger: {
 			info: () => {},
 			error: () => {},

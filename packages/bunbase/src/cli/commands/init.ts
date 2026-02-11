@@ -1,5 +1,6 @@
 import { join } from 'node:path'
 import { existsSync, mkdirSync, writeFileSync } from 'node:fs'
+import { INIT_SQL } from '../../db/init-sql.ts'
 
 export async function initCommand(name?: string): Promise<void> {
 	const projectName = name ?? 'my-bunbase-app'
@@ -16,6 +17,7 @@ export async function initCommand(name?: string): Promise<void> {
 	mkdirSync(projectDir, { recursive: true })
 	mkdirSync(join(projectDir, 'src', 'actions'), { recursive: true })
 	mkdirSync(join(projectDir, 'src', 'modules'), { recursive: true })
+	mkdirSync(join(projectDir, 'migrations'), { recursive: true })
 
 	// package.json
 	writeFileSync(
@@ -27,6 +29,9 @@ export async function initCommand(name?: string): Promise<void> {
 				type: 'module',
 				scripts: {
 					dev: 'bunbase dev',
+					'migrate': 'bunbase migrate',
+					'migrate:new': 'bunbase migrate new',
+					'migrate:status': 'bunbase migrate status',
 					build: 'bun build src/index.ts --outdir dist',
 					test: 'bun test',
 				},
@@ -51,6 +56,16 @@ export async function initCommand(name?: string): Promise<void> {
 export default defineConfig({
   port: 3000,
   actionsDir: 'src',
+  database: {
+    url: process.env.DATABASE_URL,
+  },
+  migrations: {
+    directory: 'migrations',
+  },
+  storage: {
+    adapter: 'local',
+    local: { directory: '.storage' },
+  },
   openapi: {
     enabled: true,
     title: '${projectName} API',
@@ -87,7 +102,27 @@ export default defineConfig({
 		),
 	)
 
-	// Example action
+	// .env
+	writeFileSync(
+		join(projectDir, '.env'),
+		`DATABASE_URL=postgresql://postgres:postgres@localhost:5432/${projectName.replace(/[^a-z0-9_]/g, '_')}
+`,
+	)
+
+	// .gitignore
+	writeFileSync(
+		join(projectDir, '.gitignore'),
+		`node_modules/
+dist/
+.storage/
+.env
+`,
+	)
+
+	// Initial migration
+	writeFileSync(join(projectDir, 'migrations', '001_init.sql'), INIT_SQL)
+
+	// Example standalone action
 	writeFileSync(
 		join(projectDir, 'src', 'actions', 'hello.ts'),
 		`import { action, t, triggers } from 'bunbase'
@@ -110,16 +145,17 @@ export const hello = action({
 `,
 	)
 
-	// Example module
+	// Example module with actions
 	writeFileSync(
 		join(projectDir, 'src', 'modules', '_module.ts'),
 		`import { module } from 'bunbase'
 import { getUsers } from './get-users'
+import { createNote } from './create-note'
 
 export default module({
   name: 'users',
   apiPrefix: '/api/users',
-  actions: [getUsers],
+  actions: [getUsers, createNote],
 })
 `,
 	)
@@ -141,7 +177,9 @@ export const getUsers = action({
     })),
   }),
   triggers: [triggers.api('GET', '/')],
-}, async (input) => {
+}, async (input, ctx) => {
+  // Example using ctx.db (when database is configured):
+  // const users = await ctx.db.from('users').limit(input.limit ?? 10).exec()
   return {
     users: [
       { id: '1', name: 'Alice' },
@@ -152,14 +190,50 @@ export const getUsers = action({
 `,
 	)
 
+	writeFileSync(
+		join(projectDir, 'src', 'modules', 'create-note.ts'),
+		`import { action, t, triggers } from 'bunbase'
+
+export const createNote = action({
+  name: 'users.createNote',
+  description: 'Store a note in the KV store',
+  input: t.Object({
+    key: t.String(),
+    content: t.String(),
+    ttl: t.Optional(t.Number({ description: 'TTL in seconds' })),
+  }),
+  output: t.Object({
+    success: t.Boolean(),
+    key: t.String(),
+  }),
+  triggers: [triggers.api('POST', '/notes')],
+}, async (input, ctx) => {
+  await ctx.kv.set(\`note:\${input.key}\`, { content: input.content }, {
+    ttl: input.ttl,
+  })
+  return { success: true, key: input.key }
+})
+`,
+	)
+
 	console.log(`
 Project created successfully!
 
   cd ${projectName}
   bun install
+
+Set up your database:
+  # Update .env with your DATABASE_URL
+  bunbase migrate        # Run initial migration
+
+Start developing:
   bun run dev
 
 Your API will be running at http://localhost:3000
+  GET  /hello            → Hello world action
+  GET  /api/users        → List users
+  POST /api/users/notes  → Create a note (uses ctx.kv)
+
 OpenAPI docs at http://localhost:3000/api/docs
 `)
 }

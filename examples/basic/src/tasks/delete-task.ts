@@ -1,35 +1,28 @@
 import { action, t, triggers } from 'bunbase'
-import { deleteTask, getTask } from '../lib/store.ts'
 
 /**
- * Delete a task by ID.
- * Demonstrates: DELETE trigger, path parameters.
+ * Delete a task.
+ * Demonstrates: DELETE trigger, database deletion.
  */
 export const deleteTaskAction = action(
 	{
 		name: 'deleteTask',
-		description: 'Delete a task by its ID',
+		description: 'Delete a task',
 		input: t.Object({
 			id: t.String(),
 		}),
 		output: t.Object({
 			success: t.Boolean(),
-			deletedId: t.String(),
 		}),
 		triggers: [triggers.api('DELETE', '/:id')],
 	},
 	async (input, ctx) => {
-		const task = getTask(input.id)
-		if (!task) {
-			throw new Error(`Task not found: ${input.id}`)
-		}
+		ctx.logger.info('Deleting task', { taskId: input.id })
 
-		deleteTask(input.id)
+		await ctx.db.from('tasks').eq('id', input.id).delete()
+
 		ctx.logger.info('Task deleted', { taskId: input.id })
 
-		return {
-			success: true,
-			deletedId: input.id,
-		}
+		return { success: true }
 	},
 )

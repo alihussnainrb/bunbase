@@ -1,7 +1,7 @@
 import { default as t } from 'typebox'
 import { action } from '../../core/action.ts'
 import type { ActionDefinition } from '../../core/types.ts'
-import { triggers } from '../../triggers/index.ts'
+import { triggers } from '../../core/triggers/index.ts'
 
 // Get all runs with filtering
 export const getRuns: ActionDefinition = action({

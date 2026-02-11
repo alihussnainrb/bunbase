@@ -31,10 +31,10 @@ export type {
 } from './core/types.ts'
 
 // Guards
-export * from './guards/index.ts'
+export * from './core/guards/index.ts'
 
 // Trigger builders
-export { triggers } from './triggers/index.ts'
+export { triggers } from './core/triggers/index.ts'
 
 // Auth utilities (used in action handlers for session management)
 export * from './auth/password.ts'
@@ -53,3 +53,9 @@ export * from './saas/types.ts'
 
 // Logger (useful for custom logging in action handlers)
 export { Logger, LoggerSession } from './logger/index.ts'
+
+// Storage adapter types (for custom adapter implementations)
+export type { StorageAdapter, UploadOptions } from './storage/types.ts'
+
+// Key-value store types (for custom store implementations)
+export type { KVStore } from './kv/types.ts'

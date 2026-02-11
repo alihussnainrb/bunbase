@@ -1,129 +1,179 @@
 # Bunbase Basic Example
 
-A task management API demonstrating bunbase core features:
-
-- **Actions** with typed input/output (TypeBox validation)
-- **Modules** grouping related actions with shared guards
-- **API triggers** (GET, POST, PUT, DELETE with path parameters)
-- **Event triggers** (task.created → onTaskCreated)
-- **Guards** (authenticated endpoint protection)
-- **Session management** (cookie-based auth)
-- **OpenAPI** auto-generated docs
-- **Studio** development dashboard
-- **Structured logging** with trace IDs
+A comprehensive example showcasing all Bunbase features: database, storage, key-value store, authentication, and more.
 
 ## Setup
 
-```bash
-bun install
-```
+1. Install dependencies:
+   ```bash
+   bun install
+   ```
 
-## Run
+2. Set up PostgreSQL database:
+   ```bash
+   # Update .env with your DATABASE_URL
+   cp .env.example .env
+   ```
 
-```bash
-bun run dev
-# or directly:
-bunbase dev
-```
+3. Run migrations:
+   ```bash
+   bun run migrate
+   ```
+
+4. Start the development server:
+   ```bash
+   bun run dev
+   ```
+
+## Features Demonstrated
+
+### Database (ctx.db)
+- **Tasks CRUD**: Full CRUD operations using TypedQueryBuilder
+  - `POST /api/tasks` - Create task
+  - `GET /api/tasks` - List tasks with filtering
+  - `GET /api/tasks/:id` - Get single task
+  - `PATCH /api/tasks/:id` - Update task
+  - `DELETE /api/tasks/:id` - Delete task
+
+### File Storage (ctx.storage)
+- **File Upload/Download**: Local filesystem storage
+  - `POST /upload` - Upload file (base64 encoded)
+  - `GET /download/:filename` - Download file
+
+### Key-Value Store (ctx.kv)
+- **Cache Operations**: PostgreSQL-backed KV with TTL
+  - `POST /cache` - Store value with optional TTL
+  - `GET /cache/:key` - Retrieve value
+  - `GET /cache` - List all keys with prefix filter
+
+### Authentication
+- **Session Management**: Cookie-based sessions
+  - `POST /api/auth/login` - Login with email/password
+  - `GET /api/auth/me` - Get current user
+
+### Events
+- **Event Bus**: In-memory event system
+  - Task creation triggers background notification
+  - Event listeners respond to domain events
 
 ## API Endpoints
 
-| Method | Path | Auth | Description |
-|--------|------|------|-------------|
-| GET | /health | No | Health check + task stats |
-| POST | /auth/login | No | Login (returns session cookie) |
-| GET | /auth/me | Yes | Current user profile |
-| POST | /tasks/ | Yes | Create a task |
-| GET | /tasks/ | Yes | List tasks (filter: ?status=pending) |
-| GET | /tasks/:id | Yes | Get a single task |
-| PUT | /tasks/:id | Yes | Update a task |
-| DELETE | /tasks/:id | Yes | Delete a task |
-| GET | /api/docs | No | OpenAPI documentation |
-| GET | /api/openapi.json | No | OpenAPI JSON spec |
-
-## Quick Test
-
+### Tasks
 ```bash
-# Health check (public)
-curl http://localhost:3000/health
-
-# Login (get session cookie)
-curl -X POST http://localhost:3000/auth/login \
+# Create a task
+curl -X POST http://localhost:3000/api/tasks \
   -H "Content-Type: application/json" \
-  -d '{"email":"demo@example.com","password":"password123"}' \
-  -c cookies.txt
-
-# Create a task (with auth cookie)
-curl -X POST http://localhost:3000/tasks/ \
-  -H "Content-Type: application/json" \
-  -d '{"title":"My first task","description":"Testing bunbase"}' \
-  -b cookies.txt
+  -d '{"title": "My Task", "description": "Task description"}'
 
 # List tasks
-curl http://localhost:3000/tasks/ -b cookies.txt
+curl http://localhost:3000/api/tasks?status=pending
 
-# Complete a task (replace TASK_ID)
-curl -X PUT http://localhost:3000/tasks/TASK_ID \
+# Get task
+curl http://localhost:3000/api/tasks/{id}
+
+# Update task
+curl -X PATCH http://localhost:3000/api/tasks/{id} \
   -H "Content-Type: application/json" \
-  -d '{"status":"completed"}' \
-  -b cookies.txt
+  -d '{"status": "completed"}'
+
+# Delete task
+curl -X DELETE http://localhost:3000/api/tasks/{id}
+```
+
+### File Storage
+```bash
+# Upload file
+curl -X POST http://localhost:3000/upload \
+  -H "Content-Type: application/json" \
+  -d '{"filename": "test.txt", "content": "SGVsbG8gV29ybGQ=", "contentType": "text/plain"}'
+
+# Download file
+curl http://localhost:3000/download/test.txt
+```
+
+### Cache/KV
+```bash
+# Store value
+curl -X POST http://localhost:3000/cache \
+  -H "Content-Type: application/json" \
+  -d '{"key": "user:123", "value": {"name": "Alice"}, "ttl": 3600}'
+
+# Get value
+curl http://localhost:3000/cache/user:123
+
+# List keys
+curl http://localhost:3000/cache?prefix=user:
+```
+
+### Authentication
+```bash
+# Login
+curl -X POST http://localhost:3000/api/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{"email": "demo@example.com", "password": "password123"}'
+
+# Get current user
+curl http://localhost:3000/api/auth/me \
+  -H "Cookie: bunbase_session=YOUR_SESSION_TOKEN"
+```
+
+## OpenAPI Documentation
+
+View interactive API docs at: http://localhost:3000/api/docs
+
+## Migrations
+
+```bash
+# Run pending migrations
+bun run migrate
+
+# Create new migration
+bun run migrate:new add_users_table
+
+# Check migration status
+bun run migrate:status
 ```
 
 ## Project Structure
 
 ```
-bunbase.config.ts            # Server configuration
 src/
-├── health.ts                # Standalone action (no module)
-├── on-task-created.ts       # Standalone event-triggered action
-├── lib/
-│   └── store.ts             # In-memory data store
-├── auth/
-│   ├── _module.ts           # Auth module (apiPrefix: /auth)
-│   ├── login.ts             # Login action
-│   └── me.ts                # Get current user action
-└── tasks/
-    ├── _module.ts           # Tasks module (apiPrefix: /tasks, auth guard)
-    ├── create-task.ts       # POST /tasks/
-    ├── list-tasks.ts        # GET /tasks/
-    ├── get-task.ts          # GET /tasks/:id
-    ├── update-task.ts       # PUT /tasks/:id
-    └── delete-task.ts       # DELETE /tasks/:id
+├── auth/             # Authentication module
+│   ├── _module.ts   # Module definition
+│   ├── login.ts     # Login action
+│   └── me.ts        # Get current user action
+├── tasks/           # Tasks CRUD module
+│   ├── _module.ts
+│   ├── create-task.ts
+│   ├── list-tasks.ts
+│   ├── get-task.ts
+│   ├── update-task.ts
+│   └── delete-task.ts
+├── upload-file.ts   # File upload (storage)
+├── download-file.ts # File download (storage)
+├── cache-demo.ts    # KV cache operations
+├── health.ts        # Health check
+└── on-task-created.ts # Event listener
+
+migrations/
+└── 001_init.sql     # Initial schema
+
+bunbase.config.ts    # Configuration
+.env                 # Environment variables
 ```
 
-The `bunbase dev` command reads `bunbase.config.ts`, scans `src/` for `_module.ts` files
-and standalone actions, then starts the server automatically. No manual wiring needed.
+## Configuration
 
-## Features Demonstrated
+See `bunbase.config.ts` for:
+- Database connection
+- Storage adapter (local/S3)
+- Authentication settings
+- OpenAPI settings
+- Studio dashboard
 
-### Action Definition
-Every action has typed input/output schemas, triggers, and optional guards:
-```typescript
-export const createTaskAction = action({
-  name: 'createTask',
-  input: t.Object({ title: t.String({ minLength: 1 }) }),
-  output: t.Object({ id: t.String() }),
-  triggers: [triggers.api('POST', '/')],
-}, async (input, ctx) => { ... })
-```
+## Learn More
 
-### Module Grouping
-Modules apply shared configuration to all their actions:
-```typescript
-export default module({
-  name: 'tasks',
-  apiPrefix: '/tasks',
-  guards: [guards.authenticated()],
-  actions: [createTask, listTasks, ...],
-})
-```
-
-### Event-Driven Actions
-Actions can emit events that trigger other actions:
-```typescript
-// In create-task.ts handler:
-ctx.event.emit('task.created', { taskId, title })
-
-// on-task-created.ts listens for this:
-triggers: [triggers.event('task.created')]
-```
+- [Bunbase Documentation](https://github.com/anthropics/bunbase)
+- [TypedQueryBuilder API](https://github.com/anthropics/bunbase#database)
+- [Storage Adapters](https://github.com/anthropics/bunbase#storage)
+- [Key-Value Store](https://github.com/anthropics/bunbase#kv)

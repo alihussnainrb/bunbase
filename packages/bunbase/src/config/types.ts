@@ -35,12 +35,14 @@ export interface BunbaseConfig {
 		version?: string
 	}
 
-	/** Views configuration */
-	views?: {
-		/** Enable builtin Tailwind CSS support */
-		tailwind?: boolean
-		/** Custom Tailwind config */
-		tailwindConfig?: Record<string, any>
+	/** Studio configuration */
+	studio?: {
+		/** Enable studio dashboard */
+		enabled?: boolean
+		/** Studio mount path (default: /_studio) */
+		path?: string
+		/** Studio API prefix (default: /_studio/api) */
+		apiPrefix?: string
 	}
 }
 

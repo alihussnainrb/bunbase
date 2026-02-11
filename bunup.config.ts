@@ -1,14 +1,3 @@
-// import { defineConfig } from 'bunup'
-
-// export default defineConfig({
-//     target: 'bun',
-//     entry: ['./src/index.ts'],
-//     format: 'esm',
-//     minify: true,
-//     sourcemap: true,
-//     clean: true,
-// })
-
 import { defineWorkspace } from 'bunup'
 
 export default defineWorkspace([
@@ -18,6 +7,18 @@ export default defineWorkspace([
 		config: {
 			target: 'bun',
 			entry: './src/index.ts',
+			format: 'esm',
+			minify: true,
+			sourcemap: true,
+			clean: true,
+		},
+	},
+	{
+		name: 'studio',
+		root: 'packages/studio',
+		config: {
+			target: 'bun',
+			entry: './src/main.tsx',
 			format: 'esm',
 			minify: true,
 			sourcemap: true,

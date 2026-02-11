@@ -1,7 +1,6 @@
 import type { Static, TSchema } from 'typebox'
 import type { DatabaseClient } from '../db/client.ts'
 import type { Logger } from '../logger/index.ts'
-import type { ViewDefinition } from '../views/view.ts'
 
 // ── Trigger Types ────────────────────────────────────────
 
@@ -188,7 +187,6 @@ export interface ModuleConfig {
 	readonly apiPrefix?: string
 	readonly guards?: GuardFn[]
 	readonly actions: ActionDefinition[]
-	readonly views?: ViewDefinition[]
 }
 
 export interface ModuleDefinition {

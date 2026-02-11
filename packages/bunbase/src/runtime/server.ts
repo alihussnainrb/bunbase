@@ -1,41 +1,22 @@
 import type { Server } from 'bun'
 import { type SessionConfig, SessionManager } from '../auth/session.ts'
-import type { BunbaseConfig } from '../config/types.ts'
 import type { ActionRegistry, RegisteredAction } from '../core/registry.ts'
 import type { ApiTriggerConfig, WebhookTriggerConfig } from '../core/types.ts'
 import type { Logger } from '../logger/index.ts'
-import {
-	generateOpenAPISpec,
-	generateScalarDocs,
-} from '../openapi/generator.ts'
 import type { WriteBuffer } from '../persistence/write-buffer.ts'
-import {
-	matchViewPath,
-	parsePathParams,
-	parseQueryParams,
-} from '../views/url-parser.ts'
-import { html, renderJSX } from '../views/view.ts'
-import { ViewRegistry } from '../views/view-registry.ts'
 import { eventBus } from './event-bus.ts'
 import { executeAction } from './executor.ts'
 import { McpService } from './mcp-server.ts'
 import type { Queue } from './queue.ts'
-import type { Scheduler } from './scheduler.ts'
+import { Scheduler } from './scheduler.ts'
+import { generateOpenAPISpec, generateScalarDocs } from '../openapi/generator.ts'
+import type { BunbaseConfig } from '../config/types.ts'
+import { studioModule } from '../studio/module.ts'
 
 interface Route {
 	method: string
 	action: RegisteredAction
 	trigger: ApiTriggerConfig | WebhookTriggerConfig
-}
-
-export interface BunbaseServerConfig {
-	auth?: SessionConfig
-	openapi?: {
-		enabled: boolean
-		path?: string
-		title?: string
-		version?: string
-	}
 }
 
 /**
@@ -48,9 +29,8 @@ export class BunbaseServer {
 	private queue?: Queue
 	private mcp: McpService
 	private sessionManager?: SessionManager
-	private openapiConfig?: BunbaseServerConfig['openapi']
-	private viewsConfig?: BunbaseConfig['views']
-	private viewRegistry = new ViewRegistry()
+	private openapiConfig?: BunbaseConfig['openapi']
+	private studioConfig?: BunbaseConfig['studio']
 
 	constructor(
 		private readonly registry: ActionRegistry,
@@ -60,7 +40,7 @@ export class BunbaseServer {
 	) {
 		this.mcp = new McpService(registry, logger, writeBuffer)
 		this.openapiConfig = config?.openapi
-		this.viewsConfig = config?.views
+		this.studioConfig = config?.studio
 		if (config?.auth) {
 			this.sessionManager = new SessionManager({
 				secret: config.auth.sessionSecret,
@@ -72,6 +52,12 @@ export class BunbaseServer {
 		// Auto-mount OpenAPI routes if enabled
 		if (this.openapiConfig?.enabled) {
 			this.mountOpenAPI()
+		}
+
+		// Register studio actions if studio is enabled
+		if (this.studioConfig?.enabled) {
+			// Register studio module
+			this.registry.registerModule(studioModule);
 		}
 	}
 
@@ -108,21 +94,81 @@ export class BunbaseServer {
 				})
 			}
 
+			// Check for studio routes if enabled
+			if (this.studioConfig?.enabled) {
+				const studioPath = this.studioConfig.path ?? '/_studio'
+				const apiPrefix = this.studioConfig.apiPrefix ?? '/_studio/api'
+				
+				if (url.pathname.startsWith(studioPath)) {
+					return this.handleStudioRequest(req, studioPath, apiPrefix)
+				}
+			}
+
 			return originalHandleRequest(req)
 		}
 
 		this.logger.info(`[OpenAPI] Mounted at ${specPath} and ${docsPath}`)
 	}
 
+	private async handleStudioRequest(req: Request, studioPath: string, apiPrefix: string): Promise<Response> {
+		const url = new URL(req.url)
+		const pathname = url.pathname
+
+		// Serve studio static files
+		if (pathname === studioPath || pathname === `${studioPath}/`) {
+			// In a real implementation, this would serve the built studio app
+			return new Response('Studio Dashboard - Coming Soon', {
+				headers: { 'Content-Type': 'text/html' },
+			})
+		}
+
+		// Handle studio API routes
+		if (pathname.startsWith(apiPrefix)) {
+			return this.handleStudioAPI(req, apiPrefix)
+		}
+
+		return new Response('Not Found', { status: 404 })
+	}
+
+	private async handleStudioAPI(req: Request, apiPrefix: string): Promise<Response> {
+		const url = new URL(req.url)
+		const pathname = url.pathname
+		const method = req.method.toUpperCase()
+
+		// Mock studio API endpoints - in real implementation, these would
+		// call the appropriate action handlers from the studio module
+		if (pathname === `${apiPrefix}/actions` && method === 'GET') {
+			return Response.json({
+				actions: [
+					{ id: '1', name: 'user.create', runs: 342, successRate: 98.5 },
+					{ id: '2', name: 'user.update', runs: 189, successRate: 96.8 },
+				],
+				total: 2,
+			})
+		}
+
+		if (pathname === `${apiPrefix}/runs` && method === 'GET') {
+			return Response.json({
+				runs: [
+					{ id: '1', action: 'user.create', status: 'success', duration: 125 },
+					{ id: '2', action: 'user.update', status: 'error', duration: 340 },
+				],
+				total: 2,
+			})
+		}
+
+		return new Response('Not Found', { status: 404 })
+	}
+
 	/**
-	 * Register the scheduler for cron-triggered actions.
+	 * Register scheduler for cron-triggered actions.
 	 */
 	setScheduler(scheduler: Scheduler): void {
 		this.scheduler = scheduler
 	}
 
 	/**
-	 * Register the queue for background job processing.
+	 * Register queue for background job processing.
 	 */
 	setQueue(queue: Queue): void {
 		this.queue = queue
@@ -131,10 +177,7 @@ export class BunbaseServer {
 	/**
 	 * Register a job handler for ctx.queue support.
 	 */
-	registerJob(
-		name: string,
-		handler: (data: unknown, ctx: any) => Promise<void>,
-	): void {
+	registerJob(name: string, handler: (data: unknown, ctx: any) => Promise<void>): void {
 		this.queue?.register(name, handler)
 	}
 
@@ -153,7 +196,7 @@ export class BunbaseServer {
 								logger: this.logger,
 								writeBuffer: this.writeBuffer,
 							})
-						} catch (err) {
+						} catch (err: any) {
 							this.logger.error(
 								`Error handling event ${trigger.event} for action ${action.definition.config.name}:`,
 								err,
@@ -176,12 +219,18 @@ export class BunbaseServer {
 					if (this.routes.has(routeKey)) {
 						throw new Error(
 							`Duplicate route: ${trigger.method} ${trigger.path} ` +
-								`(action: ${action.definition.config.name})`,
+							`(action: ${action.definition.config.name})`,
 						)
 					}
 					this.routes.set(routeKey, { method: trigger.method, action, trigger })
 				} else if (trigger.type === 'webhook') {
 					const routeKey = `POST:${trigger.path}`
+					if (this.routes.has(routeKey)) {
+						throw new Error(
+							`Duplicate route: POST ${trigger.path} ` +
+							`(action: ${action.definition.config.name})`,
+						)
+					}
 					this.routes.set(routeKey, {
 						method: 'POST',
 						action,
@@ -193,7 +242,7 @@ export class BunbaseServer {
 	}
 
 	/**
-	 * Start the Bun HTTP server, scheduler, and optionally MCP server.
+	 * Start Bun HTTP server, scheduler, and optionally MCP server.
 	 */
 	start(opts?: {
 		port?: number
@@ -211,8 +260,8 @@ export class BunbaseServer {
 		}
 
 		// Debug: Log all routes
-		for (const headers of this.routes.keys()) {
-			this.logger.debug(`Registered route: ${headers}`)
+		for (const routeKey of this.routes.keys()) {
+			this.logger.debug(`Registered route: ${routeKey}`)
 		}
 
 		if (mcp) {
@@ -275,20 +324,20 @@ export class BunbaseServer {
 			})
 		}
 
-		// Check for view routes (only GET requests)
-		if (method === 'GET') {
-			const view = this.viewRegistry.findByPath(pathname)
-			if (view) {
-				return this.handleView(view, req)
+		// Check for studio routes if enabled
+		if (this.studioConfig?.enabled) {
+			const studioPath = this.studioConfig.path ?? '/_studio'
+			const apiPrefix = this.studioConfig.apiPrefix ?? '/_studio/api'
+			
+			if (pathname.startsWith(studioPath)) {
+				return this.handleStudioRequest(req, studioPath, apiPrefix)
 			}
 		}
 
 		const routeKey = `${method}:${pathname}`
 		const route = this.routes.get(routeKey)
 
-		this.logger.debug(
-			`[Request] ${method} ${pathname} -> ${route ? 'ACTION' : 'MISS'}`,
-		)
+		this.logger.debug(`[Request] ${method} ${pathname} -> ${route ? 'ACTION' : 'MISS'}`)
 
 		if (!route) {
 			return Response.json(
@@ -353,7 +402,7 @@ export class BunbaseServer {
 				headers.append('Set-Cookie', cookie)
 			}
 
-			// Execute the action
+			// Execute action
 			const result = await executeAction(route.action, input, {
 				triggerType: route.trigger.type,
 				request: req,
@@ -378,105 +427,11 @@ export class BunbaseServer {
 			else if (result.error?.includes('Too Many Requests')) status = 429
 
 			return Response.json({ error: result.error }, { status, headers })
-		} catch (err) {
+		} catch (err: any) {
 			const message =
 				err instanceof Error ? err.message : 'Internal server error'
 			this.logger.error(`Unhandled error: ${message}`)
 			return Response.json({ error: message }, { status: 500 })
-		}
-	}
-
-	/**
-	 * Handle view requests with parameter parsing and guard execution
-	 */
-	private async handleView(view: any, req: Request): Promise<Response> {
-		const url = new URL(req.url)
-		const pathname = url.pathname
-
-		try {
-			// Parse URL parameters and query strings
-			const params = parsePathParams(pathname, view.path, view.paramsSchema)
-			const query = parseQueryParams(url, view.querySchema)
-
-			// Authenticate (if session manager is configured)
-			let authContext: any = {}
-			if (this.sessionManager) {
-				const cookies = this.parseCookies(req.headers.get('Cookie'))
-				const sessionToken = cookies[this.sessionManager.getCookieName()]
-				if (sessionToken) {
-					const payload = this.sessionManager.verifySession(sessionToken)
-					if (payload) {
-						authContext = payload
-					}
-				}
-			}
-
-			// Create action context for guards and render function
-			const headers = new Headers()
-			const setCookie = (name: string, value: string, opts?: any) => {
-				let cookie = `${name}=${encodeURIComponent(value)}`
-				if (opts?.path) cookie += `; Path=${opts.path}`
-				if (opts?.httpOnly) cookie += '; HttpOnly'
-				if (opts?.secure) cookie += '; Secure'
-				if (opts?.sameSite) cookie += `; SameSite=${opts.sameSite}`
-				if (opts?.expires) cookie += `; Expires=${opts.expires.toUTCString()}`
-				if (opts?.maxAge) cookie += `; Max-Age=${opts.maxAge}`
-				headers.append('Set-Cookie', cookie)
-			}
-
-			const ctx: any = {
-				db: null, // TODO: inject database client
-				logger: this.logger,
-				traceId: crypto.randomUUID(),
-				event: { emit: () => {} },
-				auth: authContext,
-				response: { headers, setCookie },
-				request: req,
-				headers: Object.fromEntries(req.headers.entries()),
-				schedule: () => Promise.resolve(''),
-				queue: {
-					add: () => Promise.resolve(''),
-					push: () => Promise.resolve(''),
-					get: () => Promise.resolve(null),
-					getAll: () => Promise.resolve([]),
-					update: () => Promise.resolve(false),
-					delete: () => Promise.resolve(false),
-					remove: () => Promise.resolve(false),
-				},
-			}
-
-			// Run guards if any
-			if (view.guards) {
-				for (const guard of view.guards) {
-					await guard(ctx)
-				}
-			}
-
-			// Render the view
-			const jsx = await view.render({ params, query }, ctx)
-			const content = renderJSX(jsx)
-			const fullHtml = html(`${view.name} - Bunbase`, content, this.viewsConfig)
-
-			return new Response(fullHtml, {
-				headers: {
-					'Content-Type': 'text/html',
-					...Object.fromEntries(headers.entries()),
-				},
-			})
-		} catch (err) {
-			const message = err instanceof Error ? err.message : 'View render error'
-			this.logger.error(`View error for ${view.name}: ${message}`)
-			return new Response(
-				html(
-					'Error',
-					`<div class="p-6 text-red-600">Error: ${message}</div>`,
-					this.viewsConfig,
-				),
-				{
-					status: 500,
-					headers: { 'Content-Type': 'text/html' },
-				},
-			)
 		}
 	}
 
@@ -493,21 +448,10 @@ export class BunbaseServer {
 	}
 
 	/**
-	 * Register a view for server-side rendering
-	 */
-	registerView(view: any): void {
-		this.viewRegistry.register(view)
-	}
-
-	/**
-	 * Register a module and its views/actions
+	 * Register a module and its actions
 	 */
 	registerModule(mod: any): void {
 		// Register actions
 		this.registry.registerModule(mod)
-		// Register views
-		if (mod.config.views) {
-			this.viewRegistry.registerModule(mod)
-		}
 	}
 }

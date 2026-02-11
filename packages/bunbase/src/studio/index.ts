@@ -1,0 +1,1 @@
+export { studioModule } from './module';

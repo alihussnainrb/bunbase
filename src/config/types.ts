@@ -26,6 +26,22 @@ export interface BunbaseConfig {
 
     /** Enable MCP Server */
     mcp?: boolean
+
+    /** OpenAPI configuration */
+    openapi?: {
+        enabled: boolean
+        path?: string
+        title?: string
+        version?: string
+    }
+
+    /** Views configuration */
+    views?: {
+        /** Enable builtin Tailwind CSS support */
+        tailwind?: boolean
+        /** Custom Tailwind config */
+        tailwindConfig?: Record<string, any>
+    }
 }
 
 /**

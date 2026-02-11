@@ -5,6 +5,9 @@ import type { RunEntry } from '../persistence/types.ts'
 import type { WriteBuffer } from '../persistence/write-buffer.ts'
 import { eventBus } from './event-bus.ts'
 
+import type { Queue } from './queue.ts'
+import type { Scheduler } from './scheduler.ts'
+
 /**
  * Executes a registered action through the full pipeline:
  *   1. Build action context
@@ -21,6 +24,8 @@ export async function executeAction(
         logger: Logger
         writeBuffer: WriteBuffer
         db?: unknown
+        queue?: Queue
+        scheduler?: Scheduler
         auth?: {
             userId?: string
             role?: string
@@ -44,6 +49,8 @@ export async function executeAction(
     })
 
     // Build context
+    const queue = opts.queue
+    const scheduler = opts.scheduler
     const ctx: ActionContext = {
         db: (opts.db ?? null) as any,
         logger: actionLogger,
@@ -57,6 +64,62 @@ export async function executeAction(
         module: action.moduleName ? { name: action.moduleName } : undefined,
         response: opts.response,
         request: opts.request,
+        schedule: async (time, name, data, scheduleOpts) => {
+            if (!queue) {
+                throw new Error('Queue not configured. Call server.setQueue() first.')
+            }
+            // Schedule via queue with delay
+            const delay = typeof time === 'number' ? time : 0
+            return queue.push(name, data, { ...scheduleOpts, priority: scheduleOpts?.priority })
+        },
+        queue: {
+            add: async (name, data, opts) => {
+                if (!queue) {
+                    throw new Error('Queue not configured. Call server.setQueue() first.')
+                }
+                return queue.add(name, data, opts)
+            },
+            push: async (name, data, opts) => {
+                if (!queue) {
+                    throw new Error('Queue not configured. Call server.setQueue() first.')
+                }
+                return queue.push(name, data, opts)
+            },
+            get: async (jobId) => {
+                if (!queue) {
+                    throw new Error('Queue not configured. Call server.setQueue() first.')
+                }
+                return queue.get(jobId)
+            },
+            getAll: async (opts) => {
+                if (!queue) {
+                    throw new Error('Queue not configured. Call server.setQueue() first.')
+                }
+                return queue.getAll({
+                    status: opts?.status as any,
+                    name: opts?.name,
+                    limit: opts?.limit,
+                })
+            },
+            update: async (jobId, updates) => {
+                if (!queue) {
+                    throw new Error('Queue not configured. Call server.setQueue() first.')
+                }
+                return queue.update(jobId, updates)
+            },
+            delete: async (jobId) => {
+                if (!queue) {
+                    throw new Error('Queue not configured. Call server.setQueue() first.')
+                }
+                return queue.delete(jobId)
+            },
+            remove: async (jobId) => {
+                if (!queue) {
+                    throw new Error('Queue not configured. Call server.setQueue() first.')
+                }
+                return queue.remove(jobId)
+            },
+        },
     }
 
     try {

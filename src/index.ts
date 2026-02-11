@@ -9,6 +9,9 @@ export * from './auth/session.ts'
 export { ActionValidationError, action } from './core/action.ts'
 export { module } from './core/module.ts'
 export { ActionRegistry } from './core/registry.ts'
+// View primitives
+export { view, renderJSX, html } from './views/view.ts'
+export { ViewRegistry } from './views/view-registry.ts'
 // Types
 export type {
     ActionConfig,
@@ -37,7 +40,6 @@ export type {
 export * from './persistence/write-buffer.ts'
 export { loadActions } from './runtime/loader.ts'
 export * from './runtime/mcp-server.ts'
-export * from './runtime/queue.ts'
 export * from './runtime/scheduler.ts'
 // Runtime
 export { BunbaseServer } from './runtime/server.ts'

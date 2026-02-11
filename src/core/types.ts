@@ -1,6 +1,7 @@
 import type { Static, TSchema } from 'typebox'
 import type { DatabaseClient } from '../db/client.ts'
 import type { Logger } from '../logger/index.ts'
+import type { ViewDefinition } from '../views/view'
 
 // ── Trigger Types ────────────────────────────────────────
 
@@ -111,6 +112,30 @@ export interface ActionContext {
     /** Raw request (only for API/webhook triggers) */
     request?: Request
     headers?: Record<string, string>
+
+    /** Schedule jobs for background execution */
+    schedule: (
+        time: number | Date | string,
+        name: string,
+        data: unknown,
+        opts?: { priority?: number; maxRetries?: number }
+    ) => Promise<string>
+
+    /** Queue management for background jobs */
+    queue: {
+        /** Add/push a job to the queue */
+        add: (name: string, data: unknown, opts?: { priority?: number; maxRetries?: number }) => Promise<string>
+        push: (name: string, data: unknown, opts?: { priority?: number; maxRetries?: number }) => Promise<string>
+        /** Get job by ID */
+        get: (jobId: string) => Promise<unknown>
+        /** Get all jobs with optional filters */
+        getAll: (opts?: { status?: string; name?: string; limit?: number }) => Promise<unknown[]>
+        /** Update a job's data or priority */
+        update: (jobId: string, updates: { data?: unknown; priority?: number }) => Promise<boolean>
+        /** Delete/remove a pending job */
+        delete: (jobId: string) => Promise<boolean>
+        remove: (jobId: string) => Promise<boolean>
+    }
 }
 
 // ── Action Config ────────────────────────────────────────
@@ -148,6 +173,7 @@ export interface ModuleConfig {
     readonly apiPrefix?: string
     readonly guards?: GuardFn[]
     readonly actions: ActionDefinition[]
+    readonly views?: ViewDefinition[]
 }
 
 export interface ModuleDefinition {

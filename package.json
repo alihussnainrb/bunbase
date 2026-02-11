@@ -61,6 +61,7 @@
 		"@types/bun": "^1.3.8",
 		"bumpp": "^10.4.1",
 		"bunup": "^0.16.23",
+		"typed-htmx": "^0.3.1",
 		"typescript": "^5.9.3"
 	},
 	"peerDependencies": {
@@ -77,6 +78,9 @@
 		"commander": "^14.0.3",
 		"croner": "^10.0.1",
 		"is-unicode-supported": "^2.1.0",
+		"openapi3-ts": "^4.5.0",
+		"preact": "^10.28.3",
+		"preact-render-to-string": "^6.6.5",
 		"typebox": "^1.0.81",
 		"zod": "^4.3.6"
 	}

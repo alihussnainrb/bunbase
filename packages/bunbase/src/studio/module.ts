@@ -1,4 +1,5 @@
-import { module, type ModuleDefinition } from '../index'
+import { module } from '../core/module.ts'
+import type { ModuleDefinition } from '../core/types.ts'
 import { getActions } from './actions/get-actions'
 import { getActionDetails } from './actions/get-action-details'
 import { getRuns } from './actions/get-runs'

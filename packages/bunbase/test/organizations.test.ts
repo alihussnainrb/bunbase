@@ -2,85 +2,75 @@ import { describe, expect, it } from 'bun:test'
 import { OrganizationService } from '../src/saas/organizations.ts'
 
 describe('OrganizationService', () => {
-	// Create a proper mock DB that maintains state between calls
+	// Create a mock DB that mimics the TypedQueryBuilder chainable API
 	function createMockDb() {
 		const organizations: any[] = []
 		const memberships: any[] = []
 
+		function createChainableQuery(store: any[], tableName: string) {
+			const wheres: Array<{ col: string; val: any }> = []
+
+			const chain: any = {
+				eq: (col: string, val: any) => {
+					wheres.push({ col, val })
+					return chain
+				},
+				select: (..._fields: any[]) => chain,
+				limit: (_n: number) => chain,
+				single: async () => {
+					const result = store.find((r) =>
+						wheres.every(({ col, val }) => r[col] === val),
+					)
+					return result || null
+				},
+				exec: async () => {
+					return store.filter((r) =>
+						wheres.every(({ col, val }) => r[col] === val),
+					)
+				},
+				insert: async (data: any) => {
+					if (tableName === 'organizations') {
+						const org = {
+							id: `org-${Date.now()}`,
+							name: data.name,
+							slug: data.slug,
+							ownerId: data.owner_id,
+							owner_id: data.owner_id,
+							createdAt: new Date(),
+							updatedAt: new Date(),
+						}
+						organizations.push(org)
+						return org
+					}
+					if (tableName === 'org_memberships') {
+						const membership = {
+							id: `mem-${Date.now()}-${Math.random().toString(36).slice(2)}`,
+							orgId: data.org_id,
+							org_id: data.org_id,
+							userId: data.user_id,
+							user_id: data.user_id,
+							role: data.role,
+							joinedAt: new Date(),
+						}
+						memberships.push(membership)
+						return membership
+					}
+					return null
+				},
+			}
+
+			return chain
+		}
+
 		return {
 			from: (table: string) => {
 				if (table === 'organizations') {
-					return {
-						where: (conds: any) => ({
-							first: async () => {
-								return (
-									organizations.find((r) =>
-										Object.entries(conds).every(([k, v]) => r[k] === v),
-									) || null
-								)
-							},
-						}),
-						insert: (data: any) => ({
-							returning: async () => {
-								// Convert snake_case DB fields to camelCase for TypeScript types
-								const org = {
-									id: `org-${Date.now()}`,
-									name: data.name,
-									slug: data.slug,
-									ownerId: data.owner_id,
-									createdAt: new Date(),
-									updatedAt: new Date(),
-								}
-								// Store the org so it can be found later
-								organizations.push(org)
-								return [org]
-							},
-						}),
-					}
+					return createChainableQuery(organizations, 'organizations')
 				}
-
 				if (table === 'org_memberships') {
-					return {
-						where: (conds: any) => ({
-							first: async () => {
-								// Convert snake_case condition keys to camelCase for lookup
-								const normalizedConds: any = {}
-								for (const [key, value] of Object.entries(conds)) {
-									const camelKey = key.replace(/_([a-z])/g, (_, letter) =>
-										letter.toUpperCase(),
-									)
-									normalizedConds[camelKey] = value
-								}
-								return (
-									memberships.find((r) =>
-										Object.entries(normalizedConds).every(
-											([k, v]) => r[k] === v,
-										),
-									) || null
-								)
-							},
-						}),
-						insert: (data: any) => ({
-							returning: async () => {
-								// Convert snake_case DB fields to camelCase for TypeScript types
-								const membership = {
-									id: `mem-${Date.now()}`,
-									orgId: data.org_id,
-									userId: data.user_id,
-									role: data.role,
-									joinedAt: new Date(),
-								}
-								memberships.push(membership)
-								return [membership]
-							},
-						}),
-					}
+					return createChainableQuery(memberships, 'org_memberships')
 				}
-
-				return {
-					where: () => ({ first: async () => null }),
-					insert: () => ({ returning: async () => [] }),
-				}
+				return createChainableQuery([], table)
 			},
 		}
 	}

@@ -39,15 +39,7 @@ export async function devCommand(): Promise<void> {
 	logger.info(`Loaded ${registry.size} actions in ${loadDuration}ms`)
 
 	// 3. Start server
-	const server = new BunbaseServer(registry, logger, writeBuffer, {
-		auth: config.auth
-			? {
-					secret: config.auth.sessionSecret,
-					cookieName: config.auth.cookieName,
-					expiresIn: config.auth.expiresIn,
-				}
-			: undefined,
-	})
+	const server = new BunbaseServer(registry, logger, writeBuffer, config)
 
 	try {
 		server.start({

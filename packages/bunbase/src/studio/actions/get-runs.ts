@@ -1,4 +1,7 @@
-import { action, t, triggers, type ActionDefinition } from '../../'
+import { default as t } from 'typebox'
+import { action } from '../../core/action.ts'
+import type { ActionDefinition } from '../../core/types.ts'
+import { triggers } from '../../triggers/index.ts'
 
 // Get all runs with filtering
 export const getRuns: ActionDefinition = action({
@@ -16,83 +19,52 @@ export const getRuns: ActionDefinition = action({
   }),
   triggers: [triggers.api('GET', '/_studio/api/runs')],
 }, async (input, ctx) => {
-  // Mock data - in real implementation, fetch from database
-  const runs = [
-    {
-      id: '1',
-      action: 'user.create',
-      status: 'success',
-      duration: 125,
-      timestamp: new Date(Date.now() - 300000).toISOString(),
-      input: { name: 'John Doe', email: 'john@example.com' },
-      output: { id: '123', name: 'John Doe', email: 'john@example.com' },
-    },
-    {
-      id: '2',
-      action: 'user.update',
-      status: 'success',
-      duration: 95,
-      timestamp: new Date(Date.now() - 600000).toISOString(),
-      input: { id: '123', name: 'John Smith' },
-      output: { id: '123', name: 'John Smith', email: 'john@example.com' },
-    },
-    {
-      id: '3',
-      action: 'payment.process',
-      status: 'error',
-      duration: 340,
-      timestamp: new Date(Date.now() - 900000).toISOString(),
-      input: { amount: 100, currency: 'USD' },
-      error: 'Insufficient funds',
-    },
-  ]
-
   const limit = input.limit ?? 20
   const offset = input.offset ?? 0
   const status = input.status ?? 'all'
-  const action = input.action ?? ''
+  const actionFilter = input.action ?? ''
 
-  const filteredRuns = runs.filter(run => {
-    if (status !== 'all' && run.status !== status) return false
-    if (action && !run.action.toLowerCase().includes(action.toLowerCase())) return false
-    return true
-  })
+  // Try to fetch from DB
+  if (ctx.db) {
+    try {
+      let query = ctx.db.from('action_runs' as any)
+        .orderBy('started_at' as any, 'DESC')
+
+      if (status !== 'all') {
+        query = query.eq('status' as any, status)
+      }
+
+      if (actionFilter) {
+        query = query.ilike('action_name' as any, `%${actionFilter}%`)
+      }
+
+      const allRuns = await query.exec()
+      const sliced = allRuns.slice(offset, offset + limit)
+
+      const runs = sliced.map((r: any) => ({
+        id: r.id,
+        action: r.action_name,
+        status: r.status,
+        duration: r.duration_ms,
+        timestamp: new Date(r.started_at).toISOString(),
+        input: r.input ? JSON.parse(r.input) : null,
+        output: r.output ? JSON.parse(r.output) : null,
+        error: r.error,
+      }))
+
+      return {
+        runs,
+        total: allRuns.length,
+        hasMore: offset + limit < allRuns.length,
+      }
+    } catch {
+      // DB not available, return empty
+    }
+  }
 
   return {
-    runs: filteredRuns.slice(offset, offset + limit),
-    total: filteredRuns.length,
-    hasMore: offset + limit < filteredRuns.length,
+    runs: [],
+    total: 0,
+    hasMore: false,
   }
-})
-
-// Get run details by ID
-export const getRunDetails: ActionDefinition = action({
-  name: 'studio.getRunDetails',
-  input: t.Object({
-    id: t.String(),
-  }),
-  output: t.Object({
-    id: t.String(),
-    action: t.String(),
-    status: t.String(),
-    duration: t.Number(),
-    timestamp: t.String(),
-    input: t.Any(),
-    output: t.Any(),
-    error: t.Optional(t.String()),
-  }),
-  triggers: [triggers.api('GET', '/_studio/api/runs/:id')],
-}, async (input, ctx) => {
-  // Mock implementation
-  const run = {
-    id: input.id,
-    action: 'user.create',
-    status: 'success',
-    duration: 125,
-    timestamp: new Date(Date.now() - 300000).toISOString(),
-    input: { name: 'John Doe', email: 'john@example.com' },
-    output: { id: '123', name: 'John Doe', email: 'john@example.com' },
-  }
-
-  return run
 })

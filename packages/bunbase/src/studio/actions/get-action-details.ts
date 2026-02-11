@@ -1,4 +1,8 @@
-import { action, t, triggers, type ActionDefinition, NotFound } from '../../'
+import { default as t } from 'typebox'
+import { action } from '../../core/action.ts'
+import type { ActionDefinition } from '../../core/types.ts'
+import { triggers } from '../../triggers/index.ts'
+import { NotFound } from '../../utils/errors.ts'
 
 // Get action details by ID
 export const getActionDetails: ActionDefinition = action({
@@ -23,46 +27,81 @@ export const getActionDetails: ActionDefinition = action({
   }),
   triggers: [triggers.api('GET', '/_studio/api/actions/:id')],
 }, async (input, ctx) => {
-  // Mock implementation - fetch from registry
-  // In real implementation, this would query the action registry
-  if (input.id !== '1' && input.id !== '2' && input.id !== '3') {
+  const registry = ctx.registry
+
+  if (!registry) {
     throw new NotFound(`Action with id '${input.id}' not found`)
   }
 
-  const action = {
-    id: input.id,
-    name: 'user.create',
-    description: 'Create a new user account',
-    method: 'POST',
-    path: '/api/users',
-    triggers: [
-      { type: 'api', config: { method: 'POST', path: '/api/users' } },
-    ],
-    runs: [
-      {
-        id: '1',
-        status: 'success',
-        duration: 125,
-        timestamp: new Date(Date.now() - 300000).toISOString(),
-        input: { name: 'John Doe', email: 'john@example.com' },
-        output: { id: '123', name: 'John Doe', email: 'john@example.com' },
-      },
-      {
-        id: '2',
-        status: 'error',
-        duration: 340,
-        timestamp: new Date(Date.now() - 600000).toISOString(),
-        input: { name: 'Jane Doe', email: 'jane@example.com' },
-        error: 'Email already exists',
-      },
-    ],
-    stats: {
-      totalRuns: 342,
-      successRate: 98.5,
-      avgDuration: 125,
-      lastRun: new Date(Date.now() - 300000).toISOString(),
-    },
+  // Find action by index-based ID or by name
+  const allActions = registry.getAll()
+  const index = parseInt(input.id, 10) - 1
+  const registered = (index >= 0 && index < allActions.length)
+    ? allActions[index]
+    : allActions.find(a => a.definition.config.name === input.id)
+
+  if (!registered) {
+    throw new NotFound(`Action with id '${input.id}' not found`)
   }
 
-  return action
+  const config = registered.definition.config
+  const apiTrigger = registered.triggers.find((t) => t.type === 'api')
+
+  const triggerList = registered.triggers.map((t) => ({
+    type: t.type,
+    config: t,
+  }))
+
+  // Try to get run data from DB
+  let runs: any[] = []
+  let stats = {
+    totalRuns: 0,
+    successRate: 0,
+    avgDuration: 0,
+    lastRun: new Date().toISOString(),
+  }
+
+  if (ctx.db) {
+    try {
+      const dbRuns = await ctx.db
+        .from('action_runs' as any)
+        .eq('action_name' as any, config.name)
+        .orderBy('started_at' as any, 'DESC')
+        .limit(20)
+        .exec()
+
+      runs = dbRuns.map((r: any) => ({
+        id: r.id,
+        status: r.status,
+        duration: r.duration_ms,
+        timestamp: new Date(r.started_at).toISOString(),
+        input: r.input ? JSON.parse(r.input) : null,
+        output: r.output ? JSON.parse(r.output) : null,
+        error: r.error,
+      }))
+
+      if (dbRuns.length > 0) {
+        const successful = dbRuns.filter((r: any) => r.status === 'success')
+        stats = {
+          totalRuns: dbRuns.length,
+          successRate: (successful.length / dbRuns.length) * 100,
+          avgDuration: dbRuns.reduce((sum: number, r: any) => sum + (r.duration_ms ?? 0), 0) / dbRuns.length,
+          lastRun: new Date(dbRuns[0]!.started_at).toISOString(),
+        }
+      }
+    } catch {
+      // DB not available
+    }
+  }
+
+  return {
+    id: input.id,
+    name: config.name,
+    description: config.description ?? '',
+    method: apiTrigger && apiTrigger.type === 'api' ? apiTrigger.method : 'N/A',
+    path: apiTrigger && (apiTrigger.type === 'api' || apiTrigger.type === 'webhook') ? apiTrigger.path : '',
+    triggers: triggerList,
+    runs,
+    stats,
+  }
 })

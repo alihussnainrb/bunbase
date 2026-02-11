@@ -6,23 +6,20 @@ export default defineWorkspace([
 		root: 'packages/bunbase',
 		config: {
 			target: 'bun',
-			entry: './src/index.ts',
+			entry: [
+				'./src/index.ts',
+				'./src/cli/index.ts',
+				'./src/db/client.ts',
+				'./src/db/types.ts',
+				'./src/logger/index.ts',
+			],
 			format: 'esm',
 			minify: true,
 			sourcemap: true,
 			clean: true,
+			dts: true,
 		},
 	},
-	{
-		name: 'studio',
-		root: 'packages/studio',
-		config: {
-			target: 'bun',
-			entry: './src/main.tsx',
-			format: 'esm',
-			minify: true,
-			sourcemap: true,
-			clean: true,
-		},
-	},
+	// Studio uses Vite for building, not bunup.
+	// Build it separately with: cd packages/studio && bun run build
 ])

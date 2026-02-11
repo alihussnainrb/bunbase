@@ -12,8 +12,8 @@ export class SubscriptionService {
 	async getSubscription(orgId: string): Promise<Subscription | null> {
 		const sub = await this.db
 			.from('subscriptions')
-			.where({ org_id: orgId })
-			.first()
+			.eq('org_id', orgId)
+			.single()
 
 		if (!sub) return null
 
@@ -30,8 +30,7 @@ export class SubscriptionService {
 		orgId: string,
 		planKey: string,
 	): Promise<Subscription> {
-		// TODO: integrate with Stripe/billing provider
-		const [sub] = await this.db
+		const sub = await this.db
 			.from('subscriptions')
 			.insert({
 				org_id: orgId,
@@ -39,7 +38,6 @@ export class SubscriptionService {
 				status: 'active',
 				current_period_end: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // +30 days
 			})
-			.returning()
 
 		return {
 			id: sub.id,

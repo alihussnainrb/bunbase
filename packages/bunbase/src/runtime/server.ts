@@ -2,6 +2,7 @@ import type { Server } from 'bun'
 import { type SessionConfig, SessionManager } from '../auth/session.ts'
 import type { ActionRegistry, RegisteredAction } from '../core/registry.ts'
 import type { ApiTriggerConfig, WebhookTriggerConfig } from '../core/types.ts'
+import { parsePathParams, matchViewPath } from '../core/url-parser.ts'
 import type { Logger } from '../logger/index.ts'
 import type { WriteBuffer } from '../persistence/write-buffer.ts'
 import { eventBus } from './event-bus.ts'
@@ -13,9 +14,11 @@ import { generateOpenAPISpec, generateScalarDocs } from '../openapi/generator.ts
 import type { BunbaseConfig } from '../config/types.ts'
 import { studioModule } from '../studio/module.ts'
 import { BunbaseError } from '../utils/errors.ts'
+import { GuardError } from '../guards/types.ts'
 
 interface Route {
 	method: string
+	pattern: string
 	action: RegisteredAction
 	trigger: ApiTriggerConfig | WebhookTriggerConfig
 }
@@ -25,6 +28,7 @@ interface Route {
  */
 export class BunbaseServer {
 	private routes = new Map<string, Route>()
+	private routePatterns: Route[] = []
 	private server: Server<any> | null = null
 	private scheduler?: Scheduler
 	private queue?: Queue
@@ -50,115 +54,10 @@ export class BunbaseServer {
 			})
 		}
 
-		// Auto-mount OpenAPI routes if enabled
-		if (this.openapiConfig?.enabled) {
-			this.mountOpenAPI()
-		}
-
 		// Register studio actions if studio is enabled
 		if (this.studioConfig?.enabled) {
-			// Register studio module
-			this.registry.registerModule(studioModule);
+			this.registry.registerModule(studioModule)
 		}
-	}
-
-	private mountOpenAPI(): void {
-		const specPath = this.openapiConfig?.path ?? '/api/openapi.json'
-		const docsPath = '/api/docs'
-
-		// Store original handleRequest reference
-		const originalHandleRequest = this.handleRequest.bind(this)
-
-		// Override handleRequest to intercept OpenAPI routes
-		this.handleRequest = async (req: Request): Promise<Response> => {
-			const url = new URL(req.url)
-			const method = req.method.toUpperCase()
-
-			// OpenAPI spec endpoint
-			if (url.pathname === specPath && method === 'GET') {
-				const spec = generateOpenAPISpec(this.registry, {
-					title: this.openapiConfig?.title,
-					version: this.openapiConfig?.version,
-				})
-				return Response.json(spec)
-			}
-
-			// Scalar docs UI
-			if (url.pathname === docsPath && method === 'GET') {
-				const spec = generateOpenAPISpec(this.registry, {
-					title: this.openapiConfig?.title,
-					version: this.openapiConfig?.version,
-				})
-				const html = generateScalarDocs(spec)
-				return new Response(html, {
-					headers: { 'Content-Type': 'text/html' },
-				})
-			}
-
-			// Check for studio routes if enabled
-			if (this.studioConfig?.enabled) {
-				const studioPath = this.studioConfig.path ?? '/_studio'
-				const apiPrefix = this.studioConfig.apiPrefix ?? '/_studio/api'
-				
-				if (url.pathname.startsWith(studioPath)) {
-					return this.handleStudioRequest(req, studioPath, apiPrefix)
-				}
-			}
-
-			return originalHandleRequest(req)
-		}
-
-		this.logger.info(`[OpenAPI] Mounted at ${specPath} and ${docsPath}`)
-	}
-
-	private async handleStudioRequest(req: Request, studioPath: string, apiPrefix: string): Promise<Response> {
-		const url = new URL(req.url)
-		const pathname = url.pathname
-
-		// Serve studio static files
-		if (pathname === studioPath || pathname === `${studioPath}/`) {
-			// In a real implementation, this would serve the built studio app
-			return new Response('Studio Dashboard - Coming Soon', {
-				headers: { 'Content-Type': 'text/html' },
-			})
-		}
-
-		// Handle studio API routes
-		if (pathname.startsWith(apiPrefix)) {
-			return this.handleStudioAPI(req, apiPrefix)
-		}
-
-		return new Response('Not Found', { status: 404 })
-	}
-
-	private async handleStudioAPI(req: Request, apiPrefix: string): Promise<Response> {
-		const url = new URL(req.url)
-		const pathname = url.pathname
-		const method = req.method.toUpperCase()
-
-		// Mock studio API endpoints - in real implementation, these would
-		// call the appropriate action handlers from the studio module
-		if (pathname === `${apiPrefix}/actions` && method === 'GET') {
-			return Response.json({
-				actions: [
-					{ id: '1', name: 'user.create', runs: 342, successRate: 98.5 },
-					{ id: '2', name: 'user.update', runs: 189, successRate: 96.8 },
-				],
-				total: 2,
-			})
-		}
-
-		if (pathname === `${apiPrefix}/runs` && method === 'GET') {
-			return Response.json({
-				runs: [
-					{ id: '1', action: 'user.create', status: 'success', duration: 125 },
-					{ id: '2', action: 'user.update', status: 'error', duration: 340 },
-				],
-				total: 2,
-			})
-		}
-
-		return new Response('Not Found', { status: 404 })
 	}
 
 	/**
@@ -196,6 +95,7 @@ export class BunbaseServer {
 								triggerType: 'event',
 								logger: this.logger,
 								writeBuffer: this.writeBuffer,
+								registry: this.registry,
 							})
 						} catch (err: any) {
 							this.logger.error(
@@ -223,7 +123,12 @@ export class BunbaseServer {
 							`(action: ${action.definition.config.name})`,
 						)
 					}
-					this.routes.set(routeKey, { method: trigger.method, action, trigger })
+					const route: Route = { method: trigger.method, pattern: trigger.path, action, trigger }
+					this.routes.set(routeKey, route)
+					// Also store in patterns array for path-param matching
+					if (trigger.path.includes(':')) {
+						this.routePatterns.push(route)
+					}
 				} else if (trigger.type === 'webhook') {
 					const routeKey = `POST:${trigger.path}`
 					if (this.routes.has(routeKey)) {
@@ -232,14 +137,43 @@ export class BunbaseServer {
 							`(action: ${action.definition.config.name})`,
 						)
 					}
-					this.routes.set(routeKey, {
+					const route: Route = {
 						method: 'POST',
+						pattern: trigger.path,
 						action,
 						trigger,
-					})
+					}
+					this.routes.set(routeKey, route)
+					if (trigger.path.includes(':')) {
+						this.routePatterns.push(route)
+					}
 				}
 			}
 		}
+	}
+
+	/**
+	 * Find a route matching the given method and pathname.
+	 * First tries exact match, then falls back to pattern matching for path params.
+	 */
+	private findRoute(method: string, pathname: string): { route: Route; params: Record<string, string> } | null {
+		// 1. Try exact match
+		const routeKey = `${method}:${pathname}`
+		const exactRoute = this.routes.get(routeKey)
+		if (exactRoute) {
+			return { route: exactRoute, params: {} }
+		}
+
+		// 2. Try pattern matching for routes with path parameters
+		for (const route of this.routePatterns) {
+			if (route.method !== method) continue
+			if (matchViewPath(pathname, route.pattern)) {
+				const params = parsePathParams(pathname, route.pattern)
+				return { route, params: params as Record<string, string> }
+			}
+		}
+
+		return null
 	}
 
 	/**
@@ -311,41 +245,53 @@ export class BunbaseServer {
 		const pathname = url.pathname
 
 		// OpenAPI spec endpoint
-		if (pathname === '/api/openapi.json' && method === 'GET') {
-			const spec = generateOpenAPISpec(this.registry, { title: 'Bunbase API' })
-			return Response.json(spec)
-		}
+		if (this.openapiConfig?.enabled) {
+			const specPath = this.openapiConfig.path ?? '/api/openapi.json'
+			const docsPath = '/api/docs'
 
-		// Scalar API docs UI
-		if (pathname === '/api/docs' && method === 'GET') {
-			const spec = generateOpenAPISpec(this.registry, { title: 'Bunbase API' })
-			const html = generateScalarDocs(spec)
-			return new Response(html, {
-				headers: { 'Content-Type': 'text/html' },
-			})
-		}
+			if (pathname === specPath && method === 'GET') {
+				const spec = generateOpenAPISpec(this.registry, {
+					title: this.openapiConfig.title,
+					version: this.openapiConfig.version,
+				})
+				return Response.json(spec)
+			}
 
-		// Check for studio routes if enabled
-		if (this.studioConfig?.enabled) {
-			const studioPath = this.studioConfig.path ?? '/_studio'
-			const apiPrefix = this.studioConfig.apiPrefix ?? '/_studio/api'
-			
-			if (pathname.startsWith(studioPath)) {
-				return this.handleStudioRequest(req, studioPath, apiPrefix)
+			if (pathname === docsPath && method === 'GET') {
+				const spec = generateOpenAPISpec(this.registry, {
+					title: this.openapiConfig.title,
+					version: this.openapiConfig.version,
+				})
+				const html = generateScalarDocs(spec)
+				return new Response(html, {
+					headers: { 'Content-Type': 'text/html' },
+				})
 			}
 		}
 
-		const routeKey = `${method}:${pathname}`
-		const route = this.routes.get(routeKey)
+		// Studio dashboard UI
+		if (this.studioConfig?.enabled) {
+			const studioPath = this.studioConfig.path ?? '/_studio'
+			if (pathname === studioPath || pathname === `${studioPath}/`) {
+				return new Response('Studio Dashboard - Coming Soon', {
+					headers: { 'Content-Type': 'text/html' },
+				})
+			}
+		}
 
-		this.logger.debug(`[Request] ${method} ${pathname} -> ${route ? 'ACTION' : 'MISS'}`)
+		// Find matching route (exact or pattern match)
+		const match = this.findRoute(method, pathname)
 
-		if (!route) {
+		this.logger.debug(`[Request] ${method} ${pathname} -> ${match ? 'ACTION' : 'MISS'}`)
+
+		if (!match) {
 			return Response.json(
 				{ error: 'Not Found', path: pathname },
 				{ status: 404 },
 			)
 		}
+
+		const { route, params } = match
 
 		// Authenticate (if session manager is configured)
 		let authContext: any = {}
@@ -374,6 +320,10 @@ export class BunbaseServer {
 					} else {
 						input = Object.fromEntries(url.searchParams)
 					}
+				}
+				// Merge path parameters into input
+				if (Object.keys(params).length > 0) {
+					input = { ...(input as Record<string, unknown> ?? {}), ...params }
 				}
 			} else if (route.trigger.type === 'webhook') {
 				// Webhooks: verify first, then map
@@ -413,19 +363,22 @@ export class BunbaseServer {
 				scheduler: this.scheduler,
 				auth: authContext,
 				response: { headers, setCookie },
+				registry: this.registry,
 			})
 
 			if (result.success) {
 				return Response.json({ data: result.data }, { headers })
 			}
 
-			// Determine error status
-			// Map GuardError (403/401) to Status Code
+			// Determine error status from the error object
 			let status = 500
-			if (result.error?.includes('validation failed')) status = 400
-			else if (result.error?.includes('Unauthorized')) status = 401
-			else if (result.error?.includes('Forbidden')) status = 403
-			else if (result.error?.includes('Too Many Requests')) status = 429
+			if (result.errorObject instanceof GuardError) {
+				status = result.errorObject.statusCode
+			} else if (result.errorObject instanceof BunbaseError) {
+				status = result.errorObject.statusCode
+			} else if (result.error?.includes('validation failed')) {
+				status = 400
+			}
 
 			return Response.json({ error: result.error }, { status, headers })
 		} catch (err: any) {
@@ -458,7 +411,6 @@ export class BunbaseServer {
 	 * Register a module and its actions
 	 */
 	registerModule(mod: any): void {
-		// Register actions
 		this.registry.registerModule(mod)
 	}
 }

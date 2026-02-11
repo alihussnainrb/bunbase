@@ -3,24 +3,40 @@ import type { ActionContext } from '../src/core/types.ts'
 import { saasGuards } from '../src/guards/saas.ts'
 import type { GuardError } from '../src/guards/types.ts'
 
-// Mock database
+// Mock database using chainable API matching TypedQueryBuilder
 function createMockDb(overrides: any = {}) {
 	return {
-		from: (table: string) => ({
-			where: (conds: any) => ({
-				first: async () =>
-					overrides[table]?.find?.((r: any) =>
-						Object.entries(conds).every(([k, v]) => r[k] === v),
-					) || null,
-				insert: async (data: any) => ({
-					returning: async () => [{ id: 'test-id', ...data }],
-				}),
-			}),
-			insert: async (data: any) => ({
-				returning: async () => [{ id: 'test-id', ...data }],
-			}),
-		}),
-		...overrides,
+		from: (table: string) => {
+			const store: any[] = overrides[table] || []
+			const wheres: Array<{ col: string; val: any }> = []
+
+			const chain: any = {
+				eq: (col: string, val: any) => {
+					wheres.push({ col, val })
+					return chain
+				},
+				select: (..._fields: any[]) => chain,
+				limit: (_n: number) => chain,
+				ilike: (_col: string, _pattern: string) => chain,
+				orderBy: (_col: string, _dir: string) => chain,
+				single: async () => {
+					const result = store.find((r: any) =>
+						wheres.every(({ col, val }) => r[col] === val),
+					)
+					return result || null
+				},
+				exec: async () => {
+					return store.filter((r: any) =>
+						wheres.every(({ col, val }) => r[col] === val),
+					)
+				},
+				insert: async (data: any) => {
+					return { id: 'test-id', ...data }
+				},
+			}
+
+			return chain
+		},
 	}
 }
 
@@ -40,7 +56,7 @@ function createMockContext(
 		event: { emit: () => {} },
 		auth: {},
 		...overrides,
-	}
+	} as ActionContext
 }
 
 describe('saasGuards.inOrg()', () => {

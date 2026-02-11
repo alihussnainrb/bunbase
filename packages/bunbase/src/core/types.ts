@@ -1,6 +1,7 @@
 import type { Static, TSchema } from 'typebox'
 import type { DatabaseClient } from '../db/client.ts'
 import type { Logger } from '../logger/index.ts'
+import type { ActionRegistry } from './registry.ts'
 
 // ── Trigger Types ────────────────────────────────────────
 
@@ -111,6 +112,9 @@ export interface ActionContext {
 	/** Raw request (only for API/webhook triggers) */
 	request?: Request
 	headers?: Record<string, string>
+
+	/** Action registry for introspection (used by studio actions) */
+	registry?: ActionRegistry
 
 	/** Schedule jobs for background execution */
 	schedule: (

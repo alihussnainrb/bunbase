@@ -59,6 +59,9 @@ class TypedQueryBuilder<Table extends TableDef> {
 	private selects: (keyof Table['Row'])[] | ['*'] = ['*']
 	private wheres: Array<{ col: keyof Table['Row']; op: string; val: any }> = []
 	private limitNum: number | null = null
+	private offsetNum: number | null = null
+	private orderByCol: keyof Table['Row'] | null = null
+	private orderByDir: 'ASC' | 'DESC' = 'ASC'
 	private returningFields: (keyof Table['Row'])[] | null = null
 
 	constructor(table: string) {
@@ -82,8 +85,51 @@ class TypedQueryBuilder<Table extends TableDef> {
 		return this
 	}
 
-	// Add more: neq, gt, in, like, ilike, is, not, etc.
-	// Example:
+	neq<K extends keyof Table['Row']>(column: K, value: Table['Row'][K]): this {
+		this.wheres.push({ col: column, op: '!=', val: value })
+		return this
+	}
+
+	gt<K extends keyof Table['Row']>(column: K, value: Table['Row'][K]): this {
+		this.wheres.push({ col: column, op: '>', val: value })
+		return this
+	}
+
+	gte<K extends keyof Table['Row']>(column: K, value: Table['Row'][K]): this {
+		this.wheres.push({ col: column, op: '>=', val: value })
+		return this
+	}
+
+	lt<K extends keyof Table['Row']>(column: K, value: Table['Row'][K]): this {
+		this.wheres.push({ col: column, op: '<', val: value })
+		return this
+	}
+
+	lte<K extends keyof Table['Row']>(column: K, value: Table['Row'][K]): this {
+		this.wheres.push({ col: column, op: '<=', val: value })
+		return this
+	}
+
+	like<K extends keyof Table['Row']>(column: K, pattern: string): this {
+		this.wheres.push({ col: column, op: 'LIKE', val: pattern })
+		return this
+	}
+
+	ilike<K extends keyof Table['Row']>(column: K, pattern: string): this {
+		this.wheres.push({ col: column, op: 'ILIKE', val: pattern })
+		return this
+	}
+
+	isNull<K extends keyof Table['Row']>(column: K): this {
+		this.wheres.push({ col: column, op: 'IS NULL', val: null })
+		return this
+	}
+
+	isNotNull<K extends keyof Table['Row']>(column: K): this {
+		this.wheres.push({ col: column, op: 'IS NOT NULL', val: null })
+		return this
+	}
+
 	in<K extends keyof Table['Row']>(column: K, values: Table['Row'][K][]): this {
 		this.wheres.push({ col: column, op: 'IN', val: values })
 		return this
@@ -91,6 +137,17 @@ class TypedQueryBuilder<Table extends TableDef> {
 
 	limit(n: number): this {
 		this.limitNum = n
+		return this
+	}
+
+	offset(n: number): this {
+		this.offsetNum = n
+		return this
+	}
+
+	orderBy<K extends keyof Table['Row']>(column: K, direction: 'ASC' | 'DESC' = 'ASC'): this {
+		this.orderByCol = column
+		this.orderByDir = direction
 		return this
 	}
 
@@ -110,36 +167,63 @@ class TypedQueryBuilder<Table extends TableDef> {
 		return rows[0] ?? null
 	}
 
+	async count(ctx?: { session?: any }): Promise<number> {
+		if (ctx) await setRLSContext(sqlPool, ctx)
+
+		let query = sqlPool`SELECT COUNT(*) as count FROM ${sqlPool(this.table)}`
+
+		if (this.wheres.length > 0) {
+			const whereClause = this.buildWhereClause()
+			query = sqlPool`${query} WHERE ${whereClause}`
+		}
+
+		const result = await query
+		return Number(result[0]?.count ?? 0)
+	}
+
+	private buildWhereClause() {
+		const conditions = this.wheres.map((w) => {
+			if (w.op === 'IN') {
+				return sqlPool`${sqlPool(w.col)} IN (${sqlPool(w.val)})`
+			}
+			if (w.op === 'IS NULL') {
+				return sqlPool`${sqlPool(w.col)} IS NULL`
+			}
+			if (w.op === 'IS NOT NULL') {
+				return sqlPool`${sqlPool(w.col)} IS NOT NULL`
+			}
+			const op = sqlPool.unsafe(w.op)
+			return sqlPool`${sqlPool(w.col)} ${op} ${w.val}`
+		})
+
+		return conditions.reduce((acc, curr, i) => {
+			if (i === 0) return curr
+			return sqlPool`${acc} AND ${curr}`
+		}, sqlPool``)
+	}
+
 	async exec(ctx?: { session?: any }): Promise<Table['Row'][]> {
 		if (ctx) await setRLSContext(sqlPool, ctx)
 
 		let query = sqlPool`SELECT ${sqlPool(this.selects)} FROM ${sqlPool(this.table)}`
 
 		if (this.wheres.length > 0) {
-			const conditions = this.wheres.map((w) => {
-				if (w.op === 'IN') {
-					return sqlPool`${sqlPool(w.col)} IN (${sqlPool(w.val)})`
-				}
-				if (w.op === 'IN') {
-					return sqlPool`${sqlPool(w.col)} IN (${sqlPool(w.val)})`
-				}
-				const op = sqlPool.unsafe(w.op)
-				return sqlPool`${sqlPool(w.col)} ${op} ${w.val}`
-			})
-
-			const whereClause = conditions.reduce((acc, curr, i) => {
-				if (i === 0) return curr
-				return sqlPool`${acc} AND ${curr}`
-			}, sqlPool``)
-
+			const whereClause = this.buildWhereClause()
 			query = sqlPool`${query} WHERE ${whereClause}`
+		}
+
+		if (this.orderByCol !== null) {
+			const dir = sqlPool.unsafe(this.orderByDir)
+			query = sqlPool`${query} ORDER BY ${sqlPool(this.orderByCol)} ${dir}`
 		}
 
 		if (this.limitNum !== null) {
 			query = sqlPool`${query} LIMIT ${this.limitNum}`
 		}
 
-		// You can add ORDER BY, OFFSET, etc. here later
+		if (this.offsetNum !== null) {
+			query = sqlPool`${query} OFFSET ${this.offsetNum}`
+		}
 
 		const result = await query
 		return result as Table['Row'][]
@@ -172,22 +256,7 @@ class TypedQueryBuilder<Table extends TableDef> {
 		let q = sqlPool`UPDATE ${sqlPool(this.table)} SET ${sqlPool(data)}`
 
 		if (this.wheres.length > 0) {
-			const conditions = this.wheres.map((w) => {
-				if (w.op === 'IN') {
-					return sqlPool`${sqlPool(w.col)} IN (${sqlPool(w.val)})`
-				}
-				if (w.op === 'IN') {
-					return sqlPool`${sqlPool(w.col)} IN (${sqlPool(w.val)})`
-				}
-				const op = sqlPool.unsafe(w.op)
-				return sqlPool`${sqlPool(w.col)} ${op} ${w.val}`
-			})
-
-			const whereClause = conditions.reduce((acc, curr, i) => {
-				if (i === 0) return curr
-				return sqlPool`${acc} AND ${curr}`
-			}, sqlPool``)
-
+			const whereClause = this.buildWhereClause()
 			q = sqlPool`${q} WHERE ${whereClause}`
 		}
 
@@ -207,19 +276,7 @@ class TypedQueryBuilder<Table extends TableDef> {
 		let q = sqlPool`DELETE FROM ${sqlPool(this.table)}`
 
 		if (this.wheres.length > 0) {
-			const conditions = this.wheres.map((w) => {
-				if (w.op === 'IN') {
-					return sqlPool`${sqlPool(w.col)} IN (${sqlPool(w.val)})`
-				}
-				const op = sqlPool.unsafe(w.op)
-				return sqlPool`${sqlPool(w.col)} ${op} ${w.val}`
-			})
-
-			const whereClause = conditions.reduce((acc, curr, i) => {
-				if (i === 0) return curr
-				return sqlPool`${acc} AND ${curr}`
-			}, sqlPool``)
-
+			const whereClause = this.buildWhereClause()
 			q = sqlPool`${q} WHERE ${whereClause}`
 		}
 

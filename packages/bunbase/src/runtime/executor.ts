@@ -1,4 +1,4 @@
-import type { RegisteredAction } from '../core/registry.ts'
+import type { ActionRegistry, RegisteredAction } from '../core/registry.ts'
 import type { ActionContext } from '../core/types.ts'
 import type { Logger } from '../logger/index.ts'
 import type { RunEntry } from '../persistence/types.ts'
@@ -26,6 +26,7 @@ export async function executeAction(
 		db?: unknown
 		queue?: Queue
 		scheduler?: Scheduler
+		registry?: ActionRegistry
 		auth?: {
 			userId?: string
 			role?: string
@@ -37,7 +38,7 @@ export async function executeAction(
 			setCookie: (name: string, value: string, opts?: any) => void
 		}
 	},
-): Promise<{ success: boolean; data?: unknown; error?: string }> {
+): Promise<{ success: boolean; data?: unknown; error?: string; errorObject?: Error }> {
 	const traceId = generateTraceId()
 	const startedAt = Date.now()
 
@@ -64,6 +65,7 @@ export async function executeAction(
 		module: action.moduleName ? { name: action.moduleName } : undefined,
 		response: opts.response,
 		request: opts.request,
+		registry: opts.registry,
 		schedule: async (time, name, data, scheduleOpts) => {
 			if (!queue) {
 				throw new Error('Queue not configured. Call server.setQueue() first.')
@@ -172,10 +174,11 @@ export async function executeAction(
 		}
 		opts.writeBuffer.pushRun(runEntry)
 
-		// Determine HTTP status
-		// const status = err instanceof ActionValidationError ? 400 : 500
-
-		return { success: false, error: errorMessage }
+		return {
+			success: false,
+			error: errorMessage,
+			errorObject: err instanceof Error ? err : new Error(String(err)),
+		}
 	}
 }
 

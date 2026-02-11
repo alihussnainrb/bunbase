@@ -1,4 +1,7 @@
-import { action, t, triggers, type ActionDefinition } from '../../'
+import { default as t } from 'typebox'
+import { action } from '../../core/action.ts'
+import type { ActionDefinition } from '../../core/types.ts'
+import { triggers } from '../../triggers/index.ts'
 
 // Get all actions with their statistics
 export const getActions: ActionDefinition = action({
@@ -25,52 +28,60 @@ export const getActions: ActionDefinition = action({
   }),
   triggers: [triggers.api('GET', '/_studio/api/actions')],
 }, async (input, ctx) => {
-  // Mock data - in real implementation, fetch from registry
-  const actions = [
-    {
-      id: '1',
-      name: 'user.create',
-      description: 'Create a new user account',
-      method: 'POST',
-      path: '/api/users',
-      triggers: 1,
-      runs: 342,
-      successRate: 98.5,
-      avgDuration: 125,
-      createdAt: '2024-01-15T10:30:00Z',
-    },
-    {
-      id: '2',
-      name: 'user.update',
-      description: 'Update user profile information',
-      method: 'PUT',
-      path: '/api/users/:id',
-      triggers: 2,
-      runs: 189,
-      successRate: 96.8,
-      avgDuration: 95,
-      createdAt: '2024-01-14T15:45:00Z',
-    },
-    {
-      id: '3',
-      name: 'payment.process',
-      description: 'Process payment transaction',
-      method: 'POST',
-      path: '/api/payments',
-      triggers: 1,
-      runs: 567,
-      successRate: 94.2,
-      avgDuration: 340,
-      createdAt: '2024-01-13T09:20:00Z',
-    },
-  ]
-
+  const registry = ctx.registry
   const limit = input.limit ?? 20
   const offset = input.offset ?? 0
 
+  if (!registry) {
+    return { actions: [], total: 0, hasMore: false }
+  }
+
+  const allActions = registry.getAll()
+  const actionList = allActions.map((registered, index) => {
+    const config = registered.definition.config
+    const apiTrigger = registered.triggers.find((t) => t.type === 'api')
+
+    return {
+      id: String(index + 1),
+      name: config.name,
+      description: config.description ?? '',
+      method: apiTrigger && apiTrigger.type === 'api' ? apiTrigger.method : 'N/A',
+      path: apiTrigger && (apiTrigger.type === 'api' || apiTrigger.type === 'webhook') ? apiTrigger.path : '',
+      triggers: registered.triggers.length,
+      runs: 0,
+      successRate: 0,
+      avgDuration: 0,
+      createdAt: new Date().toISOString(),
+    }
+  })
+
+  // Try to enrich with run stats from DB if available
+  if (ctx.db) {
+    try {
+      for (const action of actionList) {
+        const runs = await ctx.db
+          .from('action_runs' as any)
+          .eq('action_name' as any, action.name)
+          .exec()
+
+        if (runs.length > 0) {
+          action.runs = runs.length
+          const successful = runs.filter((r: any) => r.status === 'success')
+          action.successRate = runs.length > 0 ? (successful.length / runs.length) * 100 : 0
+          const totalDuration = runs.reduce((sum: number, r: any) => sum + (r.duration_ms ?? 0), 0)
+          action.avgDuration = runs.length > 0 ? totalDuration / runs.length : 0
+        }
+      }
+    } catch {
+      // DB not available, stats remain at defaults
+    }
+  }
+
+  const sliced = actionList.slice(offset, offset + limit)
+
   return {
-    actions: actions.slice(offset, offset + limit),
-    total: actions.length,
-    hasMore: offset + limit < actions.length,
+    actions: sliced,
+    total: actionList.length,
+    hasMore: offset + limit < actionList.length,
   }
 })

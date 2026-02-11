@@ -1,0 +1,10 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(bun run build)"
+    ]
+  },
+  "env": {
+    "CLAUDE_CODE_USE_BEDROCK": "true"
+  }
+}

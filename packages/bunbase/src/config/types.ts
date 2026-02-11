@@ -15,6 +15,11 @@ export interface BunbaseConfig {
 		maxConnections?: number
 		/** Idle timeout in ms (default: 30000) */
 		idleTimeout?: number
+		/** Migrations configuration */
+		migrations?: {
+			/** Directory containing migration SQL files (default: migrations) */
+			directory?: string
+		}
 	}
 
 	/** Auth configuration */
@@ -29,12 +34,6 @@ export interface BunbaseConfig {
 		enabled?: boolean
 		flushIntervalMs?: number
 		maxBufferSize?: number
-	}
-
-	/** Migrations configuration */
-	migrations?: {
-		/** Directory containing migration SQL files (default: migrations) */
-		directory?: string
 	}
 
 	/** File storage configuration */

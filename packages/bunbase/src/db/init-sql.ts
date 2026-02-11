@@ -227,6 +227,84 @@ CREATE INDEX IF NOT EXISTS idx_kv_store_expires ON kv_store(expires_at)
     WHERE expires_at IS NOT NULL;
 
 -- ============================================================================
+-- Seed Data: Roles, Permissions, Plans, Features
+-- ============================================================================
+
+-- Insert default roles (similar to Clerk's org roles)
+INSERT INTO roles (key, name, description) VALUES
+    ('org:admin', 'Organization Admin', 'Full administrative access to the organization'),
+    ('org:member', 'Organization Member', 'Standard member with read access'),
+    ('org:billing_manager', 'Billing Manager', 'Can manage billing and subscriptions')
+ON CONFLICT (key) DO NOTHING;
+
+-- Insert default permissions (similar to Clerk's permission system)
+INSERT INTO permissions (key, name, description) VALUES
+    ('org:read', 'Read Organization', 'View organization details'),
+    ('org:update', 'Update Organization', 'Modify organization settings'),
+    ('org:delete', 'Delete Organization', 'Delete the organization'),
+    ('org:members:read', 'Read Members', 'View organization members'),
+    ('org:members:manage', 'Manage Members', 'Add/remove/update members'),
+    ('org:invitations:manage', 'Manage Invitations', 'Send and manage invitations'),
+    ('org:billing:read', 'Read Billing', 'View billing information'),
+    ('org:billing:manage', 'Manage Billing', 'Update billing and subscriptions'),
+    ('org:roles:manage', 'Manage Roles', 'Assign roles to members')
+ON CONFLICT (key) DO NOTHING;
+
+-- Link permissions to roles
+INSERT INTO role_permissions (role_id, permission_id)
+SELECT
+    r.id,
+    p.id
+FROM roles r
+CROSS JOIN permissions p
+WHERE
+    -- org:admin gets all permissions
+    (r.key = 'org:admin') OR
+    -- org:member gets read-only permissions
+    (r.key = 'org:member' AND p.key IN ('org:read', 'org:members:read')) OR
+    -- org:billing_manager gets billing + read permissions
+    (r.key = 'org:billing_manager' AND p.key IN ('org:read', 'org:members:read', 'org:billing:read', 'org:billing:manage'))
+ON CONFLICT DO NOTHING;
+
+-- Insert default plans
+INSERT INTO plans (key, name, price_cents) VALUES
+    ('free', 'Free', 0),
+    ('starter', 'Starter', 2900),
+    ('pro', 'Pro', 9900),
+    ('enterprise', 'Enterprise', 29900)
+ON CONFLICT (key) DO NOTHING;
+
+-- Insert default features
+INSERT INTO features (key, name, description) VALUES
+    ('org:basic', 'Basic Organization', 'Create and manage a single organization'),
+    ('org:members:5', 'Up to 5 Members', 'Up to 5 team members'),
+    ('org:members:25', 'Up to 25 Members', 'Up to 25 team members'),
+    ('org:members:unlimited', 'Unlimited Members', 'Unlimited team members'),
+    ('org:analytics', 'Analytics', 'Advanced analytics and insights'),
+    ('org:api_access', 'API Access', 'Programmatic API access'),
+    ('org:sso', 'Single Sign-On', 'SSO authentication'),
+    ('org:priority_support', 'Priority Support', '24/7 priority support')
+ON CONFLICT (key) DO NOTHING;
+
+-- Link features to plans
+INSERT INTO plan_features (plan_id, feature_id)
+SELECT
+    pl.id,
+    f.id
+FROM plans pl
+CROSS JOIN features f
+WHERE
+    -- Free plan: basic org + 5 members
+    (pl.key = 'free' AND f.key IN ('org:basic', 'org:members:5')) OR
+    -- Starter plan: basic + 25 members + analytics
+    (pl.key = 'starter' AND f.key IN ('org:basic', 'org:members:25', 'org:analytics')) OR
+    -- Pro plan: starter features + API access + unlimited members
+    (pl.key = 'pro' AND f.key IN ('org:basic', 'org:members:unlimited', 'org:analytics', 'org:api_access')) OR
+    -- Enterprise plan: all features
+    (pl.key = 'enterprise')
+ON CONFLICT DO NOTHING;
+
+-- ============================================================================
 -- Trigger Functions
 -- ============================================================================
 

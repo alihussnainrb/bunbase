@@ -58,9 +58,9 @@ export default defineConfig({
   actionsDir: 'src',
   database: {
     url: process.env.DATABASE_URL,
-  },
-  migrations: {
-    directory: 'migrations',
+    migrations: {
+      directory: 'migrations',
+    },
   },
   storage: {
     adapter: 'local',

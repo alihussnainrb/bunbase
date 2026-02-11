@@ -6,7 +6,7 @@ import { Migrator } from '../../db/migrator.ts'
 export async function migrateCommand(subcommand?: string, name?: string): Promise<void> {
 	const config = await loadConfig()
 	const sql = createSQLPool({ url: config.database?.url })
-	const migrationsDir = join(process.cwd(), config.migrations?.directory ?? 'migrations')
+	const migrationsDir = join(process.cwd(), config.database?.migrations?.directory ?? 'migrations')
 	const migrator = new Migrator(sql, migrationsDir)
 
 	try {

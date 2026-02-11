@@ -38,7 +38,7 @@ export async function devCommand(): Promise<void> {
 	writeBuffer.setSql(sqlPool)
 
 	// 4. Auto-run pending migrations in dev mode
-	const migrationsDir = join(process.cwd(), config.migrations?.directory ?? 'migrations')
+	const migrationsDir = join(process.cwd(), config.database?.migrations?.directory ?? 'migrations')
 	if (existsSync(migrationsDir)) {
 		try {
 			const { Migrator } = await import('../../db/migrator.ts')

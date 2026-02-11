@@ -21,9 +21,9 @@ program
 	})
 
 program
-	.command('init [name]')
+	.command('init <name>')
 	.description('Scaffold a new Bunbase project')
-	.action(async (name?: string) => {
+	.action(async (name: string) => {
 		await initCommand(name)
 	})
 

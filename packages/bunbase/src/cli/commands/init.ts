@@ -2,8 +2,8 @@ import { join } from 'node:path'
 import { existsSync, mkdirSync, writeFileSync } from 'node:fs'
 import { INIT_SQL } from '../../db/init-sql.ts'
 
-export async function initCommand(name?: string): Promise<void> {
-	const projectName = name ?? 'my-bunbase-app'
+export async function initCommand(name: string): Promise<void> {
+	const projectName = name
 	const projectDir = join(process.cwd(), projectName)
 
 	if (existsSync(projectDir)) {

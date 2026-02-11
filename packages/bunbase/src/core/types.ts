@@ -1,7 +1,7 @@
 import type { Static, TSchema } from 'typebox'
 import type { DatabaseClient } from '../db/client.ts'
 import type { Logger } from '../logger/index.ts'
-import type { ViewDefinition } from '../views/view'
+import type { ViewDefinition } from '../views/view.ts'
 
 // ── Trigger Types ────────────────────────────────────────
 

@@ -1,87 +1,36 @@
 {
-	"name": "bunbase",
-	"version": "0.0.9",
-	"description": "A framework for building scalable applications",
-	"homepage": "https://github.com/alihussnainrb/bunbase#readme",
-	"bugs": {
-		"url": "https://github.com/alihussnainrb/bunbase/issues"
-	},
-	"publishConfig": {
-		"access": "public"
-	},
-	"license": "MIT",
-	"bin": {
-		"bunbase": "./dist/cli/index.js"
-	},
-	"exports": {
-		".": {
-			"import": {
-				"types": "./dist/index.d.ts",
-				"default": "./dist/index.js"
-			}
-		},
-		"./cli": "./dist/cli/index.js",
-		"./db": {
-			"import": {
-				"types": "./dist/db/index.d.ts",
-				"default": "./dist/db/index.js"
-			}
-		},
-		"./logger": {
-			"import": {
-				"types": "./dist/logger/index.d.ts",
-				"default": "./dist/logger/index.js"
-			}
-		},
-		"./package.json": "./package.json"
-	},
-	"module": "./dist/index.js",
-	"types": "./dist/index.d.ts",
-	"files": [
-		"dist"
-	],
-	"repository": {
-		"type": "git",
-		"url": "git+https://github.com/alihussnainrb/gravity.git"
-	},
-	"scripts": {
-		"build": "bunup",
-		"dev": "bunup --watch",
-		"lint": "biome check .",
-		"lint:fix": "biome check --write .",
-		"prerelease": "bun run build",
-		"release": "bumpp --commit --push --tag",
-		"test": "bun test",
-		"test:coverage": "bun test --coverage",
-		"test:watch": "bun test --watch",
-		"type-check": "tsc --noEmit"
-	},
-	"devDependencies": {
-		"@biomejs/biome": "^2.3.14",
-		"@types/bun": "^1.3.8",
-		"bumpp": "^10.4.1",
-		"bunup": "^0.16.23",
-		"typed-htmx": "^0.3.1",
-		"typescript": "^5.9.3"
-	},
-	"peerDependencies": {
-		"typescript": ">=4.5.0"
-	},
-	"peerDependenciesMeta": {
-		"typescript": {
-			"optional": true
-		}
-	},
-	"type": "module",
-	"dependencies": {
-		"@modelcontextprotocol/sdk": "^1.26.0",
-		"commander": "^14.0.3",
-		"croner": "^10.0.1",
-		"is-unicode-supported": "^2.1.0",
-		"openapi3-ts": "^4.5.0",
-		"preact": "^10.28.3",
-		"preact-render-to-string": "^6.6.5",
-		"typebox": "^1.0.81",
-		"zod": "^4.3.6"
-	}
+  "name": "bunbase-monorepo",
+  "homepage": "https://github.com/alihussnainrb/bunbase#readme",
+  "bugs": {
+    "url": "https://github.com/alihussnainrb/bunbase/issues"
+  },
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/alihussnainrb/bunbase.git"
+  },
+  "scripts": {
+    "build": "bunup",
+    "dev": "bunup --watch",
+    "lint": "biome check .",
+    "lint:fix": "biome check --write .",
+    "release": "bumpp -r --commit --push --tag",
+    "test": "bun test",
+    "test:coverage": "bun test --coverage",
+    "test:watch": "bun test --watch",
+    "type-check": "bun run --filter '*' type-check"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "^2.3.14",
+    "@types/bun": "^1.3.8",
+    "bumpp": "^10.4.0",
+    "bunup": "^0.16.22",
+    "typescript": "^5.9.3"
+  },
+  "private": true,
+  "workspaces": [
+    "packages/*",
+    "examples/*"
+  ],
+  "type": "module"
 }

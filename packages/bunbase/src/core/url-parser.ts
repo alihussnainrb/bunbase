@@ -1,4 +1,4 @@
-import type { TSchema, Static } from './typebox'
+import type { TSchema, Static } from 'typebox'
 
 export interface ParsedUrl<P extends TSchema = TSchema, Q extends TSchema = TSchema> {
   params: Static<P>

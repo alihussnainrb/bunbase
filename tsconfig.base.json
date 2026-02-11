@@ -21,7 +21,7 @@
 		"noPropertyAccessFromIndexSignature": false,
 	},
 	"include": [
-		"src/**/*"
+		"packages/bunbase/src/**/*"
 	],
 	"exclude": [
 		"node_modules",

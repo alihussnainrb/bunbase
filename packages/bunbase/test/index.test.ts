@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'bun:test'
-import { action, module, triggers, guards, t } from '../src/index.ts'
+import { action, guards, module, t, triggers } from '../src/index.ts'
 
 describe('bunbase public exports', () => {
 	it('should export action function', () => {
@@ -38,14 +38,17 @@ describe('bunbase public exports', () => {
 	})
 
 	it('should allow creating a basic action with exported functions', () => {
-		const testAction = action({
-			name: 'exportedTest',
-			input: t.Object({ name: t.String() }),
-			output: t.Object({ greeting: t.String() }),
-			triggers: [triggers.api('GET', '/test')],
-		}, async (input) => {
-			return { greeting: `Hello, ${input.name}` }
-		})
+		const testAction = action(
+			{
+				name: 'exportedTest',
+				input: t.Object({ name: t.String() }),
+				output: t.Object({ greeting: t.String() }),
+				triggers: [triggers.api('GET', '/test')],
+			},
+			async (input) => {
+				return { greeting: `Hello, ${input.name}` }
+			},
+		)
 
 		expect(testAction.config.name).toBe('exportedTest')
 		expect(testAction.config.triggers).toHaveLength(1)

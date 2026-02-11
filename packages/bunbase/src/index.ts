@@ -9,33 +9,30 @@ export * from './auth/session.ts'
 export { ActionValidationError, action } from './core/action.ts'
 export { module } from './core/module.ts'
 export { ActionRegistry } from './core/registry.ts'
-// View primitives
-export { view, renderJSX, html } from './views/view.ts'
-export { ViewRegistry } from './views/view-registry.ts'
 // Types
 export type {
-    ActionConfig,
-    ActionContext,
-    ActionDefinition,
-    ActionHandler,
-    ApiTriggerConfig,
-    CronTriggerConfig,
-    EventTriggerConfig,
-    GuardFn,
-    HttpMethod,
-    ModuleConfig,
-    ModuleDefinition,
-    ToolTriggerConfig,
-    TriggerConfig,
-    WebhookTriggerConfig,
+	ActionConfig,
+	ActionContext,
+	ActionDefinition,
+	ActionHandler,
+	ApiTriggerConfig,
+	CronTriggerConfig,
+	EventTriggerConfig,
+	GuardFn,
+	HttpMethod,
+	ModuleConfig,
+	ModuleDefinition,
+	ToolTriggerConfig,
+	TriggerConfig,
+	WebhookTriggerConfig,
 } from './core/types.ts'
 export * from './guards/index.ts'
 // Logger
 export { Logger, LoggerSession } from './logger/index.ts'
 export type {
-    LogEntry,
-    RunEntry,
-    WriteBufferOptions,
+	LogEntry,
+	RunEntry,
+	WriteBufferOptions,
 } from './persistence/types.ts'
 export * from './persistence/write-buffer.ts'
 export { loadActions } from './runtime/loader.ts'
@@ -51,3 +48,6 @@ export * from './saas/subscriptions.ts'
 export * from './saas/types.ts'
 // Trigger builders
 export { triggers } from './triggers/index.ts'
+// View primitives
+export { html, renderJSX, view } from './views/view.ts'
+export { ViewRegistry } from './views/view-registry.ts'

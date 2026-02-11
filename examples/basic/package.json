@@ -1,18 +1,18 @@
 {
-  "name": "basic",
-  "module": "index.ts",
-  "type": "module",
-  "private": true,
-  "scripts": {
-    "dev": "bunbase dev"
-  },
-  "dependencies": {
-    "bunbase": "link:bunbase"
-  },
-  "devDependencies": {
-    "@types/bun": "latest"
-  },
-  "peerDependencies": {
-    "typescript": "^5"
-  }
+	"name": "basic",
+	"module": "index.ts",
+	"type": "module",
+	"private": true,
+	"scripts": {
+		"dev": "bunbase dev"
+	},
+	"dependencies": {
+		"bunbase": "link:bunbase"
+	},
+	"devDependencies": {
+		"@types/bun": "latest"
+	},
+	"peerDependencies": {
+		"typescript": "^5"
+	}
 }

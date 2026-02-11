@@ -22,5 +22,5 @@ import type { ModuleConfig, ModuleDefinition } from './types.ts'
  * ```
  */
 export function module(config: ModuleConfig): ModuleDefinition {
-    return { config }
+	return { config }
 }

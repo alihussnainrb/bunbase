@@ -1,10 +1,12 @@
 import { describe, expect, it } from 'bun:test'
+import type { ActionContext } from '../src/core/types.ts'
 import { guards } from '../src/guards/index.ts'
 import { GuardError } from '../src/guards/types.ts'
-import type { ActionContext } from '../src/core/types.ts'
 
 // Helper to create mock context
-function createMockContext(overrides: Partial<ActionContext> = {}): ActionContext {
+function createMockContext(
+	overrides: Partial<ActionContext> = {},
+): ActionContext {
 	return {
 		db: {} as any,
 		logger: {

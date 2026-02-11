@@ -7,15 +7,18 @@ import { triggers } from '../src/triggers/index.ts'
 
 describe('action()', () => {
 	it('should create an action definition with config and handler', () => {
-		const testAction = action({
-			name: 'testAction',
-			description: 'A test action',
-			input: t.Object({ name: t.String() }),
-			output: t.Object({ greeting: t.String() }),
-			triggers: [],
-		}, async (input) => {
-			return { greeting: `Hello ${input.name}` }
-		})
+		const testAction = action(
+			{
+				name: 'testAction',
+				description: 'A test action',
+				input: t.Object({ name: t.String() }),
+				output: t.Object({ greeting: t.String() }),
+				triggers: [],
+			},
+			async (input) => {
+				return { greeting: `Hello ${input.name}` }
+			},
+		)
 
 		expect(testAction.config.name).toBe('testAction')
 		expect(testAction.config.description).toBe('A test action')
@@ -23,24 +26,32 @@ describe('action()', () => {
 	})
 
 	it('should validate input and return correct output', async () => {
-		const testAction = action({
-			name: 'validateTest',
-			input: t.Object({
-				email: t.String({ format: 'email' }),
-				age: t.Number({ minimum: 0 }),
-			}),
-			output: t.Object({
-				id: t.String(),
-				email: t.String(),
-			}),
-			triggers: [],
-		}, async (input) => {
-			return { id: '123', email: input.email }
-		})
+		const testAction = action(
+			{
+				name: 'validateTest',
+				input: t.Object({
+					email: t.String({ format: 'email' }),
+					age: t.Number({ minimum: 0 }),
+				}),
+				output: t.Object({
+					id: t.String(),
+					email: t.String(),
+				}),
+				triggers: [],
+			},
+			async (input) => {
+				return { id: '123', email: input.email }
+			},
+		)
 
 		const mockCtx = {
 			db: {} as any,
-			logger: { info: () => {}, error: () => {}, debug: () => {}, child: () => ({ info: () => {}, error: () => {}, debug: () => {} }) } as any,
+			logger: {
+				info: () => {},
+				error: () => {},
+				debug: () => {},
+				child: () => ({ info: () => {}, error: () => {}, debug: () => {} }),
+			} as any,
 			traceId: 'test-trace',
 			event: { emit: () => {} },
 			auth: {},
@@ -55,18 +66,26 @@ describe('action()', () => {
 	})
 
 	it('should throw on invalid input', async () => {
-		const testAction = action({
-			name: 'validationTest',
-			input: t.Object({ name: t.String({ minLength: 1 }) }),
-			output: t.Object({ success: t.Boolean() }),
-			triggers: [],
-		}, async () => {
-			return { success: true }
-		})
+		const testAction = action(
+			{
+				name: 'validationTest',
+				input: t.Object({ name: t.String({ minLength: 1 }) }),
+				output: t.Object({ success: t.Boolean() }),
+				triggers: [],
+			},
+			async () => {
+				return { success: true }
+			},
+		)
 
 		const mockCtx = {
 			db: {} as any,
-			logger: { info: () => {}, error: () => {}, debug: () => {}, child: () => ({ info: () => {}, error: () => {}, debug: () => {} }) } as any,
+			logger: {
+				info: () => {},
+				error: () => {},
+				debug: () => {},
+				child: () => ({ info: () => {}, error: () => {}, debug: () => {} }),
+			} as any,
 			traceId: 'test-trace',
 			event: { emit: () => {} },
 			auth: {},
@@ -84,19 +103,27 @@ describe('action()', () => {
 	})
 
 	it('should throw on invalid output', async () => {
-		const testAction = action({
-			name: 'outputValidationTest',
-			input: t.Object({ name: t.String() }),
-			output: t.Object({ id: t.String(), count: t.Number() }),
-			triggers: [],
-		}, async () => {
-			// Return invalid output (missing count)
-			return { id: '123' } as any
-		})
+		const testAction = action(
+			{
+				name: 'outputValidationTest',
+				input: t.Object({ name: t.String() }),
+				output: t.Object({ id: t.String(), count: t.Number() }),
+				triggers: [],
+			},
+			async () => {
+				// Return invalid output (missing count)
+				return { id: '123' } as any
+			},
+		)
 
 		const mockCtx = {
 			db: {} as any,
-			logger: { info: () => {}, error: () => {}, debug: () => {}, child: () => ({ info: () => {}, error: () => {}, debug: () => {} }) } as any,
+			logger: {
+				info: () => {},
+				error: () => {},
+				debug: () => {},
+				child: () => ({ info: () => {}, error: () => {}, debug: () => {} }),
+			} as any,
 			traceId: 'test-trace',
 			event: { emit: () => {} },
 			auth: {},
@@ -133,12 +160,15 @@ describe('ActionRegistry', () => {
 	it('should register standalone actions', () => {
 		const registry = new ActionRegistry()
 
-		const testAction = action({
-			name: 'standaloneAction',
-			input: t.Object({}),
-			output: t.Object({}),
-			triggers: [triggers.api('GET', '/test')],
-		}, async () => ({ }))
+		const testAction = action(
+			{
+				name: 'standaloneAction',
+				input: t.Object({}),
+				output: t.Object({}),
+				triggers: [triggers.api('GET', '/test')],
+			},
+			async () => ({}),
+		)
 
 		registry.registerAction(testAction)
 
@@ -149,27 +179,35 @@ describe('ActionRegistry', () => {
 	it('should throw on duplicate action names', () => {
 		const registry = new ActionRegistry()
 
-		const testAction = action({
-			name: 'duplicateAction',
-			input: t.Object({}),
-			output: t.Object({}),
-			triggers: [],
-		}, async () => ({ }))
+		const testAction = action(
+			{
+				name: 'duplicateAction',
+				input: t.Object({}),
+				output: t.Object({}),
+				triggers: [],
+			},
+			async () => ({}),
+		)
 
 		registry.registerAction(testAction)
 
-		expect(() => registry.registerAction(testAction)).toThrow('already registered')
+		expect(() => registry.registerAction(testAction)).toThrow(
+			'already registered',
+		)
 	})
 
 	it('should register module actions with prefixed routes', () => {
 		const registry = new ActionRegistry()
 
-		const testAction = action({
-			name: 'moduleAction',
-			input: t.Object({}),
-			output: t.Object({}),
-			triggers: [triggers.api('GET', '/items')],
-		}, async () => ({ }))
+		const testAction = action(
+			{
+				name: 'moduleAction',
+				input: t.Object({}),
+				output: t.Object({}),
+				triggers: [triggers.api('GET', '/items')],
+			},
+			async () => ({}),
+		)
 
 		const testModule = module({
 			name: 'testModule',
@@ -191,13 +229,16 @@ describe('ActionRegistry', () => {
 		const moduleGuard = async () => {}
 		const actionGuard = async () => {}
 
-		const testAction = action({
-			name: 'guardedAction',
-			input: t.Object({}),
-			output: t.Object({}),
-			triggers: [],
-			guards: [actionGuard],
-		}, async () => ({ }))
+		const testAction = action(
+			{
+				name: 'guardedAction',
+				input: t.Object({}),
+				output: t.Object({}),
+				triggers: [],
+				guards: [actionGuard],
+			},
+			async () => ({}),
+		)
 
 		const testModule = module({
 			name: 'guardedModule',
@@ -216,8 +257,24 @@ describe('ActionRegistry', () => {
 	it('should return all registered actions', () => {
 		const registry = new ActionRegistry()
 
-		const action1 = action({ name: 'action1', input: t.Object({}), output: t.Object({}), triggers: [] }, async () => ({}))
-		const action2 = action({ name: 'action2', input: t.Object({}), output: t.Object({}), triggers: [] }, async () => ({}))
+		const action1 = action(
+			{
+				name: 'action1',
+				input: t.Object({}),
+				output: t.Object({}),
+				triggers: [],
+			},
+			async () => ({}),
+		)
+		const action2 = action(
+			{
+				name: 'action2',
+				input: t.Object({}),
+				output: t.Object({}),
+				triggers: [],
+			},
+			async () => ({}),
+		)
 
 		registry.registerAction(action1)
 		registry.registerAction(action2)

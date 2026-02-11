@@ -1,16 +1,17 @@
-import { describe, expect, it, beforeEach, spyOn } from 'bun:test'
-import { saasGuards } from '../src/guards/saas.ts'
-import { GuardError } from '../src/guards/types.ts'
+import { beforeEach, describe, expect, it, spyOn } from 'bun:test'
 import type { ActionContext } from '../src/core/types.ts'
+import { saasGuards } from '../src/guards/saas.ts'
+import type { GuardError } from '../src/guards/types.ts'
 
 // Mock database
 function createMockDb(overrides: any = {}) {
 	return {
 		from: (table: string) => ({
 			where: (conds: any) => ({
-				first: async () => overrides[table]?.find?.((r: any) =>
-					Object.entries(conds).every(([k, v]) => r[k] === v)
-				) || null,
+				first: async () =>
+					overrides[table]?.find?.((r: any) =>
+						Object.entries(conds).every(([k, v]) => r[k] === v),
+					) || null,
 				insert: async (data: any) => ({
 					returning: async () => [{ id: 'test-id', ...data }],
 				}),
@@ -24,7 +25,9 @@ function createMockDb(overrides: any = {}) {
 }
 
 // Helper to create mock context
-function createMockContext(overrides: Partial<ActionContext> = {}): ActionContext {
+function createMockContext(
+	overrides: Partial<ActionContext> = {},
+): ActionContext {
 	return {
 		db: createMockDb(),
 		logger: {
@@ -82,7 +85,9 @@ describe('saasGuards.inOrg()', () => {
 
 		const db = createMockDb({
 			organizations: [{ id: 'org-123', name: 'Test Org', slug: 'test-org' }],
-			'org_memberships': [{ org_id: 'org-123', user_id: 'user-123', role: 'admin' }],
+			org_memberships: [
+				{ org_id: 'org-123', user_id: 'user-123', role: 'admin' },
+			],
 		})
 
 		const ctx = createMockContext({
@@ -105,7 +110,9 @@ describe('saasGuards.inOrg()', () => {
 
 		const db = createMockDb({
 			organizations: [{ id: 'org-456', name: 'Test Org', slug: 'test-org' }],
-			'org_memberships': [{ org_id: 'org-456', user_id: 'user-123', role: 'member' }],
+			org_memberships: [
+				{ org_id: 'org-456', user_id: 'user-123', role: 'member' },
+			],
 		})
 
 		const ctx = createMockContext({
@@ -149,7 +156,7 @@ describe('saasGuards.inOrg()', () => {
 
 		const db = createMockDb({
 			organizations: [{ id: 'org-123', name: 'Test Org', slug: 'test-org' }],
-			'org_memberships': [], // User is not a member
+			org_memberships: [], // User is not a member
 		})
 
 		const ctx = createMockContext({
@@ -177,7 +184,9 @@ describe('saasGuards.inOrg()', () => {
 
 		const db = createMockDb({
 			organizations: [{ id: 'org-123', name: 'Test Org', slug: 'test-org' }],
-			'org_memberships': [{ org_id: 'org-123', user_id: 'user-123', role: 'owner' }],
+			org_memberships: [
+				{ org_id: 'org-123', user_id: 'user-123', role: 'owner' },
+			],
 		})
 
 		const ctx = createMockContext({
@@ -199,7 +208,9 @@ describe('saasGuards.inOrg()', () => {
 
 		const db = createMockDb({
 			organizations: [{ id: 'org-123', name: 'Test Org', slug: 'test-org' }],
-			'org_memberships': [{ org_id: 'org-123', user_id: 'user-123', role: 'member' }],
+			org_memberships: [
+				{ org_id: 'org-123', user_id: 'user-123', role: 'member' },
+			],
 		})
 
 		const ctx = createMockContext({

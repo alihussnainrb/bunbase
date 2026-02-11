@@ -13,9 +13,11 @@ describe('OrganizationService', () => {
 					return {
 						where: (conds: any) => ({
 							first: async () => {
-								return organizations.find((r) =>
-									Object.entries(conds).every(([k, v]) => r[k] === v)
-								) || null
+								return (
+									organizations.find((r) =>
+										Object.entries(conds).every(([k, v]) => r[k] === v),
+									) || null
+								)
 							},
 						}),
 						insert: (data: any) => ({
@@ -44,12 +46,18 @@ describe('OrganizationService', () => {
 								// Convert snake_case condition keys to camelCase for lookup
 								const normalizedConds: any = {}
 								for (const [key, value] of Object.entries(conds)) {
-									const camelKey = key.replace(/_([a-z])/g, (_, letter) => letter.toUpperCase())
+									const camelKey = key.replace(/_([a-z])/g, (_, letter) =>
+										letter.toUpperCase(),
+									)
 									normalizedConds[camelKey] = value
 								}
-								return memberships.find((r) =>
-									Object.entries(normalizedConds).every(([k, v]) => r[k] === v)
-								) || null
+								return (
+									memberships.find((r) =>
+										Object.entries(normalizedConds).every(
+											([k, v]) => r[k] === v,
+										),
+									) || null
+								)
 							},
 						}),
 						insert: (data: any) => ({

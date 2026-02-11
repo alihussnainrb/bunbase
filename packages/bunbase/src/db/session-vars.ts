@@ -1,5 +1,5 @@
 // src/db/session-vars.ts
-import type { SQL } from 'bun';
+import type { SQL } from 'bun'
 
 /**
  * Sets PostgreSQL session variables that RLS policies can read.
@@ -10,28 +10,28 @@ import type { SQL } from 'bun';
  *   USING (org_id  = current_setting('app.current_org_id')::uuid)
  */
 export async function setRLSContext(
-    sql: SQL,
-    ctx?: {
-        session?: {
-            userId?: string;
-            orgId?: string;
-            // You can add more: roles?: string[], ip?: string, etc.
-        };
-    },
+	sql: SQL,
+	ctx?: {
+		session?: {
+			userId?: string
+			orgId?: string
+			// You can add more: roles?: string[], ip?: string, etc.
+		}
+	},
 ): Promise<void> {
-    if (!ctx?.session) return;
+	if (!ctx?.session) return
 
-    const vars: Record<string, string | undefined> = {
-        'app.current_user_id': ctx.session.userId,
-        'app.current_org_id': ctx.session.orgId,
-        // Add more session variables if your RLS policies need them
-        // 'app.current_roles': ctx.session.roles?.join(','),
-    };
+	const vars: Record<string, string | undefined> = {
+		'app.current_user_id': ctx.session.userId,
+		'app.current_org_id': ctx.session.orgId,
+		// Add more session variables if your RLS policies need them
+		// 'app.current_roles': ctx.session.roles?.join(','),
+	}
 
-    // Only set variables that have values
-    for (const [key, value] of Object.entries(vars)) {
-        if (value !== undefined && value !== null) {
-            await sql`SET LOCAL ${sql(key)} = ${value}`;
-        }
-    }
+	// Only set variables that have values
+	for (const [key, value] of Object.entries(vars)) {
+		if (value !== undefined && value !== null) {
+			await sql`SET LOCAL ${sql(key)} = ${value}`
+		}
+	}
 }

@@ -69,27 +69,37 @@ export class WriteBuffer {
 		try {
 			const sql = this.sql
 
+			// Chunk inserts to prevent PostgreSQL parameter limit (65,535)
+			// With ~10 columns per entry, 1000 entries = ~10k parameters (safe)
 			if (runsToFlush.length > 0) {
-				await sql`INSERT INTO action_runs ${sql(runsToFlush)}`
+				for (const chunk of this.chunkArray(runsToFlush, 1000)) {
+					await sql`INSERT INTO action_runs ${sql(chunk)}`
+				}
 			}
 
 			if (logsToFlush.length > 0) {
-				await sql`INSERT INTO action_logs ${sql(logsToFlush)}`
+				for (const chunk of this.chunkArray(logsToFlush, 1000)) {
+					await sql`INSERT INTO action_logs ${sql(chunk)}`
+				}
 			}
 		} catch (err) {
-			// Put failed entries back, up to max buffer size
-			this.runs.unshift(
-				...runsToFlush.slice(0, this.maxBufferSize - this.runs.length),
-			)
-			this.logs.unshift(
-				...logsToFlush.slice(0, this.maxBufferSize - this.logs.length),
-			)
+			// Re-insert failed entries at the beginning, preserving chronological order
+			// Prioritize keeping oldest entries when buffer is full
+			this.runs = [...runsToFlush, ...this.runs].slice(0, this.maxBufferSize)
+			this.logs = [...logsToFlush, ...this.logs].slice(0, this.maxBufferSize)
 
 			// Log to stderr so it doesn't recurse through our own logger
 			console.error('[bunbase:write-buffer] flush failed:', err)
 		} finally {
 			this.flushing = false
 		}
+	}
+
+	/** Helper to chunk arrays to prevent PostgreSQL parameter limit errors */
+	private chunkArray<T>(array: T[], size: number): T[][] {
+		return Array.from({ length: Math.ceil(array.length / size) }, (_, i) =>
+			array.slice(i * size, i * size + size),
+		)
 	}
 
 	/** Graceful shutdown — flush remaining buffer and stop timer */

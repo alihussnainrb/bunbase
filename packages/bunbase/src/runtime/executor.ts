@@ -1,6 +1,8 @@
+import type { SessionManager } from '../auth/session.ts'
 import type { ActionRegistry, RegisteredAction } from '../core/registry.ts'
 import type { ActionContext, TransportMetadata } from '../core/types.ts'
 import type { DatabaseClient } from '../db/client.ts'
+import type { SessionAction } from '../iam/types.ts'
 import type { KVStore } from '../kv/types.ts'
 import type { Logger } from '../logger/index.ts'
 import type { RunEntry } from '../persistence/types.ts'
@@ -33,6 +35,7 @@ export async function executeAction(
 		queue?: Queue
 		scheduler?: Scheduler
 		registry?: ActionRegistry
+		sessionManager?: SessionManager
 		auth?: {
 			userId?: string
 			role?: string
@@ -50,6 +53,7 @@ export async function executeAction(
 	error?: string
 	errorObject?: Error
 	transportMeta?: TransportMetadata
+	sessionActions?: SessionAction[]
 }> {
 	const traceId = generateTraceId()
 	const startedAt = Date.now()
@@ -91,6 +95,7 @@ export async function executeAction(
 		queue: opts.queue,
 		scheduler: opts.scheduler,
 		registry: opts.registry,
+		sessionManager: opts.sessionManager,
 		auth: { ...opts.auth, _callStack: newCallStack },
 		response: opts.response,
 		moduleName: action.moduleName ?? undefined,
@@ -171,7 +176,21 @@ export async function executeAction(
 				}
 				opts.writeBuffer.pushRun(runEntry)
 
-				return { success: true, data: cleanResult, transportMeta }
+				// Extract session actions from auth context
+				const sessionActions = (ctx.auth as any)._sessionActions as
+					| SessionAction[]
+					| undefined
+				const pendingSessionActions =
+					sessionActions && sessionActions.length > 0
+						? sessionActions
+						: undefined
+
+				return {
+					success: true,
+					data: cleanResult,
+					transportMeta,
+					sessionActions: pendingSessionActions,
+				}
 			} catch (handlerErr) {
 				lastError =
 					handlerErr instanceof Error

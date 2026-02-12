@@ -1,8 +1,15 @@
+import type { SessionManager } from '../auth/session.ts'
 import type { ActionRegistry } from '../core/registry.ts'
-import type { ActionContext } from '../core/types.ts'
+import type {
+	ActionContext,
+	ActionOutput,
+	TransportMetadata,
+} from '../core/types.ts'
 import type { DatabaseClient } from '../db/client.ts'
-import type { IAMContext } from '../iam/context.ts'
-import { createIAMContext } from '../iam/context.ts'
+import type { AuthContext } from '../iam/auth-context.ts'
+import { createAuthContext } from '../iam/auth-context.ts'
+import type { IAMManager } from '../iam/context.ts'
+import { createIAMManager } from '../iam/context.ts'
 import type { KVStore } from '../kv/types.ts'
 import type { Logger } from '../logger/index.ts'
 import type { StorageAdapter } from '../storage/types.ts'
@@ -21,6 +28,7 @@ export interface CreateLazyContextOptions {
 	queue?: Queue
 	scheduler?: Scheduler
 	registry?: ActionRegistry
+	sessionManager?: SessionManager
 	auth?: {
 		userId?: string
 		role?: string
@@ -47,10 +55,18 @@ export function createLazyContext(
 	let _storage: StorageAdapter | null | undefined
 	let _kv: KVStore | null | undefined
 	let _queue: ActionContext['queue'] | undefined
-	let _iam: IAMContext | undefined
+	let _iam: IAMManager | undefined
 
 	const queue = opts.queue
 	const _scheduler = opts.scheduler
+
+	// Build auth context with session + permission methods
+	const authContext: AuthContext = createAuthContext({
+		auth: opts.auth,
+		db: opts.db,
+		sessionManager: opts.sessionManager,
+		logger: opts.logger,
+	})
 
 	return {
 		// Lazy db getter
@@ -100,51 +116,16 @@ export function createLazyContext(
 				eventBus.emit(name, payload)
 			},
 		},
-		auth: {
-			...(opts.auth ?? {}),
-
-			// Lazy user loader - fetches full user data from DB
-			user:
-				opts.db && opts.auth?.userId
-					? async () => {
-							const database = opts.db
-							if (!database) return null
-
-							const user = await database
-								.from('users')
-								.eq('id', opts.auth!.userId!)
-								.maybeSingle()
-
-							return user as any
-						}
-					: undefined,
-
-			// Lazy team/org loader - fetches full team data from DB
-			team:
-				opts.db && opts.auth?.orgId
-					? async () => {
-							const database = opts.db
-							if (!database) return null
-
-							const team = await database
-								.from('organizations')
-								.eq('id', opts.auth!.orgId!)
-								.maybeSingle()
-
-							return team as any
-						}
-					: undefined,
-		},
+		auth: authContext,
 		module: opts.moduleName ? { name: opts.moduleName } : undefined,
 		retry: { attempt: 1, maxAttempts: 1 },
 		response: opts.response,
 		request: opts.request,
 		registry: opts.registry,
 
-		// Lazy IAM context - only initialized when accessed
+		// Lazy IAM manager - only initialized when accessed
 		get iam() {
 			if (_iam === undefined) {
-				// Check if we have database access
 				const database = opts.db ?? null
 				if (!database) {
 					throw new Error(
@@ -152,9 +133,8 @@ export function createLazyContext(
 					)
 				}
 
-				_iam = createIAMContext({
+				_iam = createIAMManager({
 					db: database,
-					roleKey: opts.auth?.role,
 					logger: opts.logger,
 				})
 			}
@@ -245,6 +225,11 @@ export function createLazyContext(
 				}
 			}
 			return _queue
+		},
+
+		// withMeta helper
+		withMeta: <T>(data: T, metadata?: TransportMetadata): ActionOutput<T> => {
+			return { ...data, _meta: metadata } as ActionOutput<T>
 		},
 	}
 }

@@ -50,32 +50,34 @@ export type {
 } from './db/client.ts'
 // Database client and types
 export { createDB } from './db/client.ts'
-// IAM (Identity & Access Management) - optional, only if using dynamic RBAC
+// IAM (Identity & Access Management)
 export type {
-	IAMContext,
+	AuthContext,
+	IAMManager,
+	Organization,
+	OrgMembership,
 	Permission,
 	Role,
 	RolePermission,
+	SessionAction,
+	Subscription,
 } from './iam/index.ts'
 export {
 	buildAuthContext,
-	createIAMContext,
+	createAuthContext,
+	createIAMManager,
 	hasPermission,
+	OrgManager,
 	RoleManager,
 	resolvePermissions,
+	SubscriptionManager,
+	UsersManager,
 } from './iam/index.ts'
 // Key-value store types (for custom store implementations)
 export type { KVStore } from './kv/types.ts'
 export type { LoggerOptions, LogLevel, LogListener } from './logger/index.ts'
 // Logger (useful for custom logging in action handlers)
 export { Logger, LoggerSession } from './logger/index.ts'
-// SaaS services (used in action handlers)
-export * from './saas/organizations.ts'
-export * from './saas/plans.ts'
-export * from './saas/role-sets.ts'
-export * from './saas/roles.ts'
-export * from './saas/subscriptions.ts'
-export * from './saas/types.ts'
 // Storage adapter types (for custom adapter implementations)
 export type { StorageAdapter, UploadOptions } from './storage/types.ts'
 export type { TestActionOptions, TestActionResult } from './test/index.ts'

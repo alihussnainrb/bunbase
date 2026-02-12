@@ -1,7 +1,3 @@
-import { OrganizationService } from '../../saas/organizations.ts'
-import { defaultPlanService } from '../../saas/plans.ts'
-import { defaultRoleService } from '../../saas/roles.ts'
-import { SubscriptionService } from '../../saas/subscriptions.ts'
 import type { ActionContext } from '../types.ts'
 import { GuardError, type GuardFn } from './types.ts'
 
@@ -9,6 +5,12 @@ export const saasGuards = {
 	/**
 	 * Ensure the request is within an organization context.
 	 * Looks for orgId in header (x-org-id) or query params.
+	 * Uses ctx.iam.orgs and ctx.iam.subscriptions for all lookups.
+	 *
+	 * Populates on ctx.auth:
+	 * - orgId, role (from membership)
+	 * - _orgPlan (plan key string)
+	 * - _orgFeatures (string[] of plan features)
 	 */
 	inOrg: (): GuardFn => {
 		return async (ctx: ActionContext) => {
@@ -33,70 +35,50 @@ export const saasGuards = {
 				throw new GuardError('Organization ID required', 400)
 			}
 
-			const orgService = new OrganizationService(ctx.db)
-			const org = await orgService.getById(orgId)
-
+			// Fetch org via IAM
+			const org = await ctx.iam.orgs.getById(orgId)
 			if (!org) {
 				throw new GuardError('Organization not found', 404)
 			}
 
 			// Check membership
-			const membership = await orgService.getMembership(orgId, ctx.auth.userId)
+			const membership = await ctx.iam.orgs.getMembership(
+				orgId,
+				ctx.auth.userId,
+			)
 			if (!membership) {
 				throw new GuardError('Not a member of this organization', 403)
 			}
 
-			// Get plan from subscription if DB is available
+			// Get plan from subscription
 			let planKey = 'free'
-			if (ctx.db) {
-				try {
-					const subService = new SubscriptionService(ctx.db)
-					const subscription = await subService.getSubscription(orgId)
-					if (
-						subscription &&
-						(subscription.status === 'active' ||
-							subscription.status === 'trialing')
-					) {
-						planKey = subscription.planKey
-					}
-				} catch {
-					// DB query failed, fall back to free
-				}
-			}
-
-			const plan = defaultPlanService.getPlan(planKey)
-
-			if (!plan) {
-				throw new GuardError('Plan configuration error', 500)
-			}
-
-			// Get actual member count
-			let memberCount = 1
 			try {
-				memberCount = await orgService.getMemberCount(orgId)
+				const subscription = await ctx.iam.subscriptions.get(orgId)
+				if (
+					subscription &&
+					(subscription.status === 'active' ||
+						subscription.status === 'trialing')
+				) {
+					planKey = subscription.planKey
+				}
 			} catch {
-				// Fall back to 1
+				// Subscription query failed, fall back to free
 			}
 
-			// Populate ctx.org
-			ctx.org = {
-				id: org.id,
-				name: org.name,
-				slug: org.slug,
-				plan: plan.key,
-				features: plan.features,
-				memberCount,
+			// Get plan features from DB
+			let features: string[] = []
+			try {
+				features = await ctx.iam.subscriptions.getPlanFeatures(planKey)
+			} catch {
+				// Plan features query failed
 			}
 
-			// Update auth context with org role
-			ctx.auth.orgId = org.id
+			// Update auth context with org data
+			ctx.auth.orgId = orgId
 			ctx.auth.role = membership.role
-
-			// Populate permissions based on role
-			const roleDef = defaultRoleService.getRole(membership.role)
-			if (roleDef) {
-				ctx.auth.permissions = roleDef.permissions
-			}
+			// Store plan/features for downstream guards (hasFeature, trialActiveOrPaid)
+			ctx.auth._orgPlan = planKey
+			ctx.auth._orgFeatures = features
 		}
 	},
 
@@ -106,13 +88,14 @@ export const saasGuards = {
 	 */
 	hasFeature: (feature: string): GuardFn => {
 		return (ctx: ActionContext) => {
-			if (!ctx.org) {
+			const features = ctx.auth._orgFeatures as string[] | undefined
+			if (!features) {
 				throw new GuardError(
 					'Organization context required (use inOrg guard)',
 					500,
 				)
 			}
-			if (!ctx.org.features.includes(feature)) {
+			if (!features.includes(feature)) {
 				throw new GuardError(`Upgrade required for feature: ${feature}`, 403)
 			}
 		}
@@ -124,10 +107,11 @@ export const saasGuards = {
 	 */
 	trialActiveOrPaid: (): GuardFn => {
 		return (ctx: ActionContext) => {
-			if (!ctx.org) {
+			const plan = ctx.auth._orgPlan as string | undefined
+			if (!plan) {
 				throw new GuardError('Organization context required', 500)
 			}
-			if (ctx.org.plan === 'free') {
+			if (plan === 'free') {
 				throw new GuardError('Paid plan required', 403)
 			}
 		}

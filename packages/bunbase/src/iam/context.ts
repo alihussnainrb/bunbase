@@ -1,40 +1,17 @@
 import type { DatabaseClient } from '../db/client.ts'
 import type { Logger } from '../logger/index.ts'
+import { OrgManager } from './org-manager.ts'
 import { RoleManager } from './role-manager.ts'
+import { SubscriptionManager } from './subscription-manager.ts'
+import { UsersManager } from './users-manager.ts'
 
 /**
- * In-memory cache for role permissions (TTL: 5 minutes)
- * Maps roleKey -> { permissions: string[], expiresAt: number }
+ * IAM Manager — admin/management interface for roles, orgs, and subscriptions.
+ * Accessed via ctx.iam in action handlers.
  */
-const permissionCache = new Map<
-	string,
-	{ permissions: string[]; expiresAt: number }
->()
-
-const CACHE_TTL_MS = 5 * 60 * 1000 // 5 minutes
-
-export interface IAMContext {
+export interface IAMManager {
 	/**
-	 * Check if the current user has a specific permission.
-	 * Queries database on first call, then caches for 5 minutes.
-	 *
-	 * @example
-	 * const { allowed, reason } = await ctx.iam.can('article:publish')
-	 * if (!allowed) throw new Forbidden(reason)
-	 */
-	can: (permission: string) => Promise<{ allowed: boolean; reason?: string }>
-
-	/**
-	 * Batch check multiple permissions at once
-	 *
-	 * @example
-	 * const results = await ctx.iam.canAll(['article:publish', 'article:delete'])
-	 * // Map { 'article:publish' => true, 'article:delete' => false }
-	 */
-	canAll: (permissions: string[]) => Promise<Map<string, boolean>>
-
-	/**
-	 * RoleManager instance for admin operations (create/update roles/permissions)
+	 * RoleManager for creating/managing roles and permissions.
 	 *
 	 * @example
 	 * await ctx.iam.roles.createRole({ key: 'moderator', name: 'Moderator', weight: 50 })
@@ -43,126 +20,71 @@ export interface IAMContext {
 	roles: RoleManager
 
 	/**
-	 * Invalidate permission cache for a specific role or all roles
+	 * OrgManager for creating/managing organizations and memberships.
 	 *
 	 * @example
-	 * await ctx.iam.invalidateCache('editor') // After changing editor permissions
+	 * const org = await ctx.iam.orgs.create(userId, 'Acme Corp', 'acme')
+	 * await ctx.iam.orgs.addMember(org.id, userId, 'admin')
+	 */
+	orgs: OrgManager
+
+	/**
+	 * UsersManager for creating/managing user accounts.
+	 *
+	 * @example
+	 * const user = await ctx.iam.users.create({ email: 'user@example.com', password: 'secret' })
+	 * await ctx.iam.users.updatePassword('user-123', 'newPassword')
+	 */
+	users: UsersManager
+
+	/**
+	 * SubscriptionManager for managing subscriptions and plans.
+	 *
+	 * @example
+	 * const sub = await ctx.iam.subscriptions.create(orgId, 'pro')
+	 * const features = await ctx.iam.subscriptions.getPlanFeatures('pro')
+	 */
+	subscriptions: SubscriptionManager
+
+	/**
+	 * Invalidate permission cache for a specific role or all roles.
+	 *
+	 * @example
+	 * ctx.iam.invalidateCache('editor') // After changing editor permissions
 	 */
 	invalidateCache: (roleKey?: string) => void
 }
 
-export interface CreateIAMContextOptions {
+export interface CreateIAMManagerOptions {
 	db: DatabaseClient
-	roleKey?: string // Current user's role (from ctx.auth.role)
 	logger: Logger
 }
 
 /**
- * Creates an IAM context with lazy-loaded, cached permission checks.
- * Only queries database when can() is called, and caches results for 5 minutes.
+ * In-memory cache for role permissions (TTL: 5 minutes)
+ * Shared across requests for performance.
  */
-export function createIAMContext(opts: CreateIAMContextOptions): IAMContext {
+export const permissionCache: Map<
+	string,
+	{ permissions: string[]; expiresAt: number }
+> = new Map()
+
+export const CACHE_TTL_MS: number = 5 * 60 * 1000 // 5 minutes
+
+/**
+ * Creates an IAM Manager for admin operations on roles, orgs, and subscriptions.
+ */
+export function createIAMManager(opts: CreateIAMManagerOptions): IAMManager {
 	const roleManager = new RoleManager(opts.db)
-	const roleKey = opts.roleKey
-
-	/**
-	 * Fetch permissions for the current role (with caching)
-	 */
-	const getRolePermissions = async (): Promise<string[]> => {
-		if (!roleKey) {
-			return []
-		}
-
-		// Check cache
-		const cached = permissionCache.get(roleKey)
-		if (cached && cached.expiresAt > Date.now()) {
-			return cached.permissions
-		}
-
-		// Cache miss - query database
-		try {
-			const permissions = await roleManager.getRolePermissions(roleKey)
-
-			// Cache result
-			permissionCache.set(roleKey, {
-				permissions,
-				expiresAt: Date.now() + CACHE_TTL_MS,
-			})
-
-			return permissions
-		} catch (err) {
-			opts.logger.error('Failed to fetch role permissions', {
-				roleKey,
-				error: err instanceof Error ? err.message : String(err),
-			})
-			return []
-		}
-	}
+	const orgManager = new OrgManager(opts.db)
+	const usersManager = new UsersManager(opts.db)
+	const subscriptionManager = new SubscriptionManager(opts.db)
 
 	return {
-		can: async (permission: string) => {
-			if (!roleKey) {
-				return {
-					allowed: false,
-					reason: 'User not authenticated or role not set',
-				}
-			}
-
-			const permissions = await getRolePermissions()
-
-			// Check for wildcard permission (superadmin)
-			if (permissions.includes('*')) {
-				return { allowed: true }
-			}
-
-			// Check specific permission
-			if (permissions.includes(permission)) {
-				return { allowed: true }
-			}
-
-			// Check namespace wildcard (e.g., 'article:*' allows 'article:publish')
-			const namespace = permission.split(':')[0]
-			if (permissions.includes(`${namespace}:*`)) {
-				return { allowed: true }
-			}
-
-			return {
-				allowed: false,
-				reason: `Missing permission: ${permission}`,
-			}
-		},
-
-		canAll: async (permissions: string[]) => {
-			const rolePermissions = await getRolePermissions()
-			const results = new Map<string, boolean>()
-
-			for (const permission of permissions) {
-				// Check wildcard
-				if (rolePermissions.includes('*')) {
-					results.set(permission, true)
-					continue
-				}
-
-				// Check specific permission
-				if (rolePermissions.includes(permission)) {
-					results.set(permission, true)
-					continue
-				}
-
-				// Check namespace wildcard
-				const namespace = permission.split(':')[0]
-				if (rolePermissions.includes(`${namespace}:*`)) {
-					results.set(permission, true)
-					continue
-				}
-
-				results.set(permission, false)
-			}
-
-			return results
-		},
-
 		roles: roleManager,
+		orgs: orgManager,
+		users: usersManager,
+		subscriptions: subscriptionManager,
 
 		invalidateCache: (roleKeyToInvalidate?: string) => {
 			if (roleKeyToInvalidate) {

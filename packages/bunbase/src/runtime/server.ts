@@ -403,10 +403,33 @@ export class BunbaseServer {
 				kv: this.services?.kv,
 				queue: this.queue,
 				scheduler: this.scheduler,
+				sessionManager: this.sessionManager,
 				auth: authContext,
 				response: { headers, setCookie },
 				registry: this.registry,
 			})
+
+			// Apply session actions (set/clear cookies from ctx.auth)
+			if (result.sessionActions && this.sessionManager) {
+				for (const sa of result.sessionActions) {
+					if (sa.type === 'create' && sa.token) {
+						setCookie(this.sessionManager.getCookieName(), sa.token, {
+							path: '/',
+							httpOnly: true,
+							secure: true,
+							sameSite: 'Lax',
+						})
+					} else if (sa.type === 'destroy') {
+						setCookie(this.sessionManager.getCookieName(), '', {
+							path: '/',
+							httpOnly: true,
+							secure: true,
+							sameSite: 'Lax',
+							maxAge: 0,
+						})
+					}
+				}
+			}
 
 			if (result.success) {
 				// Apply HTTP transport metadata if present

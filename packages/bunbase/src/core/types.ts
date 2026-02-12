@@ -1,6 +1,7 @@
 import type { Static, TSchema } from 'typebox'
 import type { DatabaseClient } from '../db'
-import type { IAMContext } from '../iam/context.ts'
+import type { AuthContext } from '../iam/auth-context.ts'
+import type { IAMManager } from '../iam/context.ts'
 import type { KVStore } from '../kv/types.ts'
 import type { Logger } from '../logger/index.ts'
 import type { StorageAdapter } from '../storage/types.ts'
@@ -206,7 +207,7 @@ export interface TransportMetadata {
 export type ActionOutput<T> = T & {
 	/** Unified transport metadata for all trigger types */
 	_meta?: TransportMetadata
-	/** @deprecated Use _meta.http instead. Support for _http will be removed in v2.0.0 */
+	/** @deprecated Use _meta.http instead. Support for _http will be removed in v1.0.0 */
 	_http?: HttpMetadata
 }
 
@@ -241,72 +242,27 @@ export interface ActionContext {
 		emit: (name: string, payload?: unknown) => void
 	}
 
-	/** Auth context (populated by auth guards) */
-	auth: {
-		userId?: string
-		orgId?: string
-		role?: string
-		permissions?: string[]
-		/** Internal call stack for loop detection */
-		_callStack?: string[]
-
-		/**
-		 * Fetch full user data from database.
-		 * Only available if database is configured.
-		 *
-		 * @example
-		 * const user = await ctx.auth.user()
-		 * console.log(user.email, user.name)
-		 */
-		user?: () => Promise<{
-			id: string
-			email: string
-			name: string | null
-			created_at: Date
-			email_verified_at: Date | null
-			[key: string]: unknown
-		} | null>
-
-		/**
-		 * Fetch full team/org data from database.
-		 * Only available if database is configured and orgId is set.
-		 *
-		 * @example
-		 * const team = await ctx.auth.team()
-		 * console.log(team.name, team.slug)
-		 */
-		team?: () => Promise<{
-			id: string
-			name: string
-			slug: string
-			owner_id: string
-			created_at: Date
-			[key: string]: unknown
-		} | null>
-	}
-
 	/**
-	 * IAM context for dynamic role-based access control.
-	 * Only available if database has roles/permissions tables configured.
-	 * Provides lazy-loaded, cached permission checks.
+	 * Auth context — primary interface for authentication and authorization.
+	 * Includes session management (login/signup/logout), lazy user/team loading,
+	 * and permission checks (can/canAll/hasRole).
 	 *
 	 * @example
-	 * const { allowed } = await ctx.iam.can('article:publish')
-	 * if (!allowed) throw new Forbidden('Missing permission')
+	 * const user = await ctx.auth.login(email, password) // auto-sets cookie
+	 * const { allowed } = await ctx.auth.can('article:publish')
+	 * ctx.auth.logout()
 	 */
-	iam?: IAMContext
+	auth: AuthContext
 
 	/**
-	 * Org context (populated by inOrg guard)
+	 * IAM Manager — admin interface for managing roles, organizations, and subscriptions.
+	 * Only available if database is configured.
+	 *
+	 * @example
+	 * await ctx.iam.roles.createRole({ key: 'editor', name: 'Editor', weight: 50 })
+	 * await ctx.iam.orgs.create(userId, 'Acme Corp', 'acme')
 	 */
-	org?: {
-		id: string
-		slug: string
-		name: string
-		plan: string
-		features: string[]
-		memberCount: number
-	}
+	iam: IAMManager
 
 	/**
 	 * Module context (if action is part of a module)
@@ -375,6 +331,27 @@ export interface ActionContext {
 		delete: (jobId: string) => Promise<boolean>
 		remove: (jobId: string) => Promise<boolean>
 	}
+
+	/**
+	 * Helper to attach transport metadata to action outputs.
+	 * Makes it easier to return data with HTTP status codes, headers, cookies,
+	 * or other transport-specific metadata.
+	 *
+	 * @example
+	 * // HTTP: Custom status and headers
+	 * return ctx.withMeta(
+	 *   { id: user.id, email: user.email },
+	 *   { http: { status: 201, headers: { Location: `/users/${user.id}` } } }
+	 * )
+	 *
+	 * @example
+	 * // MCP: Structured format
+	 * return ctx.withMeta(
+	 *   { analysis: result },
+	 *   { mcp: { format: 'structured', includeSchema: true } }
+	 * )
+	 */
+	withMeta: <T>(data: T, metadata?: TransportMetadata) => ActionOutput<T>
 }
 
 // ── Action Config ────────────────────────────────────────

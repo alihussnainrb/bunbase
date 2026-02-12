@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'bun:test'
-import { OrganizationService } from '../src/saas/organizations.ts'
+import { OrgManager } from '../src/iam/org-manager.ts'
 
-describe('OrganizationService', () => {
+describe('OrgManager', () => {
 	// Create a mock DB that mimics the TypedQueryBuilder chainable API
 	function createMockDb() {
 		const organizations: any[] = []
@@ -18,6 +18,12 @@ describe('OrganizationService', () => {
 				select: (..._fields: any[]) => chain,
 				limit: (_n: number) => chain,
 				single: async () => {
+					const result = store.find((r) =>
+						wheres.every(({ col, val }) => r[col] === val),
+					)
+					return result || null
+				},
+				maybeSingle: async () => {
 					const result = store.find((r) =>
 						wheres.every(({ col, val }) => r[col] === val),
 					)
@@ -57,6 +63,16 @@ describe('OrganizationService', () => {
 					}
 					return null
 				},
+				delete: async () => {
+					const indicesToRemove: number[] = []
+					for (let i = 0; i < store.length; i++) {
+						const match = wheres.every(({ col, val }) => store[i][col] === val)
+						if (match) indicesToRemove.push(i)
+					}
+					for (let i = indicesToRemove.length - 1; i >= 0; i--) {
+						store.splice(indicesToRemove[i]!, 1)
+					}
+				},
 			}
 
 			return chain
@@ -78,24 +94,24 @@ describe('OrganizationService', () => {
 	describe('create()', () => {
 		it('should create organization with owner as member', async () => {
 			const db = createMockDb()
-			const service = new OrganizationService(db)
+			const manager = new OrgManager(db as any)
 
-			const org = await service.create('user-123', 'Test Org', 'test-org')
+			const org = await manager.create('user-123', 'Test Org', 'test-org')
 
 			expect(org).toBeDefined()
 			expect(org.name).toBe('Test Org')
 			expect(org.slug).toBe('test-org')
-			expect(org.ownerId).toBe('user-123')
+			expect(org.owner_id).toBe('user-123')
 		})
 
 		it('should add owner as member with owner role', async () => {
 			const db = createMockDb()
-			const service = new OrganizationService(db)
+			const manager = new OrgManager(db as any)
 
-			const org = await service.create('user-123', 'Test Org', 'test-org')
+			const org = await manager.create('user-123', 'Test Org', 'test-org')
 
 			// Verify owner was added as member
-			const membership = await service.getMembership(org.id, 'user-123')
+			const membership = await manager.getMembership(org.id, 'user-123')
 			expect(membership).toBeDefined()
 			expect(membership?.role).toBe('owner')
 		})
@@ -104,13 +120,13 @@ describe('OrganizationService', () => {
 	describe('getById()', () => {
 		it('should return organization by id', async () => {
 			const db = createMockDb()
-			const service = new OrganizationService(db)
+			const manager = new OrgManager(db as any)
 
 			// First create an org
-			const created = await service.create('user-123', 'Test Org', 'test-org')
+			const created = await manager.create('user-123', 'Test Org', 'test-org')
 
 			// Then retrieve it
-			const org = await service.getById(created.id)
+			const org = await manager.getById(created.id)
 
 			expect(org).toBeDefined()
 			expect(org?.id).toBe(created.id)
@@ -119,9 +135,9 @@ describe('OrganizationService', () => {
 
 		it('should return null for non-existent organization', async () => {
 			const db = createMockDb()
-			const service = new OrganizationService(db)
+			const manager = new OrgManager(db as any)
 
-			const org = await service.getById('non-existent')
+			const org = await manager.getById('non-existent')
 
 			expect(org).toBeNull()
 		})
@@ -130,26 +146,26 @@ describe('OrganizationService', () => {
 	describe('addMember()', () => {
 		it('should add member with default role', async () => {
 			const db = createMockDb()
-			const service = new OrganizationService(db)
+			const manager = new OrgManager(db as any)
 
 			// First create an org
-			const org = await service.create('owner-123', 'Test Org', 'test-org')
+			const org = await manager.create('owner-123', 'Test Org', 'test-org')
 
 			// Add a member
-			const membership = await service.addMember(org.id, 'user-456')
+			const membership = await manager.addMember(org.id, 'user-456')
 
 			expect(membership).toBeDefined()
-			expect(membership.userId).toBe('user-456')
-			expect(membership.orgId).toBe(org.id)
+			expect(membership.user_id).toBe('user-456')
+			expect(membership.org_id).toBe(org.id)
 			expect(membership.role).toBe('member')
 		})
 
 		it('should add member with specified role', async () => {
 			const db = createMockDb()
-			const service = new OrganizationService(db)
+			const manager = new OrgManager(db as any)
 
-			const org = await service.create('owner-123', 'Test Org', 'test-org')
-			const membership = await service.addMember(org.id, 'user-456', 'admin')
+			const org = await manager.create('owner-123', 'Test Org', 'test-org')
+			const membership = await manager.addMember(org.id, 'user-456', 'admin')
 
 			expect(membership.role).toBe('admin')
 		})
@@ -158,25 +174,25 @@ describe('OrganizationService', () => {
 	describe('getMembership()', () => {
 		it('should return membership for org member', async () => {
 			const db = createMockDb()
-			const service = new OrganizationService(db)
+			const manager = new OrgManager(db as any)
 
-			const org = await service.create('user-123', 'Test Org', 'test-org')
-			await service.addMember(org.id, 'user-456', 'member')
+			const org = await manager.create('user-123', 'Test Org', 'test-org')
+			await manager.addMember(org.id, 'user-456', 'member')
 
-			const membership = await service.getMembership(org.id, 'user-456')
+			const membership = await manager.getMembership(org.id, 'user-456')
 
 			expect(membership).toBeDefined()
-			expect(membership?.userId).toBe('user-456')
-			expect(membership?.orgId).toBe(org.id)
+			expect(membership?.user_id).toBe('user-456')
+			expect(membership?.org_id).toBe(org.id)
 		})
 
 		it('should return null for non-member', async () => {
 			const db = createMockDb()
-			const service = new OrganizationService(db)
+			const manager = new OrgManager(db as any)
 
-			const org = await service.create('user-123', 'Test Org', 'test-org')
+			const org = await manager.create('user-123', 'Test Org', 'test-org')
 
-			const membership = await service.getMembership(org.id, 'non-member')
+			const membership = await manager.getMembership(org.id, 'non-member')
 
 			expect(membership).toBeNull()
 		})
@@ -185,25 +201,46 @@ describe('OrganizationService', () => {
 	describe('getMemberRole()', () => {
 		it('should return role for member', async () => {
 			const db = createMockDb()
-			const service = new OrganizationService(db)
+			const manager = new OrgManager(db as any)
 
-			const org = await service.create('user-123', 'Test Org', 'test-org')
-			await service.addMember(org.id, 'user-456', 'admin')
+			const org = await manager.create('user-123', 'Test Org', 'test-org')
+			await manager.addMember(org.id, 'user-456', 'admin')
 
-			const role = await service.getMemberRole(org.id, 'user-456')
+			const role = await manager.getMemberRole(org.id, 'user-456')
 
 			expect(role).toBe('admin')
 		})
 
 		it('should return null for non-member', async () => {
 			const db = createMockDb()
-			const service = new OrganizationService(db)
+			const manager = new OrgManager(db as any)
 
-			const org = await service.create('user-123', 'Test Org', 'test-org')
+			const org = await manager.create('user-123', 'Test Org', 'test-org')
 
-			const role = await service.getMemberRole(org.id, 'non-member')
+			const role = await manager.getMemberRole(org.id, 'non-member')
 
 			expect(role).toBeNull()
+		})
+	})
+
+	describe('removeMember()', () => {
+		it('should remove a member from org', async () => {
+			const db = createMockDb()
+			const manager = new OrgManager(db as any)
+
+			const org = await manager.create('user-123', 'Test Org', 'test-org')
+			await manager.addMember(org.id, 'user-456', 'member')
+
+			// Verify member exists
+			const before = await manager.getMembership(org.id, 'user-456')
+			expect(before).toBeDefined()
+
+			// Remove member
+			await manager.removeMember(org.id, 'user-456')
+
+			// Verify member is gone
+			const after = await manager.getMembership(org.id, 'user-456')
+			expect(after).toBeNull()
 		})
 	})
 })

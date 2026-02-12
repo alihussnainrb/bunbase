@@ -3,68 +3,77 @@ import { saasGuards } from '../src/core/guards/saas.ts'
 import type { GuardError } from '../src/core/guards/types.ts'
 import type { ActionContext } from '../src/core/types.ts'
 
-// Mock database using chainable API matching TypedQueryBuilder
-function createMockDb(overrides: any = {}) {
+// Mock OrgManager and SubscriptionManager
+function createMockIAM(data: {
+	organizations?: any[]
+	memberships?: any[]
+	subscriptions?: any[]
+	plans?: any[]
+}) {
 	return {
-		from: (table: string) => {
-			const store: any[] = overrides[table] || []
-			const wheres: Array<{ col: string; val: any }> = []
-
-			const chain: any = {
-				eq: (col: string, val: any) => {
-					wheres.push({ col, val })
-					return chain
-				},
-				select: (..._fields: any[]) => chain,
-				limit: (_n: number) => chain,
-				ilike: (_col: string, _pattern: string) => chain,
-				orderBy: (_col: string, _dir: string) => chain,
-				single: async () => {
-					const result = store.find((r: any) =>
-						wheres.every(({ col, val }) => r[col] === val),
-					)
-					return result || null
-				},
-				exec: async () => {
-					return store.filter((r: any) =>
-						wheres.every(({ col, val }) => r[col] === val),
-					)
-				},
-				insert: async (data: any) => {
-					return { id: 'test-id', ...data }
-				},
-			}
-
-			return chain
+		roles: {} as any,
+		orgs: {
+			getById: async (id: string) => {
+				return (data.organizations ?? []).find((o: any) => o.id === id) ?? null
+			},
+			getMembership: async (orgId: string, userId: string) => {
+				return (
+					(data.memberships ?? []).find(
+						(m: any) => m.org_id === orgId && m.user_id === userId,
+					) ?? null
+				)
+			},
+			getMemberCount: async (orgId: string) => {
+				return (data.memberships ?? []).filter((m: any) => m.org_id === orgId)
+					.length
+			},
 		},
+		subscriptions: {
+			get: async (orgId: string) => {
+				return (
+					(data.subscriptions ?? []).find((s: any) => s.orgId === orgId) ?? null
+				)
+			},
+			getPlanFeatures: async (planKey: string) => {
+				const plan = (data.plans ?? []).find((p: any) => p.key === planKey)
+				return plan?.features ?? []
+			},
+		},
+		invalidateCache: () => {},
 	}
 }
 
 // Helper to create mock context
 function createMockContext(
-	overrides: Partial<ActionContext> = {},
+	overrides: Partial<ActionContext> & { iam?: any } = {},
 ): ActionContext {
+	const { iam, ...rest } = overrides
 	return {
-		db: createMockDb(),
+		db: {} as any,
 		storage: {} as any,
 		kv: {} as any,
 		logger: {
 			info: () => {},
 			error: () => {},
 			debug: () => {},
-			child: () => ({ info: () => {}, error: () => {}, debug: () => {} }),
+			child: () => ({
+				info: () => {},
+				error: () => {},
+				debug: () => {},
+			}),
 		} as any,
 		traceId: 'test-trace',
 		event: { emit: () => {} },
-		auth: {},
-		...overrides,
+		auth: {} as any,
+		iam: iam ?? createMockIAM({}),
+		...rest,
 	} as ActionContext
 }
 
 describe('saasGuards.inOrg()', () => {
 	it('should throw 401 when user is not authenticated', async () => {
 		const guard = saasGuards.inOrg()
-		const ctx = createMockContext({ auth: {} })
+		const ctx = createMockContext({ auth: {} as any })
 
 		let error: GuardError | undefined
 		try {
@@ -80,7 +89,7 @@ describe('saasGuards.inOrg()', () => {
 		const guard = saasGuards.inOrg()
 		const request = new Request('http://localhost:3000/test')
 		const ctx = createMockContext({
-			auth: { userId: 'user-123' },
+			auth: { userId: 'user-123' } as any,
 			request,
 		})
 
@@ -101,42 +110,48 @@ describe('saasGuards.inOrg()', () => {
 			headers: { 'x-org-id': 'org-123' },
 		})
 
-		const db = createMockDb({
+		const iam = createMockIAM({
 			organizations: [{ id: 'org-123', name: 'Test Org', slug: 'test-org' }],
-			org_memberships: [
-				{ org_id: 'org-123', user_id: 'user-123', role: 'admin' },
+			memberships: [
+				{
+					org_id: 'org-123',
+					user_id: 'user-123',
+					role: 'admin',
+				},
 			],
 		})
 
 		const ctx = createMockContext({
-			auth: { userId: 'user-123' },
+			auth: { userId: 'user-123' } as any,
 			request,
-			db,
+			iam,
 		})
 
 		await guard(ctx)
 
 		expect(ctx.auth.orgId).toBe('org-123')
 		expect(ctx.auth.role).toBe('admin')
-		expect(ctx.org).toBeDefined()
-		expect(ctx.org?.id).toBe('org-123')
 	})
 
 	it('should find orgId in query params', async () => {
 		const guard = saasGuards.inOrg()
 		const request = new Request('http://localhost:3000/test?orgId=org-456')
 
-		const db = createMockDb({
+		const iam = createMockIAM({
 			organizations: [{ id: 'org-456', name: 'Test Org', slug: 'test-org' }],
-			org_memberships: [
-				{ org_id: 'org-456', user_id: 'user-123', role: 'member' },
+			memberships: [
+				{
+					org_id: 'org-456',
+					user_id: 'user-123',
+					role: 'member',
+				},
 			],
 		})
 
 		const ctx = createMockContext({
-			auth: { userId: 'user-123' },
+			auth: { userId: 'user-123' } as any,
 			request,
-			db,
+			iam,
 		})
 
 		await guard(ctx)
@@ -151,9 +166,9 @@ describe('saasGuards.inOrg()', () => {
 		})
 
 		const ctx = createMockContext({
-			auth: { userId: 'user-123' },
+			auth: { userId: 'user-123' } as any,
 			request,
-			db: createMockDb({ organizations: [] }),
+			iam: createMockIAM({ organizations: [] }),
 		})
 
 		let error: GuardError | undefined
@@ -172,15 +187,15 @@ describe('saasGuards.inOrg()', () => {
 			headers: { 'x-org-id': 'org-123' },
 		})
 
-		const db = createMockDb({
+		const iam = createMockIAM({
 			organizations: [{ id: 'org-123', name: 'Test Org', slug: 'test-org' }],
-			org_memberships: [], // User is not a member
+			memberships: [], // User is not a member
 		})
 
 		const ctx = createMockContext({
-			auth: { userId: 'user-123' },
+			auth: { userId: 'user-123' } as any,
 			request,
-			db,
+			iam,
 		})
 
 		let error: GuardError | undefined
@@ -194,53 +209,75 @@ describe('saasGuards.inOrg()', () => {
 		expect(error?.message).toContain('Not a member')
 	})
 
-	it('should populate permissions from role', async () => {
+	it('should set plan and features from subscription', async () => {
 		const guard = saasGuards.inOrg()
 		const request = new Request('http://localhost:3000/test', {
 			headers: { 'x-org-id': 'org-123' },
 		})
 
-		const db = createMockDb({
+		const iam = createMockIAM({
 			organizations: [{ id: 'org-123', name: 'Test Org', slug: 'test-org' }],
-			org_memberships: [
-				{ org_id: 'org-123', user_id: 'user-123', role: 'owner' },
+			memberships: [
+				{
+					org_id: 'org-123',
+					user_id: 'user-123',
+					role: 'member',
+				},
+			],
+			subscriptions: [{ orgId: 'org-123', planKey: 'pro', status: 'active' }],
+			plans: [
+				{
+					key: 'pro',
+					features: ['org:create', 'org:analytics'],
+				},
 			],
 		})
 
 		const ctx = createMockContext({
-			auth: { userId: 'user-123' },
+			auth: { userId: 'user-123' } as any,
 			request,
-			db,
+			iam,
 		})
 
 		await guard(ctx)
 
-		expect(ctx.auth.permissions).toContain('*') // Owner has all permissions
+		expect(ctx.auth._orgPlan).toBe('pro')
+		expect(ctx.auth._orgFeatures).toEqual(['org:create', 'org:analytics'])
 	})
 
-	it('should set free plan features by default', async () => {
+	it('should default to free plan when no subscription', async () => {
 		const guard = saasGuards.inOrg()
 		const request = new Request('http://localhost:3000/test', {
 			headers: { 'x-org-id': 'org-123' },
 		})
 
-		const db = createMockDb({
+		const iam = createMockIAM({
 			organizations: [{ id: 'org-123', name: 'Test Org', slug: 'test-org' }],
-			org_memberships: [
-				{ org_id: 'org-123', user_id: 'user-123', role: 'member' },
+			memberships: [
+				{
+					org_id: 'org-123',
+					user_id: 'user-123',
+					role: 'member',
+				},
+			],
+			plans: [
+				{
+					key: 'free',
+					features: ['org:create'],
+				},
 			],
 		})
 
 		const ctx = createMockContext({
-			auth: { userId: 'user-123' },
+			auth: { userId: 'user-123' } as any,
 			request,
-			db,
+			iam,
 		})
 
 		await guard(ctx)
 
-		expect(ctx.org?.plan).toBe('free')
-		expect(ctx.org?.features).toContain('org:create')
+		expect(ctx.auth._orgPlan).toBe('free')
+		expect(ctx.auth._orgFeatures).toEqual(['org:create'])
 	})
 })
 
@@ -248,14 +285,10 @@ describe('saasGuards.hasFeature()', () => {
 	it('should pass when org has the feature', () => {
 		const guard = saasGuards.hasFeature('org:create')
 		const ctx = createMockContext({
-			org: {
-				id: 'org-123',
-				name: 'Test',
-				slug: 'test',
-				plan: 'free',
-				features: ['org:create'],
-				memberCount: 1,
-			},
+			auth: {
+				userId: 'user-123',
+				_orgFeatures: ['org:create'],
+			} as any,
 		})
 
 		// Should not throw
@@ -264,7 +297,9 @@ describe('saasGuards.hasFeature()', () => {
 
 	it('should throw 500 when org context is missing', () => {
 		const guard = saasGuards.hasFeature('org:create')
-		const ctx = createMockContext({ org: undefined })
+		const ctx = createMockContext({
+			auth: { userId: 'user-123' } as any,
+		})
 
 		let error: GuardError | undefined
 		try {
@@ -280,14 +315,10 @@ describe('saasGuards.hasFeature()', () => {
 	it('should throw 403 when org lacks the feature', () => {
 		const guard = saasGuards.hasFeature('org:analytics')
 		const ctx = createMockContext({
-			org: {
-				id: 'org-123',
-				name: 'Test',
-				slug: 'test',
-				plan: 'free',
-				features: ['org:create'], // Missing org:analytics
-				memberCount: 1,
-			},
+			auth: {
+				userId: 'user-123',
+				_orgFeatures: ['org:create'], // Missing org:analytics
+			} as any,
 		})
 
 		let error: GuardError | undefined
@@ -306,14 +337,10 @@ describe('saasGuards.trialActiveOrPaid()', () => {
 	it('should pass when org is on paid plan', () => {
 		const guard = saasGuards.trialActiveOrPaid()
 		const ctx = createMockContext({
-			org: {
-				id: 'org-123',
-				name: 'Test',
-				slug: 'test',
-				plan: 'pro', // Paid plan
-				features: [],
-				memberCount: 1,
-			},
+			auth: {
+				userId: 'user-123',
+				_orgPlan: 'pro',
+			} as any,
 		})
 
 		// Should not throw
@@ -322,7 +349,9 @@ describe('saasGuards.trialActiveOrPaid()', () => {
 
 	it('should throw 500 when org context is missing', () => {
 		const guard = saasGuards.trialActiveOrPaid()
-		const ctx = createMockContext({ org: undefined })
+		const ctx = createMockContext({
+			auth: { userId: 'user-123' } as any,
+		})
 
 		let error: GuardError | undefined
 		try {
@@ -337,14 +366,10 @@ describe('saasGuards.trialActiveOrPaid()', () => {
 	it('should throw 403 when org is on free plan', () => {
 		const guard = saasGuards.trialActiveOrPaid()
 		const ctx = createMockContext({
-			org: {
-				id: 'org-123',
-				name: 'Test',
-				slug: 'test',
-				plan: 'free',
-				features: [],
-				memberCount: 1,
-			},
+			auth: {
+				userId: 'user-123',
+				_orgPlan: 'free',
+			} as any,
 		})
 
 		let error: GuardError | undefined

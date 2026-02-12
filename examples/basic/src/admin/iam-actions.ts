@@ -319,8 +319,8 @@ export const checkPermission = action(
 		guards: [guards.authenticated()],
 	},
 	async (input, ctx) => {
-		// This demonstrates the ctx.iam.can() method
-		const result = await ctx.iam.can(input.permission)
+		// Permission checks are on ctx.auth (not ctx.iam)
+		const result = await ctx.auth.can(input.permission)
 
 		return result
 	},
@@ -349,7 +349,7 @@ export const deleteOrganization = action(
 	},
 	async (input, ctx) => {
 		// Instead of using guards.hasPermission(), check dynamically
-		const { allowed, reason } = await ctx.iam.can('org:delete')
+		const { allowed, reason } = await ctx.auth.can('org:delete')
 
 		if (!allowed) {
 			throw new Forbidden(reason || 'Permission denied')

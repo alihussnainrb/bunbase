@@ -60,3 +60,7 @@ export * from './saas/types.ts'
 export type { StorageAdapter, UploadOptions } from './storage/types.ts'
 // Error classes
 export * from './utils/errors.ts'
+
+// Test utilities (for testing actions)
+export { testAction } from './test/index.ts'
+export type { TestActionOptions, TestActionResult } from './test/index.ts'

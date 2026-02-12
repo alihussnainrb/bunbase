@@ -74,6 +74,22 @@ export class ServiceUnavailable extends BunbaseError {
 	}
 }
 
+// Circular dependency error (when actions call each other in a loop)
+export class CircularDependencyError extends BunbaseError {
+	constructor(
+		public readonly actionName: string,
+		public readonly callStack: string[],
+		message?: string,
+	) {
+		super(
+			message ||
+				`Circular dependency detected: ${callStack.join(' → ')} → ${actionName}`,
+			500,
+		)
+		this.name = 'CircularDependencyError'
+	}
+}
+
 // Non-retriable errors (client errors that shouldn't be retried)
 export class NonRetriableError extends BunbaseError {
 	constructor(message: string = 'Non-Retriable Error') {

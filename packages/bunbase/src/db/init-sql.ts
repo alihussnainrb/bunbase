@@ -155,6 +155,7 @@ CREATE TABLE IF NOT EXISTS action_runs (
     input JSONB,
     output JSONB,
     error TEXT,
+    error_stack TEXT,
     duration_ms INT NOT NULL DEFAULT 0,
     attempt INT,
     max_attempts INT,

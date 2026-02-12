@@ -214,7 +214,11 @@ describe('executeAction()', () => {
 			},
 		)
 
-		expect(capturedAuth).toEqual(authContext)
+		// Auth context includes _callStack for loop detection, so check individual fields
+		expect(capturedAuth.userId).toBe(authContext.userId)
+		expect(capturedAuth.role).toBe(authContext.role)
+		expect(capturedAuth.permissions).toEqual(authContext.permissions)
+		expect(capturedAuth._callStack).toEqual(['testAuthContext'])
 	})
 
 	it('should handle handler errors gracefully', async () => {

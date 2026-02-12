@@ -104,6 +104,8 @@ export interface ActionContext {
 		orgId?: string
 		role?: string
 		permissions?: string[]
+		/** Internal call stack for loop detection */
+		_callStack?: string[]
 	}
 
 	/**

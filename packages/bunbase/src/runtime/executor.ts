@@ -6,8 +6,8 @@ import type { Logger } from '../logger/index.ts'
 import type { RunEntry } from '../persistence/types.ts'
 import type { WriteBuffer } from '../persistence/write-buffer.ts'
 import type { StorageAdapter } from '../storage/types.ts'
-import { isRetryable } from '../utils/errors.ts'
-import { eventBus } from './event-bus.ts'
+import { CircularDependencyError, isRetryable } from '../utils/errors.ts'
+import { createLazyContext } from './context.ts'
 
 import type { Queue } from './queue.ts'
 import type { Scheduler } from './scheduler.ts'
@@ -60,86 +60,40 @@ export async function executeAction(
 		traceId,
 	})
 
-	// Build context
-	const queue = opts.queue
-	const _scheduler = opts.scheduler
-	const ctx: ActionContext = {
-		db: (opts.db ?? null) as any,
-		storage: (opts.storage ?? null) as any,
-		kv: (opts.kv ?? null) as any,
+	// Loop detection: Check for circular action dependencies
+	const callStack = opts.auth?._callStack || []
+	const actionName = action.definition.config.name
+	const maxDepth = 50 // Prevent infinite loops while allowing deep legitimate chains
+
+	if (callStack.includes(actionName)) {
+		throw new CircularDependencyError(actionName, callStack)
+	}
+
+	if (callStack.length >= maxDepth) {
+		throw new Error(
+			`Maximum action call depth (${maxDepth}) exceeded. Call stack: ${callStack.join(' → ')}`,
+		)
+	}
+
+	// Add current action to call stack for nested action calls
+	const newCallStack = [...callStack, actionName]
+
+	// Build context with lazy service initialization
+	const ctx: ActionContext = createLazyContext({
 		logger: actionLogger,
 		traceId,
-		event: {
-			emit: (name: string, payload?: unknown) => {
-				eventBus.emit(name, payload)
-			},
-		},
-		auth: opts.auth ?? {},
-		module: action.moduleName ? { name: action.moduleName } : undefined,
-		retry: { attempt: 1, maxAttempts: 1 },
-		response: opts.response,
+		triggerType: opts.triggerType,
 		request: opts.request,
+		db: opts.db,
+		storage: opts.storage,
+		kv: opts.kv,
+		queue: opts.queue,
+		scheduler: opts.scheduler,
 		registry: opts.registry,
-		schedule: async (time, name, data, scheduleOpts) => {
-			if (!queue) {
-				throw new Error('Queue not configured. Call server.setQueue() first.')
-			}
-			// Schedule via queue with delay
-			const _delay = typeof time === 'number' ? time : 0
-			return queue.push(name, data, {
-				...scheduleOpts,
-				priority: scheduleOpts?.priority,
-			})
-		},
-		queue: {
-			add: async (name, data, opts) => {
-				if (!queue) {
-					throw new Error('Queue not configured. Call server.setQueue() first.')
-				}
-				return queue.add(name, data, opts)
-			},
-			push: async (name, data, opts) => {
-				if (!queue) {
-					throw new Error('Queue not configured. Call server.setQueue() first.')
-				}
-				return queue.push(name, data, opts)
-			},
-			get: async (jobId) => {
-				if (!queue) {
-					throw new Error('Queue not configured. Call server.setQueue() first.')
-				}
-				return queue.get(jobId)
-			},
-			getAll: async (opts) => {
-				if (!queue) {
-					throw new Error('Queue not configured. Call server.setQueue() first.')
-				}
-				return queue.getAll({
-					status: opts?.status as any,
-					name: opts?.name,
-					limit: opts?.limit,
-				})
-			},
-			update: async (jobId, updates) => {
-				if (!queue) {
-					throw new Error('Queue not configured. Call server.setQueue() first.')
-				}
-				return queue.update(jobId, updates)
-			},
-			delete: async (jobId) => {
-				if (!queue) {
-					throw new Error('Queue not configured. Call server.setQueue() first.')
-				}
-				return queue.delete(jobId)
-			},
-			remove: async (jobId) => {
-				if (!queue) {
-					throw new Error('Queue not configured. Call server.setQueue() first.')
-				}
-				return queue.remove(jobId)
-			},
-		},
-	}
+		auth: { ...opts.auth, _callStack: newCallStack },
+		response: opts.response,
+		moduleName: action.moduleName,
+	})
 
 	try {
 		// Run guards (once, not retried)
@@ -179,6 +133,7 @@ export async function executeAction(
 					input: safeStringify(input),
 					output: safeStringify(result),
 					error: null,
+					error_stack: null,
 					duration_ms: Date.now() - startedAt,
 					started_at: startedAt,
 					attempt: maxAttempts > 1 ? attempt : null,
@@ -217,6 +172,7 @@ export async function executeAction(
 						input: safeStringify(input),
 						output: null,
 						error: errorMessage,
+						error_stack: lastError.stack || null,
 						duration_ms: Date.now() - startedAt,
 						started_at: startedAt,
 						attempt,
@@ -248,6 +204,7 @@ export async function executeAction(
 						input: safeStringify(input),
 						output: null,
 						error: errorMessage,
+						error_stack: lastError.stack || null,
 						duration_ms: Date.now() - startedAt,
 						started_at: startedAt,
 						attempt: maxAttempts > 1 ? attempt : null,
@@ -278,6 +235,7 @@ export async function executeAction(
 	} catch (err) {
 		// Guard failures land here (outside retry loop)
 		const errorMessage = err instanceof Error ? err.message : String(err)
+		const errorStack = err instanceof Error ? err.stack || null : null
 		actionLogger.error(`Action failed: ${errorMessage}`)
 
 		const runEntry: RunEntry = {
@@ -290,6 +248,7 @@ export async function executeAction(
 			input: safeStringify(input),
 			output: null,
 			error: errorMessage,
+			error_stack: errorStack,
 			duration_ms: Date.now() - startedAt,
 			started_at: startedAt,
 			attempt: null,

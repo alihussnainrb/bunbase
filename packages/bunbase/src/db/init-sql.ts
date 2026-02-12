@@ -82,6 +82,7 @@ CREATE TABLE IF NOT EXISTS roles (
     key VARCHAR(100) UNIQUE NOT NULL,
     name VARCHAR(255) NOT NULL,
     description TEXT,
+    weight INT NOT NULL DEFAULT 0,
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
@@ -234,10 +235,11 @@ CREATE INDEX IF NOT EXISTS idx_kv_store_expires ON kv_store(expires_at)
 -- ============================================================================
 
 -- Insert default roles (similar to Clerk's org roles)
-INSERT INTO roles (key, name, description) VALUES
-    ('org:admin', 'Organization Admin', 'Full administrative access to the organization'),
-    ('org:member', 'Organization Member', 'Standard member with read access'),
-    ('org:billing_manager', 'Billing Manager', 'Can manage billing and subscriptions')
+-- Weight determines role hierarchy: higher weight = more power (admin=100, member=10)
+INSERT INTO roles (key, name, description, weight) VALUES
+    ('org:admin', 'Organization Admin', 'Full administrative access to the organization', 100),
+    ('org:billing_manager', 'Billing Manager', 'Can manage billing and subscriptions', 50),
+    ('org:member', 'Organization Member', 'Standard member with read access', 10)
 ON CONFLICT (key) DO NOTHING;
 
 -- Insert default permissions (similar to Clerk's permission system)

@@ -1,6 +1,8 @@
 import type { ActionRegistry } from '../core/registry.ts'
 import type { ActionContext } from '../core/types.ts'
 import type { DatabaseClient } from '../db/client.ts'
+import type { IAMContext } from '../iam/context.ts'
+import { createIAMContext } from '../iam/context.ts'
 import type { KVStore } from '../kv/types.ts'
 import type { Logger } from '../logger/index.ts'
 import type { StorageAdapter } from '../storage/types.ts'
@@ -45,6 +47,7 @@ export function createLazyContext(
 	let _storage: StorageAdapter | null | undefined
 	let _kv: KVStore | null | undefined
 	let _queue: ActionContext['queue'] | undefined
+	let _iam: IAMContext | undefined
 
 	const queue = opts.queue
 	const _scheduler = opts.scheduler
@@ -97,12 +100,66 @@ export function createLazyContext(
 				eventBus.emit(name, payload)
 			},
 		},
-		auth: opts.auth ?? {},
+		auth: {
+			...(opts.auth ?? {}),
+
+			// Lazy user loader - fetches full user data from DB
+			user:
+				opts.db && opts.auth?.userId
+					? async () => {
+							const database = opts.db
+							if (!database) return null
+
+							const user = await database
+								.from('users')
+								.eq('id', opts.auth!.userId!)
+								.maybeSingle()
+
+							return user as any
+						}
+					: undefined,
+
+			// Lazy team/org loader - fetches full team data from DB
+			team:
+				opts.db && opts.auth?.orgId
+					? async () => {
+							const database = opts.db
+							if (!database) return null
+
+							const team = await database
+								.from('organizations')
+								.eq('id', opts.auth!.orgId!)
+								.maybeSingle()
+
+							return team as any
+						}
+					: undefined,
+		},
 		module: opts.moduleName ? { name: opts.moduleName } : undefined,
 		retry: { attempt: 1, maxAttempts: 1 },
 		response: opts.response,
 		request: opts.request,
 		registry: opts.registry,
+
+		// Lazy IAM context - only initialized when accessed
+		get iam() {
+			if (_iam === undefined) {
+				// Check if we have database access
+				const database = opts.db ?? null
+				if (!database) {
+					throw new Error(
+						'IAM not available: Database not configured. Add database config to bunbase.config.ts',
+					)
+				}
+
+				_iam = createIAMContext({
+					db: database,
+					roleKey: opts.auth?.role,
+					logger: opts.logger,
+				})
+			}
+			return _iam
+		},
 
 		// schedule function (lightweight)
 		schedule: async (time, name, data, scheduleOpts) => {

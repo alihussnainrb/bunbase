@@ -107,7 +107,7 @@ export class BunbaseServer {
 					eventBus.on(trigger.event, async (payload) => {
 						try {
 							const input = trigger.map ? trigger.map(payload) : payload
-							await executeAction(action, input, {
+							const result = await executeAction(action, input, {
 								triggerType: 'event',
 								logger: this.logger,
 								writeBuffer: this.writeBuffer,
@@ -116,6 +116,16 @@ export class BunbaseServer {
 								kv: this.services?.kv,
 								registry: this.registry,
 							})
+
+							// Log event metadata if present
+							if (result.success && result.transportMeta?.event) {
+								const eventMeta = result.transportMeta.event
+								this.logger.debug(`Event metadata for ${trigger.event}:`, {
+									broadcast: eventMeta.broadcast,
+									priority: eventMeta.priority,
+									delay: eventMeta.delay,
+								})
+							}
 						} catch (err: unknown) {
 							this.logger.error(
 								`Error handling event ${trigger.event} for action ${action.definition.config.name}:`,
@@ -399,7 +409,44 @@ export class BunbaseServer {
 			})
 
 			if (result.success) {
-				return Response.json({ data: result.data }, { headers })
+				// Apply HTTP transport metadata if present
+				let status = 200
+				if (result.transportMeta?.http) {
+					const httpMeta = result.transportMeta.http
+
+					// Apply custom status code
+					if (httpMeta.status) {
+						status = httpMeta.status
+					}
+
+					// Apply custom headers
+					if (httpMeta.headers) {
+						for (const [key, value] of Object.entries(httpMeta.headers)) {
+							headers.set(key, value)
+						}
+					}
+
+					// Apply cookies
+					if (httpMeta.cookies) {
+						for (const cookie of httpMeta.cookies) {
+							let cookieStr = `${cookie.name}=${cookie.value}`
+							if (cookie.httpOnly) cookieStr += '; HttpOnly'
+							if (cookie.secure) cookieStr += '; Secure'
+							if (cookie.sameSite) {
+								// Capitalize first letter: 'strict' -> 'Strict'
+								cookieStr += `; SameSite=${cookie.sameSite.charAt(0).toUpperCase()}${cookie.sameSite.slice(1)}`
+							}
+							if (cookie.path) cookieStr += `; Path=${cookie.path}`
+							if (cookie.domain) cookieStr += `; Domain=${cookie.domain}`
+							if (cookie.maxAge) cookieStr += `; Max-Age=${cookie.maxAge}`
+							if (cookie.expires)
+								cookieStr += `; Expires=${cookie.expires.toUTCString()}`
+							headers.append('Set-Cookie', cookieStr)
+						}
+					}
+				}
+
+				return Response.json({ data: result.data }, { status, headers })
 			}
 
 			// Determine error status from the error object

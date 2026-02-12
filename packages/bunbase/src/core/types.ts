@@ -1,5 +1,6 @@
 import type { Static, TSchema } from 'typebox'
 import type { DatabaseClient } from '../db'
+import type { IAMContext } from '../iam/context.ts'
 import type { KVStore } from '../kv/types.ts'
 import type { Logger } from '../logger/index.ts'
 import type { StorageAdapter } from '../storage/types.ts'
@@ -67,6 +68,148 @@ export interface RetryConfig {
 
 export type GuardFn = (ctx: ActionContext) => void | Promise<void>
 
+// ── HTTP Metadata Types ──────────────────────────────────
+
+/**
+ * HTTP-specific transport metadata for API and Webhook triggers.
+ * Use the _meta.http field in your return value.
+ *
+ * @example
+ * return {
+ *   userId: user.id,
+ *   _meta: {
+ *     http: {
+ *       status: 201,
+ *       headers: { Location: '/users/123' }
+ *     }
+ *   }
+ * }
+ */
+export interface HttpTransportMeta {
+	/** HTTP status code (default: 200) */
+	status?: number
+	/** Custom response headers */
+	headers?: Record<string, string>
+	/** Cookies to set */
+	cookies?: Array<{
+		name: string
+		value: string
+		httpOnly?: boolean
+		secure?: boolean
+		sameSite?: 'strict' | 'lax' | 'none'
+		path?: string
+		domain?: string
+		maxAge?: number
+		expires?: Date
+	}>
+}
+
+/**
+ * @deprecated Use HttpTransportMeta and _meta.http instead. Support for _http will be removed in v2.0.0
+ */
+export type HttpMetadata = HttpTransportMeta
+
+/**
+ * MCP tool-specific transport metadata.
+ * Controls output formatting for Model Context Protocol tools.
+ */
+export interface McpTransportMeta {
+	/** Format hint: 'text', 'json', or 'structured' */
+	format?: 'text' | 'json' | 'structured'
+	/** Include TypeBox schema in response */
+	includeSchema?: boolean
+	/** Streaming hint for large responses */
+	isStreaming?: boolean
+}
+
+/**
+ * Event-specific transport metadata.
+ * Controls event emission behavior.
+ */
+export interface EventTransportMeta {
+	/** Broadcast to all listeners vs. single listener */
+	broadcast?: boolean
+	/** Priority for event queue (higher = sooner) */
+	priority?: number
+	/** Delay before emitting (milliseconds) */
+	delay?: number
+}
+
+/**
+ * Cron-specific transport metadata.
+ * Allows dynamic control of scheduled jobs.
+ */
+export interface CronTransportMeta {
+	/** Dynamically update cron schedule for next run */
+	reschedule?: string
+	/** Skip next scheduled run */
+	skipNext?: boolean
+	/** One-time execution, then disable */
+	runOnce?: boolean
+}
+
+/**
+ * Unified transport metadata container.
+ * Only the relevant section is used based on trigger type.
+ *
+ * @example
+ * // HTTP trigger - status and headers
+ * return {
+ *   userId: '123',
+ *   _meta: {
+ *     http: { status: 201, headers: { Location: '/users/123' } }
+ *   }
+ * }
+ *
+ * @example
+ * // MCP tool - structured format
+ * return {
+ *   result: data,
+ *   _meta: {
+ *     mcp: { format: 'structured', includeSchema: true }
+ *   }
+ * }
+ *
+ * @example
+ * // Multi-trigger action
+ * return {
+ *   data: result,
+ *   _meta: {
+ *     http: { status: 201 },        // Used when called via API
+ *     mcp: { format: 'json' }        // Used when called as MCP tool
+ *   }
+ * }
+ */
+export interface TransportMetadata {
+	/** HTTP metadata for API and Webhook triggers */
+	http?: HttpTransportMeta
+	/** MCP tool metadata */
+	mcp?: McpTransportMeta
+	/** Event bus metadata */
+	event?: EventTransportMeta
+	/** Cron scheduler metadata */
+	cron?: CronTransportMeta
+}
+
+/**
+ * Action output with optional transport metadata.
+ * The _meta field is stripped before validation and applied by the runtime.
+ *
+ * @example
+ * return {
+ *   userId: '123',
+ *   _meta: {
+ *     http: { status: 201, headers: { Location: '/users/123' } }
+ *   }
+ * }
+ */
+export type ActionOutput<T> = T & {
+	/** Unified transport metadata for all trigger types */
+	_meta?: TransportMetadata
+	/** @deprecated Use _meta.http instead. Support for _http will be removed in v2.0.0 */
+	_http?: HttpMetadata
+}
+
 // ── Action Context ───────────────────────────────────────
 
 export interface ActionContext {
@@ -106,7 +249,52 @@ export interface ActionContext {
 		permissions?: string[]
 		/** Internal call stack for loop detection */
 		_callStack?: string[]
+
+		/**
+		 * Fetch full user data from database.
+		 * Only available if database is configured.
+		 *
+		 * @example
+		 * const user = await ctx.auth.user()
+		 * console.log(user.email, user.name)
+		 */
+		user?: () => Promise<{
+			id: string
+			email: string
+			name: string | null
+			created_at: Date
+			email_verified_at: Date | null
+			[key: string]: unknown
+		} | null>
+
+		/**
+		 * Fetch full team/org data from database.
+		 * Only available if database is configured and orgId is set.
+		 *
+		 * @example
+		 * const team = await ctx.auth.team()
+		 * console.log(team.name, team.slug)
+		 */
+		team?: () => Promise<{
+			id: string
+			name: string
+			slug: string
+			owner_id: string
+			created_at: Date
+			[key: string]: unknown
+		} | null>
 	}
+
+	/**
+	 * IAM context for dynamic role-based access control.
+	 * Only available if database has roles/permissions tables configured.
+	 * Provides lazy-loaded, cached permission checks.
+	 *
+	 * @example
+	 * const { allowed } = await ctx.iam.can('article:publish')
+	 * if (!allowed) throw new Forbidden('Missing permission')
+	 */
+	iam?: IAMContext
 
 	/**
 	 * Org context (populated by inOrg guard)
@@ -207,7 +395,10 @@ export interface ActionConfig<
 export type ActionHandler<
 	TInput extends TSchema = TSchema,
 	TOutput extends TSchema = TSchema,
-> = (input: Static<TInput>, ctx: ActionContext) => Promise<Static<TOutput>>
+> = (
+	input: Static<TInput>,
+	ctx: ActionContext,
+) => Promise<ActionOutput<Static<TOutput>>>
 
 export interface ActionDefinition<
 	TInput extends TSchema = TSchema,

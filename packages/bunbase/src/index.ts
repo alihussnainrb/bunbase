@@ -23,15 +23,22 @@ export type {
 	ActionContext,
 	ActionDefinition,
 	ActionHandler,
+	ActionOutput,
 	ApiTriggerConfig,
+	CronTransportMeta,
 	CronTriggerConfig,
+	EventTransportMeta,
 	EventTriggerConfig,
 	GuardFn,
+	HttpMetadata,
 	HttpMethod,
+	HttpTransportMeta,
+	McpTransportMeta,
 	ModuleConfig,
 	ModuleDefinition,
 	RetryConfig,
 	ToolTriggerConfig,
+	TransportMetadata,
 	TriggerConfig,
 	WebhookTriggerConfig,
 } from './core/types.ts'
@@ -43,6 +50,20 @@ export type {
 } from './db/client.ts'
 // Database client and types
 export { createDB } from './db/client.ts'
+// IAM (Identity & Access Management) - optional, only if using dynamic RBAC
+export type {
+	IAMContext,
+	Permission,
+	Role,
+	RolePermission,
+} from './iam/index.ts'
+export {
+	buildAuthContext,
+	createIAMContext,
+	hasPermission,
+	RoleManager,
+	resolvePermissions,
+} from './iam/index.ts'
 // Key-value store types (for custom store implementations)
 export type { KVStore } from './kv/types.ts'
 export type { LoggerOptions, LogLevel, LogListener } from './logger/index.ts'
@@ -55,12 +76,12 @@ export * from './saas/role-sets.ts'
 export * from './saas/roles.ts'
 export * from './saas/subscriptions.ts'
 export * from './saas/types.ts'
-
 // Storage adapter types (for custom adapter implementations)
 export type { StorageAdapter, UploadOptions } from './storage/types.ts'
 export type { TestActionOptions, TestActionResult } from './test/index.ts'
-
 // Test utilities (for testing actions)
 export { testAction } from './test/index.ts'
 // Error classes
 export * from './utils/errors.ts'
+// Transport metadata helper
+export { withMeta } from './utils/with-meta.ts'

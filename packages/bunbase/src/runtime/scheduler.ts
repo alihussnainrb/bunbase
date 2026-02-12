@@ -22,6 +22,7 @@ type ScheduleTime = number | Date | string
  */
 export class Scheduler {
 	private cronJobs: Cron[] = []
+	private cronJobsByAction = new Map<string, { job: Cron; trigger: any }>()
 	private delayedTasks = new Map<
 		string,
 		{ timeout: ReturnType<typeof setTimeout>; handler: () => void }
@@ -135,17 +136,50 @@ export class Scheduler {
 						const job = new Cron(trigger.schedule, async () => {
 							try {
 								const input = trigger.input ? trigger.input() : {}
-								await executeAction(action, input, {
+								const result = await executeAction(action, input, {
 									triggerType: 'cron',
 									logger: this.logger,
 									writeBuffer: this.writeBuffer,
 								})
+
+								// Handle cron transport metadata
+								if (result.success && result.transportMeta?.cron) {
+									const cronMeta = result.transportMeta.cron
+
+									// Dynamic rescheduling
+									if (cronMeta.reschedule) {
+										this.rescheduleAction(
+											action.definition.config.name,
+											cronMeta.reschedule,
+											trigger,
+										)
+									}
+
+									// One-time execution
+									if (cronMeta.runOnce) {
+										this.stopAction(action.definition.config.name)
+									}
+
+									// Skip next run
+									if (cronMeta.skipNext) {
+										// Croner doesn't support skipping, log it
+										this.logger.info(
+											`[Scheduler] skipNext requested for ${action.definition.config.name} (not supported by croner)`,
+										)
+									}
+								}
 							} catch (err) {
 								this.logger.error(
 									`Error executing cron action ${action.definition.config.name}:`,
 									err,
 								)
 							}
+						})
+
+						// Store job reference for dynamic management
+						this.cronJobsByAction.set(action.definition.config.name, {
+							job,
+							trigger,
 						})
 						this.cronJobs.push(job)
 						this.logger.info(
@@ -183,6 +217,100 @@ export class Scheduler {
 		this.delayedTasks.clear()
 
 		this.logger.info('[Scheduler] Stopped')
+	}
+
+	/**
+	 * Reschedule a cron action with a new schedule pattern.
+	 */
+	private rescheduleAction(
+		actionName: string,
+		newSchedule: string,
+		trigger: any,
+	): void {
+		const existing = this.cronJobsByAction.get(actionName)
+		if (!existing) {
+			this.logger.warn(`[Scheduler] Cannot reschedule ${actionName}: not found`)
+			return
+		}
+
+		// Stop old job
+		existing.job.stop()
+
+		// Remove from cronJobs array
+		const index = this.cronJobs.indexOf(existing.job)
+		if (index > -1) {
+			this.cronJobs.splice(index, 1)
+		}
+
+		// Create new job with updated schedule
+		try {
+			const action = this.registry.get(actionName)
+			if (!action) {
+				this.logger.error(
+					`[Scheduler] Cannot reschedule ${actionName}: action not found in registry`,
+				)
+				return
+			}
+
+			const newJob = new Cron(newSchedule, async () => {
+				try {
+					const input = trigger.input ? trigger.input() : {}
+					const result = await executeAction(action, input, {
+						triggerType: 'cron',
+						logger: this.logger,
+						writeBuffer: this.writeBuffer,
+					})
+
+					// Handle metadata recursively
+					if (result.success && result.transportMeta?.cron) {
+						const cronMeta = result.transportMeta.cron
+						if (cronMeta.reschedule) {
+							this.rescheduleAction(actionName, cronMeta.reschedule, trigger)
+						}
+						if (cronMeta.runOnce) {
+							this.stopAction(actionName)
+						}
+					}
+				} catch (err) {
+					this.logger.error(`Error executing cron action ${actionName}:`, err)
+				}
+			})
+
+			// Update references
+			this.cronJobsByAction.set(actionName, { job: newJob, trigger })
+			this.cronJobs.push(newJob)
+
+			this.logger.info(
+				`[Scheduler] Rescheduled ${actionName} to: ${newSchedule}`,
+			)
+		} catch (err) {
+			this.logger.error(`[Scheduler] Failed to reschedule ${actionName}:`, err)
+		}
+	}
+
+	/**
+	 * Stop a specific cron action.
+	 */
+	private stopAction(actionName: string): void {
+		const existing = this.cronJobsByAction.get(actionName)
+		if (!existing) {
+			this.logger.warn(`[Scheduler] Cannot stop ${actionName}: not found`)
+			return
+		}
+
+		// Stop job
+		existing.job.stop()
+
+		// Remove from cronJobs array
+		const index = this.cronJobs.indexOf(existing.job)
+		if (index > -1) {
+			this.cronJobs.splice(index, 1)
+		}
+
+		// Remove from map
+		this.cronJobsByAction.delete(actionName)
+
+		this.logger.info(`[Scheduler] Stopped cron action: ${actionName}`)
 	}
 
 	/**

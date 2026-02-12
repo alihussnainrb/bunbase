@@ -18,10 +18,21 @@ export class BadRequest extends BunbaseError {
 	}
 }
 
+export function badRequest(message: string = 'Bad Request'): never {
+	throw new BadRequest(message)
+}
+
 export class Unauthorized extends BunbaseError {
 	constructor(message: string = 'Unauthorized') {
 		super(message, 401)
 		this.name = 'Unauthorized'
+	}
+}
+
+export class ActionValidationError extends BunbaseError {
+	constructor(message: string = 'Action Validation Error') {
+		super(message, 400)
+		this.name = 'ActionValidationError'
 	}
 }
 

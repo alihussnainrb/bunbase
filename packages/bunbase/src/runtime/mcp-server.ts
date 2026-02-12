@@ -65,11 +65,35 @@ export class McpService {
 							})
 
 							if (result.success) {
+								// Apply MCP transport metadata if present
+								const mcpMeta = result.transportMeta?.mcp
+								const format = mcpMeta?.format ?? 'json'
+
+								// Structured format with optional schema
+								if (format === 'structured' && mcpMeta?.includeSchema) {
+									return {
+										content: [
+											{
+												type: 'text',
+												text: JSON.stringify(result.data, null, 2),
+											},
+											{
+												type: 'text',
+												text: `\n\n# Schema\n${JSON.stringify(action.definition.config.output, null, 2)}`,
+											},
+										],
+									}
+								}
+
+								// Text or JSON format
 								return {
 									content: [
 										{
 											type: 'text',
-											text: JSON.stringify(result.data, null, 2),
+											text:
+												format === 'text'
+													? String(result.data)
+													: JSON.stringify(result.data, null, 2),
 										},
 									],
 								}

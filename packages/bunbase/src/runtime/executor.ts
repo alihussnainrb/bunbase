@@ -1,5 +1,5 @@
 import type { ActionRegistry, RegisteredAction } from '../core/registry.ts'
-import type { ActionContext } from '../core/types.ts'
+import type { ActionContext, TransportMetadata } from '../core/types.ts'
 import type { DatabaseClient } from '../db/client.ts'
 import type { KVStore } from '../kv/types.ts'
 import type { Logger } from '../logger/index.ts'
@@ -49,6 +49,7 @@ export async function executeAction(
 	data?: unknown
 	error?: string
 	errorObject?: Error
+	transportMeta?: TransportMetadata
 }> {
 	const traceId = generateTraceId()
 	const startedAt = Date.now()
@@ -92,7 +93,7 @@ export async function executeAction(
 		registry: opts.registry,
 		auth: { ...opts.auth, _callStack: newCallStack },
 		response: opts.response,
-		moduleName: action.moduleName,
+		moduleName: action.moduleName ?? undefined,
 	})
 
 	try {
@@ -121,6 +122,35 @@ export async function executeAction(
 				// Run handler (validation is baked into the wrapped handler)
 				const result = await action.definition.handler(input as never, ctx)
 
+				// Extract transport metadata with backward compatibility
+				let transportMeta: TransportMetadata | undefined
+
+				if (result && typeof result === 'object') {
+					// Check for new _meta field
+					if ('_meta' in result) {
+						transportMeta = (result as any)._meta
+					}
+					// Backward compatibility: check for old _http field
+					else if ('_http' in result) {
+						console.warn(
+							'[DEPRECATED] Use _meta.http instead of _http. Support for _http will be removed in v2.0.0',
+						)
+						transportMeta = { http: (result as any)._http }
+					}
+				}
+
+				// Strip metadata from result before saving to database
+				let cleanResult = result
+				if (result && typeof result === 'object') {
+					if ('_meta' in result) {
+						const { _meta, ...rest } = result as any
+						cleanResult = rest
+					} else if ('_http' in result) {
+						const { _http, ...rest } = result as any
+						cleanResult = rest
+					}
+				}
+
 				// Record successful run
 				const runEntry: RunEntry = {
 					id:
@@ -131,7 +161,7 @@ export async function executeAction(
 					trigger_type: opts.triggerType,
 					status: 'success',
 					input: safeStringify(input),
-					output: safeStringify(result),
+					output: safeStringify(cleanResult),
 					error: null,
 					error_stack: null,
 					duration_ms: Date.now() - startedAt,
@@ -141,7 +171,7 @@ export async function executeAction(
 				}
 				opts.writeBuffer.pushRun(runEntry)
 
-				return { success: true, data: result }
+				return { success: true, data: cleanResult, transportMeta }
 			} catch (handlerErr) {
 				lastError =
 					handlerErr instanceof Error

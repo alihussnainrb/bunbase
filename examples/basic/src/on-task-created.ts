@@ -30,7 +30,9 @@ export default action(
 		})
 
 		// Simulate sending a notification
-		ctx.logger.info(`[Notification] New task "${input.title}" created by ${input.createdBy}`)
+		ctx.logger.info(
+			`[Notification] New task "${input.title}" created by ${input.createdBy}`,
+		)
 
 		return { notified: true }
 	},

@@ -29,7 +29,11 @@ export class S3StorageAdapter implements StorageAdapter {
 		})
 	}
 
-	async upload(key: string, data: Buffer | Uint8Array | ReadableStream, opts?: UploadOptions): Promise<void> {
+	async upload(
+		key: string,
+		data: Buffer | Uint8Array | ReadableStream,
+		opts?: UploadOptions,
+	): Promise<void> {
 		const s3File = this.client.file(key)
 
 		// Convert ReadableStream to Buffer if needed
@@ -94,7 +98,9 @@ export class S3StorageAdapter implements StorageAdapter {
 	async list(_prefix?: string): Promise<string[]> {
 		// Bun.S3Client does not natively support listing objects.
 		// To use list(), install @aws-sdk/client-s3 or use a compatible API.
-		throw new Error('S3 list() is not natively supported by Bun.S3Client. Use @aws-sdk/client-s3 for listing.')
+		throw new Error(
+			'S3 list() is not natively supported by Bun.S3Client. Use @aws-sdk/client-s3 for listing.',
+		)
 	}
 
 	async getUrl(key: string): Promise<string> {

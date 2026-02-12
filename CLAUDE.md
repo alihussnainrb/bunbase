@@ -124,6 +124,52 @@ There is no `main.ts` or manual server setup in user projects. See `examples/bas
 - Central `Database` type defines all tables with Row/Insert/Update types
 - Mirrors Supabase schema structure
 
+### Redis Integration (Optional)
+
+**Redis Configuration** (`bunbase.config.ts`):
+
+- Optional Redis support for high-performance KV store and rate limiting
+- Automatically falls back to Postgres if Redis is not configured or connection fails
+- Uses Bun's native Redis client for optimal performance
+
+Configuration example:
+
+```typescript
+export default defineConfig({
+  redis: {
+    url: process.env.REDIS_URL, // Default: redis://localhost:6379
+    connectionTimeout: 5000,     // Default: 5000ms
+    idleTimeout: 30000,          // Default: 30000ms
+    autoReconnect: true,         // Default: true
+    maxRetries: 10,              // Default: 10
+    tls: false,                  // Default: false
+  }
+})
+```
+
+**RedisKVStore** (`packages/bunbase/src/kv/redis.ts`):
+
+- Implements `KVStore` interface using Redis
+- JSON serialization for complex values
+- TTL support via Redis EXPIRE command
+- Used automatically when Redis is configured
+- Falls back to PostgresKVStore if Redis unavailable
+
+**Redis Rate Limiter** (`packages/bunbase/src/core/guards/rate-limit-redis.ts`):
+
+- Distributed rate limiting using Redis sorted sets
+- Sliding window algorithm for accurate rate limiting
+- Persists across server restarts
+- Scales horizontally across multiple instances
+- Auto-created when Redis is configured, otherwise uses in-memory limiter
+
+Key differences from Postgres-backed implementations:
+
+- **KV Store**: Redis is ~10-100x faster for key-value operations
+- **Rate Limiting**: Redis enables distributed rate limiting across multiple server instances
+- **Persistence**: Redis data persists across restarts (unlike in-memory rate limiter)
+- **Scalability**: Multiple Bunbase instances can share the same Redis for coordination
+
 ### Guards & Authorization
 
 Guards are higher-order functions returning `GuardFn` that:

@@ -1,7 +1,7 @@
 import { Command } from 'commander'
 import { devCommand } from './commands/dev.ts'
-import { initCommand } from './commands/init.ts'
 import { generateCommand } from './commands/generate.ts'
+import { initCommand } from './commands/init.ts'
 import { migrateCommand } from './commands/migrate.ts'
 import { typegenCommand } from './commands/typegen.ts'
 

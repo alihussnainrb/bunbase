@@ -1,13 +1,14 @@
 {
-  "env": {
-    "CLAUDE_CODE_USE_BEDROCK": "1",
-    "ANTHROPIC_VERTEX_PROJECT_ID": "gen-lang-client-0903621945",
-    "CLOUD_ML_REGION": "global"
-  },
-  "permissions": {
-    "allow": [
-      "Bash(bun run build)",
-      "Bash(bun test)",
-      "Bash(bun run type-check)"
-    ]}
+	"env": {
+		"CLAUDE_CODE_USE_BEDROCK": "1",
+		"ANTHROPIC_VERTEX_PROJECT_ID": "gen-lang-client-0903621945",
+		"CLOUD_ML_REGION": "global"
+	},
+	"permissions": {
+		"allow": [
+			"Bash(bun run build)",
+			"Bash(bun test)",
+			"Bash(bun run type-check)"
+		]
+	}
 }

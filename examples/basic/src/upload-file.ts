@@ -34,7 +34,10 @@ export const uploadFile = action(
 		// Get URL for the uploaded file
 		const url = await ctx.storage.getUrl(input.filename)
 
-		ctx.logger.info('File uploaded', { filename: input.filename, size: buffer.length })
+		ctx.logger.info('File uploaded', {
+			filename: input.filename,
+			size: buffer.length,
+		})
 
 		return {
 			success: true,

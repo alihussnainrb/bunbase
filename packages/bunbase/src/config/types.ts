@@ -22,6 +22,22 @@ export interface BunbaseConfig {
 		}
 	}
 
+	/** Redis configuration (optional, falls back to Postgres) */
+	redis?: {
+		/** Redis connection URL. Falls back to REDIS_URL env var (default: redis://localhost:6379) */
+		url?: string
+		/** Connection timeout in milliseconds (default: 5000) */
+		connectionTimeout?: number
+		/** Idle timeout in milliseconds (default: 30000) */
+		idleTimeout?: number
+		/** Whether to automatically reconnect on disconnection (default: true) */
+		autoReconnect?: boolean
+		/** Maximum number of reconnection attempts (default: 10) */
+		maxRetries?: number
+		/** Enable TLS connections (default: false) */
+		tls?: boolean
+	}
+
 	/** Auth configuration */
 	auth?: {
 		sessionSecret: string

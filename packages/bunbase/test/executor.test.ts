@@ -1,12 +1,12 @@
 import { beforeEach, describe, expect, it } from 'bun:test'
 import { t } from '../src'
 import { action } from '../src/core/action.ts'
+import { guards } from '../src/core/guards/index.ts'
 import { module } from '../src/core/module.ts'
 import { ActionRegistry } from '../src/core/registry.ts'
-import { guards } from '../src/core/guards/index.ts'
+import { triggers } from '../src/core/triggers/index.ts'
 import type { WriteBuffer } from '../src/persistence/write-buffer.ts'
 import { executeAction } from '../src/runtime/executor.ts'
-import { triggers } from '../src/core/triggers/index.ts'
 
 // Mock WriteBuffer
 function createMockWriteBuffer(): WriteBuffer {
@@ -803,17 +803,17 @@ describe('executeAction()', () => {
 
 // ── isRetryable() tests ─────────────────────────────────
 
+import { ActionValidationError } from '../src/core/action.ts'
+import { GuardError } from '../src/core/guards/types.ts'
 import {
-	isRetryable,
-	BunbaseError,
-	NonRetriableError,
 	BadRequest,
-	NotFound,
+	BunbaseError,
 	InternalError,
+	isRetryable,
+	NonRetriableError,
+	NotFound,
 	ServiceUnavailable,
 } from '../src/utils/errors.ts'
-import { GuardError } from '../src/core/guards/types.ts'
-import { ActionValidationError } from '../src/core/action.ts'
 
 describe('isRetryable()', () => {
 	it('should return false for NonRetriableError', () => {
@@ -835,7 +835,9 @@ describe('isRetryable()', () => {
 	})
 
 	it('should return false for ActionValidationError', () => {
-		expect(isRetryable(new ActionValidationError('input', 'bad', []))).toBe(false)
+		expect(isRetryable(new ActionValidationError('input', 'bad', []))).toBe(
+			false,
+		)
 	})
 
 	it('should return true for generic Error', () => {

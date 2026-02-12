@@ -1,1 +1,1 @@
-export { studioModule } from './module';
+export { studioModule } from './module'

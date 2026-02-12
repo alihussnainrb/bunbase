@@ -1,12 +1,18 @@
 import { join } from 'node:path'
 import { loadConfig } from '../../config/loader.ts'
-import { createSQLPool } from '../../db/pool.ts'
 import { Migrator } from '../../db/migrator.ts'
+import { createSQLPool } from '../../db/pool.ts'
 
-export async function migrateCommand(subcommand?: string, name?: string): Promise<void> {
+export async function migrateCommand(
+	subcommand?: string,
+	name?: string,
+): Promise<void> {
 	const config = await loadConfig()
 	const sql = createSQLPool({ url: config.database?.url })
-	const migrationsDir = join(process.cwd(), config.database?.migrations?.directory ?? 'migrations')
+	const migrationsDir = join(
+		process.cwd(),
+		config.database?.migrations?.directory ?? 'migrations',
+	)
 	const migrator = new Migrator(sql, migrationsDir)
 
 	try {
@@ -29,7 +35,9 @@ export async function migrateCommand(subcommand?: string, name?: string): Promis
 					console.log('─'.repeat(60))
 					for (const s of statuses) {
 						const icon = s.status === 'applied' ? '✓' : '○'
-						const date = s.appliedAt ? ` (${new Date(s.appliedAt).toLocaleString()})` : ''
+						const date = s.appliedAt
+							? ` (${new Date(s.appliedAt).toLocaleString()})`
+							: ''
 						console.log(`  ${icon} ${s.name}${date}`)
 					}
 				}

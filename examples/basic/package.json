@@ -1,15 +1,15 @@
 {
-  "name": "bunbase-basic-example",
-  "version": "0.1.1",
-  "private": true,
-  "type": "module",
-  "scripts": {
-    "dev": "bunbase dev",
-    "migrate": "bunbase migrate",
-    "migrate:new": "bunbase migrate new",
-    "migrate:status": "bunbase migrate status"
-  },
-  "dependencies": {
-    "bunbase": "workspace:*"
-  }
+	"name": "bunbase-basic-example",
+	"version": "0.1.1",
+	"private": true,
+	"type": "module",
+	"scripts": {
+		"dev": "bunbase dev",
+		"migrate": "bunbase migrate",
+		"migrate:new": "bunbase migrate new",
+		"migrate:status": "bunbase migrate status"
+	},
+	"dependencies": {
+		"bunbase": "workspace:*"
+	}
 }

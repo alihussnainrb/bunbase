@@ -10,10 +10,7 @@ export class SubscriptionService {
 	constructor(private readonly db: any) {}
 
 	async getSubscription(orgId: string): Promise<Subscription | null> {
-		const sub = await this.db
-			.from('subscriptions')
-			.eq('org_id', orgId)
-			.single()
+		const sub = await this.db.from('subscriptions').eq('org_id', orgId).single()
 
 		if (!sub) return null
 
@@ -30,14 +27,12 @@ export class SubscriptionService {
 		orgId: string,
 		planKey: string,
 	): Promise<Subscription> {
-		const sub = await this.db
-			.from('subscriptions')
-			.insert({
-				org_id: orgId,
-				plan_key: planKey,
-				status: 'active',
-				current_period_end: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // +30 days
-			})
+		const sub = await this.db.from('subscriptions').insert({
+			org_id: orgId,
+			plan_key: planKey,
+			status: 'active',
+			current_period_end: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // +30 days
+		})
 
 		return {
 			id: sub.id,

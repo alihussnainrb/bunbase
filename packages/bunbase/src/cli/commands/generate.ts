@@ -1,7 +1,10 @@
-import { join } from 'node:path'
 import { existsSync, mkdirSync, writeFileSync } from 'node:fs'
+import { join } from 'node:path'
 
-export async function generateCommand(type: string, name: string): Promise<void> {
+export async function generateCommand(
+	type: string,
+	name: string,
+): Promise<void> {
 	if (!type || !name) {
 		console.error('Usage: bunbase generate <action|module> <name>')
 		process.exit(1)
@@ -13,7 +16,9 @@ export async function generateCommand(type: string, name: string): Promise<void>
 		case 'module':
 			return generateModule(name)
 		default:
-			console.error(`Unknown generator type: "${type}". Use "action" or "module".`)
+			console.error(
+				`Unknown generator type: "${type}". Use "action" or "module".`,
+			)
 			process.exit(1)
 	}
 }

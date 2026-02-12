@@ -14,7 +14,8 @@ export default defineConfig({
 		local: { directory: '.storage' },
 	},
 	auth: {
-		sessionSecret: process.env.SESSION_SECRET ?? 'dev-secret-change-me-in-production',
+		sessionSecret:
+			process.env.SESSION_SECRET ?? 'dev-secret-change-me-in-production',
 	},
 	openapi: {
 		enabled: true,

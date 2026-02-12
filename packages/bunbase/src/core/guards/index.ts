@@ -2,6 +2,9 @@ import type { ActionContext } from '../types.ts'
 import { saasGuards } from './saas.ts'
 import { GuardError, type GuardFn, type RateLimitOptions } from './types.ts'
 
+// Export Redis rate limiter for server initialization
+export { createRedisRateLimiter } from './rate-limit-redis.ts'
+
 /**
  * Standard guards for common checks.
  */

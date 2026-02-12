@@ -12,7 +12,13 @@ export const updateTaskAction = action(
 			id: t.String(),
 			title: t.Optional(t.String({ minLength: 1, maxLength: 200 })),
 			description: t.Optional(t.String()),
-			status: t.Optional(t.Union([t.Literal('pending'), t.Literal('in_progress'), t.Literal('completed')])),
+			status: t.Optional(
+				t.Union([
+					t.Literal('pending'),
+					t.Literal('in_progress'),
+					t.Literal('completed'),
+				]),
+			),
 			assigneeId: t.Optional(t.String()),
 		}),
 		output: t.Object({

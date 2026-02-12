@@ -8,13 +8,11 @@ export class OrganizationService {
 		name: string,
 		slug: string,
 	): Promise<Organization> {
-		const org = await this.db
-			.from('organizations')
-			.insert({
-				name,
-				slug,
-				owner_id: userId,
-			})
+		const org = await this.db.from('organizations').insert({
+			name,
+			slug,
+			owner_id: userId,
+		})
 
 		// Add owner as member with 'owner' role
 		await this.addMember(org.id, userId, 'owner')
@@ -31,13 +29,11 @@ export class OrganizationService {
 		userId: string,
 		role: string = 'member',
 	): Promise<OrgMembership> {
-		return this.db
-			.from('org_memberships')
-			.insert({
-				org_id: orgId,
-				user_id: userId,
-				role,
-			})
+		return this.db.from('org_memberships').insert({
+			org_id: orgId,
+			user_id: userId,
+			role,
+		})
 	}
 
 	async getMembership(

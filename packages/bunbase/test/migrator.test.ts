@@ -1,14 +1,20 @@
-import { describe, expect, it, beforeEach, afterEach } from 'bun:test'
-import { Migrator } from '../src/db/migrator.ts'
+import { afterEach, beforeEach, describe, expect, it } from 'bun:test'
 import { existsSync, mkdirSync, rmSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
+import { Migrator } from '../src/db/migrator.ts'
 
 // Mock SQL implementation for testing
 function createMockSQL() {
-	const migrations = new Map<string, { id: number; name: string; applied_at: Date }>()
+	const migrations = new Map<
+		string,
+		{ id: number; name: string; applied_at: Date }
+	>()
 	let idCounter = 1
 
-	const mockSQL: any = async (strings: TemplateStringsArray, ...values: any[]) => {
+	const mockSQL: any = async (
+		strings: TemplateStringsArray,
+		...values: any[]
+	) => {
 		const query = strings.join('?')
 
 		// CREATE TABLE _migrations
@@ -105,10 +111,17 @@ describe('Migrator', () => {
 		it('should return migration files sorted by prefix', async () => {
 			writeFileSync(join(testDir, '003_add_posts.sql'), 'CREATE TABLE posts;')
 			writeFileSync(join(testDir, '001_init.sql'), 'CREATE TABLE users;')
-			writeFileSync(join(testDir, '002_add_comments.sql'), 'CREATE TABLE comments;')
+			writeFileSync(
+				join(testDir, '002_add_comments.sql'),
+				'CREATE TABLE comments;',
+			)
 
 			const available = await migrator.getAvailable()
-			expect(available).toEqual(['001_init.sql', '002_add_comments.sql', '003_add_posts.sql'])
+			expect(available).toEqual([
+				'001_init.sql',
+				'002_add_comments.sql',
+				'003_add_posts.sql',
+			])
 		})
 
 		it('should ignore non-SQL files', async () => {
@@ -125,7 +138,10 @@ describe('Migrator', () => {
 		beforeEach(() => {
 			writeFileSync(join(testDir, '001_init.sql'), 'CREATE TABLE users;')
 			writeFileSync(join(testDir, '002_add_posts.sql'), 'CREATE TABLE posts;')
-			writeFileSync(join(testDir, '003_add_comments.sql'), 'CREATE TABLE comments;')
+			writeFileSync(
+				join(testDir, '003_add_comments.sql'),
+				'CREATE TABLE comments;',
+			)
 		})
 
 		it('should return all migrations when none applied', async () => {
@@ -213,7 +229,10 @@ describe('Migrator', () => {
 		beforeEach(() => {
 			writeFileSync(join(testDir, '001_init.sql'), 'CREATE TABLE users;')
 			writeFileSync(join(testDir, '002_add_posts.sql'), 'CREATE TABLE posts;')
-			writeFileSync(join(testDir, '003_add_comments.sql'), 'CREATE TABLE comments;')
+			writeFileSync(
+				join(testDir, '003_add_comments.sql'),
+				'CREATE TABLE comments;',
+			)
 		})
 
 		it('should return status of all migrations', async () => {

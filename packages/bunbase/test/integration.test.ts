@@ -1,12 +1,12 @@
 import { describe, expect, it } from 'bun:test'
 import { action } from '../src/core/action.ts'
+import { guards } from '../src/core/guards/index.ts'
 import { module } from '../src/core/module.ts'
 import { ActionRegistry } from '../src/core/registry.ts'
-import { guards } from '../src/core/guards/index.ts'
+import { triggers } from '../src/core/triggers/index.ts'
 import { t } from '../src/index.ts'
 import { WriteBuffer } from '../src/persistence/write-buffer.ts'
 import { BunbaseServer } from '../src/runtime/server.ts'
-import { triggers } from '../src/core/triggers/index.ts'
 
 // Mock logger
 const createMockLogger = () => ({

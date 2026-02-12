@@ -95,14 +95,17 @@ export function listTasks(filters?: {
 		result = result.filter((t) => t.assigneeId === filters.assigneeId)
 	}
 
-	return result.sort(
-		(a, b) => b.createdAt.getTime() - a.createdAt.getTime(),
-	)
+	return result.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime())
 }
 
 export function updateTask(
 	id: string,
-	data: Partial<Pick<Task, 'title' | 'description' | 'status' | 'assigneeId' | 'completedAt'>>,
+	data: Partial<
+		Pick<
+			Task,
+			'title' | 'description' | 'status' | 'assigneeId' | 'completedAt'
+		>
+	>,
 ): Task | undefined {
 	const task = tasks.get(id)
 	if (!task) return undefined

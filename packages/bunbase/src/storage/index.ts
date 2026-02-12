@@ -1,10 +1,10 @@
-export type { StorageAdapter, UploadOptions } from './types.ts'
 export { LocalStorageAdapter } from './local-adapter.ts'
-export { S3StorageAdapter, type S3Config } from './s3-adapter.ts'
+export { type S3Config, S3StorageAdapter } from './s3-adapter.ts'
+export type { StorageAdapter, UploadOptions } from './types.ts'
 
-import type { StorageAdapter } from './types.ts'
 import { LocalStorageAdapter } from './local-adapter.ts'
-import { S3StorageAdapter, type S3Config } from './s3-adapter.ts'
+import { type S3Config, S3StorageAdapter } from './s3-adapter.ts'
+import type { StorageAdapter } from './types.ts'
 
 export interface StorageConfig {
 	adapter?: 'local' | 's3'

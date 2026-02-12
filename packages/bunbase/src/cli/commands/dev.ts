@@ -1,5 +1,6 @@
 import { existsSync } from 'node:fs'
 import { join } from 'node:path'
+import { RedisClient } from 'bun'
 import { loadConfig } from '../../config/loader.ts'
 import { ActionRegistry } from '../../core/registry.ts'
 import { createDB } from '../../db/client.ts'
@@ -38,7 +39,10 @@ export async function devCommand(): Promise<void> {
 	writeBuffer.setSql(sqlPool)
 
 	// 4. Auto-run pending migrations in dev mode
-	const migrationsDir = join(process.cwd(), config.database?.migrations?.directory ?? 'migrations')
+	const migrationsDir = join(
+		process.cwd(),
+		config.database?.migrations?.directory ?? 'migrations',
+	)
 	if (existsSync(migrationsDir)) {
 		try {
 			const { Migrator } = await import('../../db/migrator.ts')
@@ -55,9 +59,38 @@ export async function devCommand(): Promise<void> {
 		}
 	}
 
-	// 5. Create storage and KV (lazy — will be set up in Phase 4/5)
-	let storage: any = null
-	let kv: any = null
+	// 5. Create Redis client if configured
+	let redis: RedisClient | undefined
+	if (config.redis) {
+		try {
+			const redisUrl =
+				config.redis.url ??
+				process.env.REDIS_URL ??
+				process.env.VALKEY_URL ??
+				'redis://localhost:6379'
+
+			redis = new RedisClient(redisUrl, {
+				connectionTimeout: config.redis.connectionTimeout ?? 5000,
+				idleTimeout: config.redis.idleTimeout ?? 30000,
+				autoReconnect: config.redis.autoReconnect ?? true,
+				maxRetries: config.redis.maxRetries ?? 10,
+				tls: config.redis.tls ?? false,
+			})
+
+			// Test connection
+			await redis.connect()
+			logger.info(`Connected to Redis at ${redisUrl}`)
+		} catch (err: unknown) {
+			const message = err instanceof Error ? err.message : String(err)
+			logger.warn(`Failed to connect to Redis: ${message}`)
+			logger.warn('Falling back to Postgres for KV store')
+			redis = undefined
+		}
+	}
+
+	// 6. Create storage and KV
+	let storage: import('../../storage/types.ts').StorageAdapter | undefined
+	let kv: import('../../kv/types.ts').KVStore | undefined
 
 	try {
 		const { createStorage } = await import('../../storage/index.ts')
@@ -68,8 +101,16 @@ export async function devCommand(): Promise<void> {
 
 	try {
 		const { createKVStore } = await import('../../kv/index.ts')
-		kv = createKVStore(sqlPool)
-		await kv.ensureTable()
+		kv = createKVStore(sqlPool, redis)
+		if (
+			!redis &&
+			kv &&
+			'ensureTable' in kv &&
+			typeof kv.ensureTable === 'function'
+		) {
+			// Only ensure table if using Postgres backend
+			await kv.ensureTable()
+		}
 	} catch {
 		// KV module not yet available
 	}
@@ -105,6 +146,9 @@ export async function devCommand(): Promise<void> {
 			server.stop()
 			await writeBuffer.shutdown()
 			sqlPool.close()
+			if (redis) {
+				redis.close()
+			}
 			process.exit(0)
 		})
 	} catch (err) {

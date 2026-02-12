@@ -34,7 +34,10 @@ export const downloadFile = action(
 		// Encode to base64 for JSON response
 		const content = buffer.toString('base64')
 
-		ctx.logger.info('File downloaded', { filename: input.filename, size: buffer.length })
+		ctx.logger.info('File downloaded', {
+			filename: input.filename,
+			size: buffer.length,
+		})
 
 		return {
 			filename: input.filename,

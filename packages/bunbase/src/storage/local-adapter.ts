@@ -1,5 +1,5 @@
-import { join, dirname } from 'node:path'
 import { mkdir, unlink } from 'node:fs/promises'
+import { dirname, join } from 'node:path'
 import type { StorageAdapter, UploadOptions } from './types.ts'
 
 /**
@@ -9,7 +9,11 @@ import type { StorageAdapter, UploadOptions } from './types.ts'
 export class LocalStorageAdapter implements StorageAdapter {
 	constructor(private readonly directory: string) {}
 
-	async upload(key: string, data: Buffer | Uint8Array | ReadableStream, _opts?: UploadOptions): Promise<void> {
+	async upload(
+		key: string,
+		data: Buffer | Uint8Array | ReadableStream,
+		_opts?: UploadOptions,
+	): Promise<void> {
 		const filePath = join(this.directory, key)
 		await mkdir(dirname(filePath), { recursive: true })
 		// Convert ReadableStream to Buffer if needed

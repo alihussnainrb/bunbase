@@ -1,7 +1,7 @@
-import type { SQL } from 'bun'
-import { readdir, readFile, writeFile, mkdir } from 'node:fs/promises'
 import { existsSync } from 'node:fs'
+import { mkdir, readdir, readFile, writeFile } from 'node:fs/promises'
 import { join } from 'node:path'
+import type { SQL } from 'bun'
 
 export interface MigrationEntry {
 	id: number
@@ -91,9 +91,7 @@ export class Migrator {
 
 		const available = await this.getAvailable()
 		const lastFile = available[available.length - 1]
-		const nextNum = lastFile
-			? parseInt(lastFile.split('_')[0]!, 10) + 1
-			: 1
+		const nextNum = lastFile ? parseInt(lastFile.split('_')[0]!, 10) + 1 : 1
 
 		const paddedNum = String(nextNum).padStart(3, '0')
 		const kebabName = name
@@ -120,7 +118,9 @@ export class Migrator {
 
 		return available.map((file) => ({
 			name: file,
-			status: appliedMap.has(file) ? ('applied' as const) : ('pending' as const),
+			status: appliedMap.has(file)
+				? ('applied' as const)
+				: ('pending' as const),
 			appliedAt: appliedMap.get(file),
 		}))
 	}

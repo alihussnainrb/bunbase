@@ -1,23 +1,26 @@
 import type { Server } from 'bun'
 import { type SessionConfig, SessionManager } from '../auth/session.ts'
+import type { BunbaseConfig } from '../config/types.ts'
+import { GuardError } from '../core/guards/types.ts'
 import type { ActionRegistry, RegisteredAction } from '../core/registry.ts'
 import type { ApiTriggerConfig, WebhookTriggerConfig } from '../core/types.ts'
-import { parsePathParams, matchViewPath } from '../core/url-parser.ts'
+import { matchViewPath, parsePathParams } from '../core/url-parser.ts'
 import type { DatabaseClient } from '../db/client.ts'
 import type { KVStore } from '../kv/types.ts'
 import type { Logger } from '../logger/index.ts'
+import {
+	generateOpenAPISpec,
+	generateScalarDocs,
+} from '../openapi/generator.ts'
 import type { WriteBuffer } from '../persistence/write-buffer.ts'
 import type { StorageAdapter } from '../storage/types.ts'
+import { studioModule } from '../studio/module.ts'
+import { BunbaseError } from '../utils/errors.ts'
 import { eventBus } from './event-bus.ts'
 import { executeAction } from './executor.ts'
 import { McpService } from './mcp-server.ts'
 import type { Queue } from './queue.ts'
-import { Scheduler } from './scheduler.ts'
-import { generateOpenAPISpec, generateScalarDocs } from '../openapi/generator.ts'
-import type { BunbaseConfig } from '../config/types.ts'
-import { studioModule } from '../studio/module.ts'
-import { BunbaseError } from '../utils/errors.ts'
-import { GuardError } from '../core/guards/types.ts'
+import type { Scheduler } from './scheduler.ts'
 
 export interface ServerServices {
 	db?: DatabaseClient
@@ -87,7 +90,10 @@ export class BunbaseServer {
 	/**
 	 * Register a job handler for ctx.queue support.
 	 */
-	registerJob(name: string, handler: (data: unknown, ctx: any) => Promise<void>): void {
+	registerJob(
+		name: string,
+		handler: (data: unknown, ctx: any) => Promise<void>,
+	): void {
 		this.queue?.register(name, handler)
 	}
 
@@ -133,10 +139,15 @@ export class BunbaseServer {
 					if (this.routes.has(routeKey)) {
 						throw new Error(
 							`Duplicate route: ${trigger.method} ${trigger.path} ` +
-							`(action: ${action.definition.config.name})`,
+								`(action: ${action.definition.config.name})`,
 						)
 					}
-					const route: Route = { method: trigger.method, pattern: trigger.path, action, trigger }
+					const route: Route = {
+						method: trigger.method,
+						pattern: trigger.path,
+						action,
+						trigger,
+					}
 					this.routes.set(routeKey, route)
 					// Also store in patterns array for path-param matching
 					if (trigger.path.includes(':')) {
@@ -147,7 +158,7 @@ export class BunbaseServer {
 					if (this.routes.has(routeKey)) {
 						throw new Error(
 							`Duplicate route: POST ${trigger.path} ` +
-							`(action: ${action.definition.config.name})`,
+								`(action: ${action.definition.config.name})`,
 						)
 					}
 					const route: Route = {
@@ -169,7 +180,10 @@ export class BunbaseServer {
 	 * Find a route matching the given method and pathname.
 	 * First tries exact match, then falls back to pattern matching for path params.
 	 */
-	private findRoute(method: string, pathname: string): { route: Route; params: Record<string, string> } | null {
+	private findRoute(
+		method: string,
+		pathname: string,
+	): { route: Route; params: Record<string, string> } | null {
 		// 1. Try exact match
 		const routeKey = `${method}:${pathname}`
 		const exactRoute = this.routes.get(routeKey)
@@ -295,7 +309,9 @@ export class BunbaseServer {
 		// Find matching route (exact or pattern match)
 		const match = this.findRoute(method, pathname)
 
-		this.logger.debug(`[Request] ${method} ${pathname} -> ${match ? 'ACTION' : 'MISS'}`)
+		this.logger.debug(
+			`[Request] ${method} ${pathname} -> ${match ? 'ACTION' : 'MISS'}`,
+		)
 
 		if (!match) {
 			return Response.json(
@@ -336,7 +352,7 @@ export class BunbaseServer {
 				}
 				// Merge path parameters into input
 				if (Object.keys(params).length > 0) {
-					input = { ...(input as Record<string, unknown> ?? {}), ...params }
+					input = { ...((input as Record<string, unknown>) ?? {}), ...params }
 				}
 			} else if (route.trigger.type === 'webhook') {
 				// Webhooks: verify first, then map
@@ -405,7 +421,8 @@ export class BunbaseServer {
 			}
 
 			// Handle other errors as internal server errors
-			const message = err instanceof Error ? err.message : 'Internal server error'
+			const message =
+				err instanceof Error ? err.message : 'Internal server error'
 			this.logger.error(`Unhandled error: ${message}`)
 			return Response.json({ error: message }, { status: 500 })
 		}

@@ -99,7 +99,9 @@ function generateTableType(
 		const hasDefault = col.column_default !== null
 		const isNullable = col.is_nullable === 'YES'
 		const optional = hasDefault || isNullable ? '?' : ''
-		lines.push(`${indent}\t\t${col.column_name}${optional}: ${tsType}${nullable}`)
+		lines.push(
+			`${indent}\t\t${col.column_name}${optional}: ${tsType}${nullable}`,
+		)
 	}
 	lines.push(`${indent}\t}`)
 
@@ -188,7 +190,9 @@ export async function typegenCommand(opts?: TypegenOptions): Promise<void> {
 		if (enums.size > 0) {
 			const enumEntries: string[] = []
 			for (const [name, values] of enums) {
-				enumEntries.push(`\t\t\t\t${name}: ${values.map((v) => `'${v}'`).join(' | ')}`)
+				enumEntries.push(
+					`\t\t\t\t${name}: ${values.map((v) => `'${v}'`).join(' | ')}`,
+				)
 			}
 			enumSection = `\n${enumEntries.join('\n')}\n\t\t\t`
 		}
@@ -223,7 +227,9 @@ declare module 'bunbase' {
 		const outPath = join(outDir, 'database.d.ts')
 		await Bun.write(outPath, output)
 
-		console.log(`Generated ${tables.size} table type(s) -> .bunbase/database.d.ts`)
+		console.log(
+			`Generated ${tables.size} table type(s) -> .bunbase/database.d.ts`,
+		)
 
 		if (enums.size > 0) {
 			console.log(`Found ${enums.size} enum type(s)`)

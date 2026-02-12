@@ -2,84 +2,84 @@
 // These can be thrown from action handlers and will be properly handled by the server
 
 export class BunbaseError extends Error {
-  public readonly statusCode: number
+	public readonly statusCode: number
 
-  constructor(message: string, statusCode: number = 500) {
-    super(message)
-    this.name = 'BunbaseError'
-    this.statusCode = statusCode
-  }
+	constructor(message: string, statusCode: number = 500) {
+		super(message)
+		this.name = 'BunbaseError'
+		this.statusCode = statusCode
+	}
 }
 
 export class BadRequest extends BunbaseError {
-  constructor(message: string = 'Bad Request') {
-    super(message, 400)
-    this.name = 'BadRequest'
-  }
+	constructor(message: string = 'Bad Request') {
+		super(message, 400)
+		this.name = 'BadRequest'
+	}
 }
 
 export class Unauthorized extends BunbaseError {
-  constructor(message: string = 'Unauthorized') {
-    super(message, 401)
-    this.name = 'Unauthorized'
-  }
+	constructor(message: string = 'Unauthorized') {
+		super(message, 401)
+		this.name = 'Unauthorized'
+	}
 }
 
 export class Forbidden extends BunbaseError {
-  constructor(message: string = 'Forbidden') {
-    super(message, 403)
-    this.name = 'Forbidden'
-  }
+	constructor(message: string = 'Forbidden') {
+		super(message, 403)
+		this.name = 'Forbidden'
+	}
 }
 
 export class NotFound extends BunbaseError {
-  constructor(message: string = 'Not Found') {
-    super(message, 404)
-    this.name = 'NotFound'
-  }
+	constructor(message: string = 'Not Found') {
+		super(message, 404)
+		this.name = 'NotFound'
+	}
 }
 
 export class Conflict extends BunbaseError {
-  constructor(message: string = 'Conflict') {
-    super(message, 409)
-    this.name = 'Conflict'
-  }
+	constructor(message: string = 'Conflict') {
+		super(message, 409)
+		this.name = 'Conflict'
+	}
 }
 
 export class TooManyRequests extends BunbaseError {
-  constructor(message: string = 'Too Many Requests') {
-    super(message, 429)
-    this.name = 'TooManyRequests'
-  }
+	constructor(message: string = 'Too Many Requests') {
+		super(message, 429)
+		this.name = 'TooManyRequests'
+	}
 }
 
 export class InternalError extends BunbaseError {
-  constructor(message: string = 'Internal Server Error') {
-    super(message, 500)
-    this.name = 'InternalError'
-  }
+	constructor(message: string = 'Internal Server Error') {
+		super(message, 500)
+		this.name = 'InternalError'
+	}
 }
 
 export class NotImplemented extends BunbaseError {
-  constructor(message: string = 'Not Implemented') {
-    super(message, 501)
-    this.name = 'NotImplemented'
-  }
+	constructor(message: string = 'Not Implemented') {
+		super(message, 501)
+		this.name = 'NotImplemented'
+	}
 }
 
 export class ServiceUnavailable extends BunbaseError {
-  constructor(message: string = 'Service Unavailable') {
-    super(message, 503)
-    this.name = 'ServiceUnavailable'
-  }
+	constructor(message: string = 'Service Unavailable') {
+		super(message, 503)
+		this.name = 'ServiceUnavailable'
+	}
 }
 
 // Non-retriable errors (client errors that shouldn't be retried)
 export class NonRetriableError extends BunbaseError {
-  constructor(message: string = 'Non-Retriable Error') {
-    super(message, 400)
-    this.name = 'NonRetriableError'
-  }
+	constructor(message: string = 'Non-Retriable Error') {
+		super(message, 400)
+		this.name = 'NonRetriableError'
+	}
 }
 
 // ── Retry Classification ────────────────────────────────
@@ -94,10 +94,10 @@ export class NonRetriableError extends BunbaseError {
  * generic Error (unknown errors assumed transient)
  */
 export function isRetryable(error: unknown): boolean {
-  if (!(error instanceof Error)) return false
-  if (error instanceof NonRetriableError) return false
-  if (error.name === 'ActionValidationError') return false
-  if (error.name === 'GuardError') return false
-  if (error instanceof BunbaseError) return error.statusCode >= 500
-  return true
+	if (!(error instanceof Error)) return false
+	if (error instanceof NonRetriableError) return false
+	if (error.name === 'ActionValidationError') return false
+	if (error.name === 'GuardError') return false
+	if (error instanceof BunbaseError) return error.statusCode >= 500
+	return true
 }

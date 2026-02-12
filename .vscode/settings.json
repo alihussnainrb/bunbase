@@ -1,6 +1,5 @@
 {
 	"editor.codeActionsOnSave": {
 		"source.fixAll.biome": "explicit"
-	},
-	// "claudeCode.selectedModel": "us.anthropic.claude-opus-4-6-v1",
+	}
 }

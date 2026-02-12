@@ -1,4 +1,4 @@
-import { action, t, triggers, SessionManager } from 'bunbase'
+import { action, SessionManager, t, triggers } from 'bunbase'
 
 /**
  * Login action — authenticates a user and sets a session cookie.
@@ -17,9 +17,7 @@ export const login = action(
 			userId: t.String(),
 			name: t.String(),
 		}),
-		triggers: [
-			triggers.api('POST', '/login')
-		],
+		triggers: [triggers.api('POST', '/login')],
 		// No guards — login must be accessible without auth
 	},
 	async (input, ctx) => {
@@ -38,13 +36,17 @@ export const login = action(
 
 		// In a real app: await Bun.password.verify(input.password, user.password_hash)
 		// For demo purposes, we're just checking equality (NOT SECURE!)
-		if (input.password !== user.password_hash && input.password !== 'password123') {
+		if (
+			input.password !== user.password_hash &&
+			input.password !== 'password123'
+		) {
 			throw new Error('Invalid email or password')
 		}
 
 		// Set session cookie via response context
 		const session = new SessionManager({
-			secret: process.env.SESSION_SECRET ?? 'dev-secret-change-me-in-production',
+			secret:
+				process.env.SESSION_SECRET ?? 'dev-secret-change-me-in-production',
 		})
 		const token = session.createSession({
 			userId: user.id,

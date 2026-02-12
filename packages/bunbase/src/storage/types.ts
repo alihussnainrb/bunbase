@@ -1,6 +1,10 @@
 export interface StorageAdapter {
 	/** Upload a file to storage */
-	upload(key: string, data: Buffer | Uint8Array | ReadableStream, opts?: UploadOptions): Promise<void>
+	upload(
+		key: string,
+		data: Buffer | Uint8Array | ReadableStream,
+		opts?: UploadOptions,
+	): Promise<void>
 	/** Download a file from storage */
 	download(key: string): Promise<Buffer | null>
 	/** Delete a file from storage */
@@ -22,17 +26,32 @@ export interface UploadOptions {
 	// S3-specific options (ignored by local adapter)
 
 	/** S3 Access Control List policy */
-	acl?: 'private' | 'public-read' | 'public-read-write' | 'aws-exec-read' |
-	      'authenticated-read' | 'bucket-owner-read' | 'bucket-owner-full-control' |
-	      'log-delivery-write'
+	acl?:
+		| 'private'
+		| 'public-read'
+		| 'public-read-write'
+		| 'aws-exec-read'
+		| 'authenticated-read'
+		| 'bucket-owner-read'
+		| 'bucket-owner-full-control'
+		| 'log-delivery-write'
 
 	/** Content-Disposition header (e.g., 'attachment; filename="file.pdf"') */
 	contentDisposition?: string
 
 	/** S3 storage class */
-	storageClass?: 'STANDARD' | 'DEEP_ARCHIVE' | 'EXPRESS_ONEZONE' | 'GLACIER' |
-	               'GLACIER_IR' | 'INTELLIGENT_TIERING' | 'ONEZONE_IA' | 'OUTPOSTS' |
-	               'REDUCED_REDUNDANCY' | 'SNOW' | 'STANDARD_IA'
+	storageClass?:
+		| 'STANDARD'
+		| 'DEEP_ARCHIVE'
+		| 'EXPRESS_ONEZONE'
+		| 'GLACIER'
+		| 'GLACIER_IR'
+		| 'INTELLIGENT_TIERING'
+		| 'ONEZONE_IA'
+		| 'OUTPOSTS'
+		| 'REDUCED_REDUNDANCY'
+		| 'SNOW'
+		| 'STANDARD_IA'
 
 	/** Request payer configuration (for requester pays buckets) */
 	requestPayer?: boolean

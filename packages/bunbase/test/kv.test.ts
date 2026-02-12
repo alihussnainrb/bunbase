@@ -1,12 +1,15 @@
-import { describe, expect, it, beforeEach } from 'bun:test'
-import { PostgresKVStore } from '../src/kv/postgres-kv.ts'
+import { beforeEach, describe, expect, it } from 'bun:test'
 import { getSQLPool } from '../src/db/pool.ts'
+import { PostgresKVStore } from '../src/kv/postgres-kv.ts'
 
 // Mock SQL pool for testing
 function createMockSQL() {
 	const store = new Map<string, { value: any; expires_at: Date | null }>()
 
-	const mockSQL: any = async (strings: TemplateStringsArray, ...values: any[]) => {
+	const mockSQL: any = async (
+		strings: TemplateStringsArray,
+		...values: any[]
+	) => {
 		const query = strings.join('?')
 
 		// Handle CREATE TABLE

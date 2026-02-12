@@ -33,10 +33,12 @@ export class PostgresKVStore implements KVStore {
 		return rows[0]!.value as T
 	}
 
-	async set(key: string, value: unknown, opts?: { ttl?: number }): Promise<void> {
-		const expiresAt = opts?.ttl
-			? new Date(Date.now() + opts.ttl * 1000)
-			: null
+	async set(
+		key: string,
+		value: unknown,
+		opts?: { ttl?: number },
+	): Promise<void> {
+		const expiresAt = opts?.ttl ? new Date(Date.now() + opts.ttl * 1000) : null
 
 		await this.sql`
 			INSERT INTO kv_store (key, value, expires_at)

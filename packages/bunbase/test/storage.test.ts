@@ -1,7 +1,7 @@
-import { describe, expect, it, beforeEach, afterEach } from 'bun:test'
-import { LocalStorageAdapter } from '../src/storage/local-adapter.ts'
+import { afterEach, beforeEach, describe, expect, it } from 'bun:test'
 import { existsSync, mkdirSync, rmSync } from 'node:fs'
 import { join } from 'node:path'
+import { LocalStorageAdapter } from '../src/storage/local-adapter.ts'
 
 describe('LocalStorageAdapter', () => {
 	const testDir = join(process.cwd(), '.test-storage')
@@ -136,7 +136,9 @@ describe('LocalStorageAdapter', () => {
 			const allFiles = await adapter.list()
 			expect(allFiles.length).toBeGreaterThan(0)
 			// Verify we can find docs files in the list
-			const hasDocsFiles = allFiles.some((f) => f.includes('readme') || f.includes('guide'))
+			const hasDocsFiles = allFiles.some(
+				(f) => f.includes('readme') || f.includes('guide'),
+			)
 			expect(hasDocsFiles).toBe(true)
 		})
 	})

@@ -1,5 +1,5 @@
-import { join } from 'node:path'
 import { existsSync, mkdirSync, writeFileSync } from 'node:fs'
+import { join } from 'node:path'
 import { INIT_SQL } from '../../db/init-sql.ts'
 
 export async function initCommand(name: string): Promise<void> {
@@ -29,7 +29,7 @@ export async function initCommand(name: string): Promise<void> {
 				type: 'module',
 				scripts: {
 					dev: 'bunbase dev',
-					'migrate': 'bunbase migrate',
+					migrate: 'bunbase migrate',
 					'migrate:new': 'bunbase migrate new',
 					'migrate:status': 'bunbase migrate status',
 					build: 'bun build src/index.ts --outdir dist',

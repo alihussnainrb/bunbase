@@ -44,7 +44,12 @@ export async function executeAction(
 			setCookie: (name: string, value: string, opts?: any) => void
 		}
 	},
-): Promise<{ success: boolean; data?: unknown; error?: string; errorObject?: Error }> {
+): Promise<{
+	success: boolean
+	data?: unknown
+	error?: string
+	errorObject?: Error
+}> {
 	const traceId = generateTraceId()
 	const startedAt = Date.now()
 
@@ -164,7 +169,8 @@ export async function executeAction(
 
 				// Record successful run
 				const runEntry: RunEntry = {
-					id: maxAttempts > 1 && attempt > 1 ? `${traceId}-a${attempt}` : traceId,
+					id:
+						maxAttempts > 1 && attempt > 1 ? `${traceId}-a${attempt}` : traceId,
 					action_name: action.definition.config.name,
 					module_name: action.moduleName,
 					trace_id: traceId,
@@ -182,13 +188,17 @@ export async function executeAction(
 
 				return { success: true, data: result }
 			} catch (handlerErr) {
-				lastError = handlerErr instanceof Error ? handlerErr : new Error(String(handlerErr))
+				lastError =
+					handlerErr instanceof Error
+						? handlerErr
+						: new Error(String(handlerErr))
 				const errorMessage = lastError.message
 
 				// Determine if we should retry
 				const builtinRetryable = isRetryable(handlerErr)
 				const customRetryable = retryIf ? retryIf(lastError) : true
-				const shouldRetry = builtinRetryable && customRetryable && attempt < maxAttempts
+				const shouldRetry =
+					builtinRetryable && customRetryable && attempt < maxAttempts
 
 				if (shouldRetry) {
 					// Log retry attempt
@@ -226,7 +236,10 @@ export async function executeAction(
 					actionLogger.error(`Action failed: ${errorMessage}`)
 
 					const runEntry: RunEntry = {
-						id: maxAttempts > 1 && attempt > 1 ? `${traceId}-a${attempt}` : traceId,
+						id:
+							maxAttempts > 1 && attempt > 1
+								? `${traceId}-a${attempt}`
+								: traceId,
 						action_name: action.definition.config.name,
 						module_name: action.moduleName,
 						trace_id: traceId,
@@ -253,7 +266,9 @@ export async function executeAction(
 
 		// All retries exhausted (safety net)
 		const errorMessage = lastError?.message ?? 'All retry attempts exhausted'
-		actionLogger.error(`Action failed after ${maxAttempts} attempts: ${errorMessage}`)
+		actionLogger.error(
+			`Action failed after ${maxAttempts} attempts: ${errorMessage}`,
+		)
 
 		return {
 			success: false,

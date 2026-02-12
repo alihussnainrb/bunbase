@@ -22,7 +22,9 @@ export const login = action(
 	},
 	async (input, ctx) => {
 		ctx.logger.info('Login attempt', { email: input.email })
-		ctx.db.from("users")
+		ctx.db.from("") // no autocomplete
+		
+
 
 		// Find user by email
 		const user = await ctx.db

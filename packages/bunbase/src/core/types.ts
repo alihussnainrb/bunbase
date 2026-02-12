@@ -1,5 +1,5 @@
 import type { Static, TSchema } from 'typebox'
-import type { DatabaseClient } from '../db/client.ts'
+import type {  DatabaseClient } from '../db'
 import type { KVStore } from '../kv/types.ts'
 import type { Logger } from '../logger/index.ts'
 import type { StorageAdapter } from '../storage/types.ts'
@@ -71,7 +71,7 @@ export type GuardFn = (ctx: ActionContext) => void | Promise<void>
 
 export interface ActionContext {
 	/** Typed database client */
-	db: DatabaseClient
+	db: DatabaseClient<import("../db").Database>
 
 	/** File storage (S3 or local filesystem) */
 	storage: StorageAdapter

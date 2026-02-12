@@ -8,19 +8,20 @@ import { setRLSContext } from './session-vars.ts'
  * Typed DB client — generic over your Database schema
  */
 
+
+// type Database = {
+// 	public: {
+// 		Tables: {
+// 			[key: string]: TableDef
+// 		}
+// 	}
+// }
+
 interface TableDef {
 	Row: Record<string, any>
 	Insert: Record<string, any>
 	Update: Record<string, any>
 	Relationships: any[]
-}
-
-type Database = {
-	public: {
-		Tables: {
-			[key: string]: TableDef
-		}
-	}
 }
 
 /**
@@ -30,18 +31,20 @@ type Database = {
  * @example
  * // .bunbase/database.d.ts (auto-generated)
  * declare module 'bunbase/db' {
- *   interface BunbaseDBRegister {
- *     database: { public: { Tables: { ... } } }
+ *   interface Database {
+ *     public: { Tables: { ... } }
  *   }
  * }
  */
-export interface BunbaseDBRegister {}
-
-type ResolvedDatabase = BunbaseDBRegister extends {
-	database: infer DB extends Database
+export interface Database {
+	public: {
+		Tables: {
+			[key: string]: TableDef
+		}
+	}
 }
-	? DB
-	: Database
+
+
 
 type InferTables<DB extends Database> = DB['public']['Tables']
 
@@ -50,22 +53,43 @@ type InferTable<
 	T extends keyof InferTables<DB>,
 > = InferTables<DB>[T]
 
-export type DatabaseClient<DB extends Database = ResolvedDatabase> = {
-	from: <T extends keyof InferTables<DB>>(
+export type DatabaseClient<DB extends Database = Database> = {
+	from<T extends keyof InferTables<DB> & string>(
 		table: T,
-	) => TypedQueryBuilder<InferTable<DB, T>>
+	): TypedQueryBuilder<InferTable<DB, T>>
 
 	raw: (strings: TemplateStringsArray, ...values: any[]) => Promise<any[]>
-	// transaction: <T>(cb: (tx: DatabaseClient<DB>) => Promise<T>) => Promise<T>
 }
 
-export function createDB<DB extends Database = ResolvedDatabase>(sql?: SQL): DatabaseClient<DB> {
+// type ResolvedDatabase = BunbaseDBRegister extends {
+// 	database: infer DB extends Database
+// }
+// 	? DB
+// 	: Database
+
+// type InferTables<DB extends Database> = DB['public']['Tables']
+
+// type InferTable<
+// 	DB extends Database,
+// 	T extends keyof InferTables<DB>,
+// > = InferTables<DB>[T]
+
+// export type DatabaseClient<DB extends Database = Database> = {
+// 	from: <T extends keyof InferTables<DB>>(
+// 		table: T,
+// 	) => TypedQueryBuilder<InferTable<DB, T>>
+
+// 	raw: (strings: TemplateStringsArray, ...values: any[]) => Promise<any[]>
+// 	// transaction: <T>(cb: (tx: DatabaseClient<DB>) => Promise<T>) => Promise<T>
+// }
+
+export function createDB<DB extends Database = Database>(sql?: SQL): DatabaseClient<DB> {
 	type Tables = InferTables<DB>
 	const pool = sql ?? getSQLPool()
 
 	return {
-		from: <T extends keyof Tables>(table: T) =>
-			new TypedQueryBuilder<Tables[T]>(table as string, pool) as any,
+		from: <T extends keyof Tables & string>(table: T) =>
+			new TypedQueryBuilder<Tables[T]>(table, pool) as any,
 
 		raw: (strings: TemplateStringsArray, ...values: any[]) =>
 			pool(strings, ...values),
@@ -91,8 +115,8 @@ class TypedQueryBuilder<Table extends TableDef> {
 	select<
 		Fields extends keyof Table['Row'] | '*',
 		Result = Fields extends '*'
-			? Table['Row']
-			: Pick<Table['Row'], Fields extends keyof Table['Row'] ? Fields : never>,
+		? Table['Row']
+		: Pick<Table['Row'], Fields extends keyof Table['Row'] ? Fields : never>,
 	>(
 		...fields: Fields[]
 	): TypedQueryBuilder<Table> & { exec: () => Promise<Result[]> } {

@@ -2,10 +2,9 @@
 // Do not edit manually — re-run `bunbase typegen` to regenerate.
 
 declare module 'bunbase/db' {
-	interface BunbaseDBRegister {
-		database: {
-			public: {
-				Tables: {
+	interface Database {
+		public: {
+			Tables: {
 					_migrations: {
 						Row: {
 							id: number
@@ -341,12 +340,11 @@ declare module 'bunbase/db' {
 						}
 						Relationships: []
 					}
-				}
-				Views: {}
-				Functions: {}
-				Enums: {}
-				Composites: {}
 			}
+			Views: {}
+			Functions: {}
+			Enums: {}
+			Composites: {}
 		}
 	}
 }

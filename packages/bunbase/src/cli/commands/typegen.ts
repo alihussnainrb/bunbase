@@ -200,17 +200,15 @@ export async function typegenCommand(opts?: TypegenOptions): Promise<void> {
 // Do not edit manually — re-run \`bunbase typegen\` to regenerate.
 
 declare module 'bunbase/db' {
-	interface BunbaseDBRegister {
-		database: {
-			public: {
-				Tables: {
+	interface Database {
+		public: {
+			Tables: {
 ${tableTypes.join('\n\n')}
-				}
-				Views: {}
-				Functions: {}
-				Enums: {${enumSection}}
-				Composites: {}
 			}
+			Views: {}
+			Functions: {}
+			Enums: {${enumSection}}
+			Composites: {}
 		}
 	}
 }

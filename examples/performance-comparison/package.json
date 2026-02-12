@@ -16,6 +16,7 @@
     "typescript": "^5"
   },
   "dependencies": {
-    "bunbase": "../../packages/bunbase"
+    "bunbase": "../../packages/bunbase",
+    "typebox": "^1.0.81"
   }
 }

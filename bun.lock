@@ -23,6 +23,7 @@
       "name": "performance-comparison",
       "dependencies": {
         "bunbase": "../../packages/bunbase",
+        "typebox": "^1.0.81",
       },
       "devDependencies": {
         "@types/bun": "latest",

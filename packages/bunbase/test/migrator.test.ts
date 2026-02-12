@@ -47,7 +47,7 @@ function createMockSQL() {
 		const tx: any = async (strings: TemplateStringsArray, ...values: any[]) => {
 			return mockSQL(strings, ...values)
 		}
-		tx.unsafe = async (sql: string) => {
+		tx.unsafe = async (_sql: string) => {
 			// Simulate executing raw SQL
 			return []
 		}

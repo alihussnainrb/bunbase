@@ -93,7 +93,7 @@ export const getActionDetails: ActionDefinition = action(
 								(sum: number, r: any) => sum + (r.duration_ms ?? 0),
 								0,
 							) / dbRuns.length,
-						lastRun: new Date(dbRuns[0]!.started_at).toISOString(),
+						lastRun: new Date(dbRuns[0]?.started_at).toISOString(),
 					}
 				}
 			} catch {

@@ -1,6 +1,6 @@
 import type { SQL } from 'bun'
 import { Cron } from 'croner'
-import type { ActionRegistry, RegisteredAction } from '../core/registry.ts'
+import type { ActionRegistry } from '../core/registry.ts'
 import type { Logger } from '../logger/index.ts'
 import type { WriteBuffer } from '../persistence/write-buffer.ts'
 import { executeAction } from './executor.ts'
@@ -32,7 +32,7 @@ export class Scheduler {
 		private readonly registry: ActionRegistry,
 		private readonly logger: Logger,
 		private readonly writeBuffer: WriteBuffer,
-		private readonly sql: SQL,
+		readonly _sql: SQL,
 	) {}
 
 	/**
@@ -177,7 +177,7 @@ export class Scheduler {
 		this.cronJobs = []
 
 		// Cancel delayed tasks
-		for (const [id, task] of this.delayedTasks) {
+		for (const [_id, task] of this.delayedTasks) {
 			clearTimeout(task.timeout)
 		}
 		this.delayedTasks.clear()
@@ -205,6 +205,7 @@ export class Scheduler {
 
 		// Add delayed tasks
 		for (const [id, task] of this.delayedTasks) {
+			this.logger.info(`[Scheduler] Delayed task: ${id}`, { task })
 			tasks.push({
 				id,
 				name: 'delayed-task',

@@ -30,7 +30,7 @@ export class PostgresKVStore implements KVStore {
 				AND (expires_at IS NULL OR expires_at > NOW())
 		`
 		if (rows.length === 0) return null
-		return rows[0]!.value as T
+		return rows[0]?.value as T
 	}
 
 	async set(
@@ -66,7 +66,7 @@ export class PostgresKVStore implements KVStore {
 		const rows = prefix
 			? await this.sql`
 				SELECT key FROM kv_store
-				WHERE key LIKE ${prefix + '%'}
+				WHERE key LIKE ${`${prefix}%`}
 					AND (expires_at IS NULL OR expires_at > NOW())
 				ORDER BY key
 			`

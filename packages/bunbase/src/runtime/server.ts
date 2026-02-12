@@ -1,5 +1,5 @@
 import type { Server } from 'bun'
-import { type SessionConfig, SessionManager } from '../auth/session.ts'
+import { SessionManager } from '../auth/session.ts'
 import type { BunbaseConfig } from '../config/types.ts'
 import { GuardError } from '../core/guards/types.ts'
 import type { ActionRegistry, RegisteredAction } from '../core/registry.ts'
@@ -116,7 +116,7 @@ export class BunbaseServer {
 								kv: this.services?.kv,
 								registry: this.registry,
 							})
-						} catch (err: any) {
+						} catch (err: unknown) {
 							this.logger.error(
 								`Error handling event ${trigger.event} for action ${action.definition.config.name}:`,
 								err,
@@ -413,7 +413,7 @@ export class BunbaseServer {
 			}
 
 			return Response.json({ error: result.error }, { status, headers })
-		} catch (err: any) {
+		} catch (err: unknown) {
 			// Handle BunbaseError instances with their specific status codes
 			if (err instanceof BunbaseError) {
 				this.logger.error(`Action error: ${err.message}`)

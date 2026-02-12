@@ -236,7 +236,7 @@ describe('Integration: Event Triggers', () => {
 		)
 
 		// Start server (this registers event listeners)
-		const bunServer = server.start({ port: 0 })
+		const _bunServer = server.start({ port: 0 })
 
 		try {
 			// Wait a bit for event listener registration

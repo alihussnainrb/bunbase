@@ -1,4 +1,4 @@
-import { createHmac, randomBytes, timingSafeEqual } from 'node:crypto'
+import { createHmac, timingSafeEqual } from 'node:crypto'
 
 export interface SessionConfig {
 	secret: string

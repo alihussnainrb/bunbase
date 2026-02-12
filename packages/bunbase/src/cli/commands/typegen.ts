@@ -32,8 +32,10 @@ function pgTypeToTs(udtName: string, enums: Map<string, string[]>): string {
 
 	// Check enums first
 	if (enums.has(udtName)) {
-		const values = enums.get(udtName)!
-		return values.map((v) => `'${v}'`).join(' | ')
+		const values = enums.get(udtName)
+		if (values) {
+			return values.map((v) => `'${v}'`).join(' | ')
+		}
 	}
 
 	switch (udtName) {
@@ -162,7 +164,7 @@ export async function typegenCommand(opts?: TypegenOptions): Promise<void> {
 			if (!enums.has(row.enum_name)) {
 				enums.set(row.enum_name, [])
 			}
-			enums.get(row.enum_name)!.push(row.enum_value)
+			enums.get(row.enum_name)?.push(row.enum_value)
 		}
 
 		// Group columns by table
@@ -171,7 +173,7 @@ export async function typegenCommand(opts?: TypegenOptions): Promise<void> {
 			if (!tables.has(col.table_name)) {
 				tables.set(col.table_name, [])
 			}
-			tables.get(col.table_name)!.push(col)
+			tables.get(col.table_name)?.push(col)
 		}
 
 		if (tables.size === 0) {

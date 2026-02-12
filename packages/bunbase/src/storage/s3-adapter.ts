@@ -15,7 +15,7 @@ export interface S3Config {
 export class S3StorageAdapter implements StorageAdapter {
 	private client: Bun.S3Client
 
-	constructor(private readonly config: S3Config) {
+	constructor(readonly config: S3Config) {
 		// Check if Bun.S3Client is available (Bun 1.2+)
 		if (typeof Bun.S3Client !== 'function') {
 			throw new Error('Bun.S3Client is not available. Requires Bun 1.2+.')

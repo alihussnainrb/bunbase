@@ -20,7 +20,7 @@ export function parsePathParams<P extends TSchema>(
 
 	// Simple path matching - convert :param to regex groups
 	const patternRegex = new RegExp(
-		'^' + pattern.replace(/:([^/]+)/g, '(?<$1>[^/]+)') + '$',
+		`^${pattern.replace(/:([^/]+)/g, '(?<$1>[^/]+)')}$`,
 	)
 
 	const match = path.match(patternRegex)
@@ -58,7 +58,7 @@ export function parseQueryParams<Q extends TSchema>(
 			if (value === '') continue
 			// Try to parse as number
 			const numValue = Number(value)
-			if (!isNaN(numValue) && value !== '') {
+			if (!Number.isNaN(numValue) && value !== '') {
 				converted[key] = numValue
 			} else if (value === 'true') {
 				converted[key] = true
@@ -78,6 +78,6 @@ export function parseQueryParams<Q extends TSchema>(
  * Match a view path pattern against a URL path
  */
 export function matchViewPath(path: string, pattern: string): boolean {
-	const regex = new RegExp('^' + pattern.replace(/:([^/]+)/g, '[^/]+') + '$')
+	const regex = new RegExp(`^${pattern.replace(/:([^/]+)/g, '[^/]+')}$`)
 	return regex.test(path)
 }

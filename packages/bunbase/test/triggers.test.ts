@@ -11,7 +11,7 @@ describe('triggers.api()', () => {
 	})
 
 	it('should create API trigger with custom map function', () => {
-		const mapFn = (req: Request) => ({ custom: true })
+		const mapFn = (_req: Request) => ({ custom: true })
 		const trigger = triggers.api('GET', '/items', { map: mapFn })
 
 		expect(trigger.type).toBe('api')
@@ -82,7 +82,7 @@ describe('triggers.webhook()', () => {
 	})
 
 	it('should create webhook trigger with verify and map', () => {
-		const verifyFn = async (req: Request) => true
+		const verifyFn = async (_req: Request) => true
 		const mapFn = (body: unknown) => ({ mapped: body })
 
 		const trigger = triggers.webhook('/webhooks/github', {

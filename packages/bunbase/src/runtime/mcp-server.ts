@@ -84,12 +84,12 @@ export class McpService {
 								],
 								isError: true,
 							}
-						} catch (err: any) {
+						} catch (err: unknown) {
 							return {
 								content: [
 									{
 										type: 'text',
-										text: `Internal Error: ${err.message}`,
+										text: `Internal Error: ${err instanceof Error ? err.message : String(err)}`,
 									},
 								],
 								isError: true,

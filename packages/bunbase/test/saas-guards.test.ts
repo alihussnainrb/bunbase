@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, spyOn } from 'bun:test'
+import { describe, expect, it } from 'bun:test'
 import { saasGuards } from '../src/core/guards/saas.ts'
 import type { GuardError } from '../src/core/guards/types.ts'
 import type { ActionContext } from '../src/core/types.ts'

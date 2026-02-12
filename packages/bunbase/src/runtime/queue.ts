@@ -55,7 +55,7 @@ export class Queue {
 	constructor(
 		private readonly sql: SQL,
 		private readonly logger: Logger,
-		private readonly writeBuffer: WriteBuffer,
+		readonly _writeBuffer: WriteBuffer,
 		opts: { pollIntervalMs?: number } = {},
 	) {
 		this.pollIntervalMs = opts.pollIntervalMs ?? 1000

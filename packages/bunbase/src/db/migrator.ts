@@ -42,8 +42,8 @@ export class Migrator {
 		return files
 			.filter((f) => f.endsWith('.sql'))
 			.sort((a, b) => {
-				const numA = parseInt(a.split('_')[0]!, 10)
-				const numB = parseInt(b.split('_')[0]!, 10)
+				const numA = parseInt(a.split('_')[0] || '0', 10)
+				const numB = parseInt(b.split('_')[0] || '0', 10)
 				return numA - numB
 			})
 	}
@@ -91,7 +91,9 @@ export class Migrator {
 
 		const available = await this.getAvailable()
 		const lastFile = available[available.length - 1]
-		const nextNum = lastFile ? parseInt(lastFile.split('_')[0]!, 10) + 1 : 1
+		const nextNum = lastFile
+			? parseInt(lastFile.split('_')[0] || '0', 10) + 1
+			: 1
 
 		const paddedNum = String(nextNum).padStart(3, '0')
 		const kebabName = name

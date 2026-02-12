@@ -1,5 +1,4 @@
 import { beforeEach, describe, expect, it } from 'bun:test'
-import { getSQLPool } from '../src/db/pool.ts'
 import { PostgresKVStore } from '../src/kv/postgres-kv.ts'
 
 // Mock SQL pool for testing

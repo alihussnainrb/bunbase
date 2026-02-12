@@ -62,7 +62,7 @@ export async function executeAction(
 
 	// Build context
 	const queue = opts.queue
-	const scheduler = opts.scheduler
+	const _scheduler = opts.scheduler
 	const ctx: ActionContext = {
 		db: (opts.db ?? null) as any,
 		storage: (opts.storage ?? null) as any,
@@ -85,7 +85,7 @@ export async function executeAction(
 				throw new Error('Queue not configured. Call server.setQueue() first.')
 			}
 			// Schedule via queue with delay
-			const delay = typeof time === 'number' ? time : 0
+			const _delay = typeof time === 'number' ? time : 0
 			return queue.push(name, data, {
 				...scheduleOpts,
 				priority: scheduleOpts?.priority,

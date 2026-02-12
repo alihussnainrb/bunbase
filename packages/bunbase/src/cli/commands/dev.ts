@@ -54,8 +54,9 @@ export async function devCommand(): Promise<void> {
 					logger.info(`  ✓ ${name}`)
 				}
 			}
-		} catch (err: any) {
-			logger.error('Migration failed:', err?.message ?? err)
+		} catch (err: unknown) {
+			const message = err instanceof Error ? err.message : String(err)
+			logger.error('Migration failed:', message)
 		}
 	}
 

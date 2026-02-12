@@ -71,7 +71,7 @@ export type GuardFn = (ctx: ActionContext) => void | Promise<void>
 
 export interface ActionContext {
 	/** Typed database client */
-	db: DatabaseClient<import("../db").Database>
+	db: DatabaseClient;
 
 	/** File storage (S3 or local filesystem) */
 	storage: StorageAdapter

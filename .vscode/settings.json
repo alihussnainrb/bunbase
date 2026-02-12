@@ -2,15 +2,5 @@
 	"editor.codeActionsOnSave": {
 		"source.fixAll.biome": "explicit"
 	},
-	"claudeCode.selectedModel": "us.anthropic.claude-opus-4-6-v1",
-	// "claudeCode.environmentVariables": [
-	// 	{
-	// 		"name": "CLAUDE_CODE_USE_BEDROCK",
-	// 		"value": "1"
-	// 	},
-	// 	{
-	// 		"name": "ANTHROPIC_VERTEX_PROJECT_ID",
-	// 		"value": "gen-lang-client-0903621945"
-	// 	}
-	// ],
+	// "claudeCode.selectedModel": "us.anthropic.claude-opus-4-6-v1",
 }

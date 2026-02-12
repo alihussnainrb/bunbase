@@ -1,5 +1,3 @@
-// src/db/client.ts
-
 import type { SQL } from 'bun'
 import { getSQLPool } from './pool.ts'
 import { setRLSContext } from './session-vars.ts'
@@ -21,42 +19,37 @@ interface TableDef {
 	Row: Record<string, any>
 	Insert: Record<string, any>
 	Update: Record<string, any>
-	Relationships: any[]
+	// Relationships: any[]
 }
 
-/**
- * Type registration interface. Augment this via `bunbase typegen` to get
- * automatic type inference without passing generics.
- *
- * @example
- * // .bunbase/database.d.ts (auto-generated)
- * declare module 'bunbase/db' {
- *   interface Database {
- *     public: { Tables: { ... } }
- *   }
- * }
- */
-export interface Database {
+
+
+
+export type BaseDatabase = {
 	public: {
 		Tables: {
 			[key: string]: TableDef
 		}
 	}
-}
+};
 
 
 
-type InferTables<DB extends Database> = DB['public']['Tables']
+export interface GeneratedDatabase extends BaseDatabase { }
+
+export type Database = BaseDatabase & GeneratedDatabase
+
+// type InferTables<DB extends Database> = DB['public']['Tables']
 
 type InferTable<
 	DB extends Database,
-	T extends keyof InferTables<DB>,
-> = InferTables<DB>[T]
+	T extends keyof DB["public"]["Tables"],
+> = DB["public"]["Tables"][T]
 
-export type DatabaseClient<DB extends Database = Database> = {
-	from<T extends keyof InferTables<DB> & string>(
+export type DatabaseClient = {
+	from<T extends keyof Database["public"]["Tables"]>(
 		table: T,
-	): TypedQueryBuilder<InferTable<DB, T>>
+	): TypedQueryBuilder<InferTable<Database, T>>
 
 	raw: (strings: TemplateStringsArray, ...values: any[]) => Promise<any[]>
 }
@@ -83,16 +76,18 @@ export type DatabaseClient<DB extends Database = Database> = {
 // 	// transaction: <T>(cb: (tx: DatabaseClient<DB>) => Promise<T>) => Promise<T>
 // }
 
-export function createDB<DB extends Database = Database>(sql?: SQL): DatabaseClient<DB> {
-	type Tables = InferTables<DB>
+export function createDB<DB extends Database = Database>(sql?: SQL): DatabaseClient {
+	// type Tables = InferTables<DB>
 	const pool = sql ?? getSQLPool()
 
 	return {
-		from: <T extends keyof Tables & string>(table: T) =>
-			new TypedQueryBuilder<Tables[T]>(table, pool) as any,
+		from: <T extends keyof DB["public"]["Tables"]>(table: T) => {
+			return new TypedQueryBuilder<DB["public"]["Tables"][T]>(table as string, pool)
+		},
 
-		raw: (strings: TemplateStringsArray, ...values: any[]) =>
-			pool(strings, ...values),
+		raw: (strings: TemplateStringsArray, ...values: any[]) => {
+			return pool(strings, ...values)
+		},
 	}
 }
 

@@ -35,15 +35,17 @@ export type {
 	TriggerConfig,
 	WebhookTriggerConfig,
 } from './core/types.ts'
-// Database type contracts (used for module augmentation via typegen output)
 export type {
 	BaseDatabase,
 	Database,
 	DatabaseClient,
 	GeneratedDatabase,
-} from './db/index.ts'
+} from './db/client.ts'
+// Database client and types
+export { createDB } from './db/client.ts'
 // Key-value store types (for custom store implementations)
 export type { KVStore } from './kv/types.ts'
+export type { LoggerOptions, LogLevel, LogListener } from './logger/index.ts'
 // Logger (useful for custom logging in action handlers)
 export { Logger, LoggerSession } from './logger/index.ts'
 // SaaS services (used in action handlers)

@@ -21,18 +21,6 @@
 			}
 		},
 		"./cli": "./dist/cli/index.js",
-		"./db": {
-			"import": {
-				"types": "./dist/db/index.d.ts",
-				"default": "./dist/db/index.js"
-			}
-		},
-		"./logger": {
-			"import": {
-				"types": "./dist/logger/index.d.ts",
-				"default": "./dist/logger/index.js"
-			}
-		},
 		"./package.json": "./package.json"
 	},
 	"module": "./dist/index.js",

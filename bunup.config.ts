@@ -6,12 +6,7 @@ export default defineWorkspace([
 		root: 'packages/bunbase',
 		config: {
 			target: 'bun',
-			entry: [
-				'./src/index.ts',
-				'./src/cli/index.ts',
-				'./src/db/index.ts',
-				'./src/logger/index.ts',
-			],
+			entry: ['./src/index.ts', './src/cli/index.ts'],
 			format: 'esm',
 			minify: true,
 			sourcemap: true,

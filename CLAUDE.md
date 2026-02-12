@@ -281,9 +281,7 @@ Follow Conventional Commits:
 
 The main `bunbase` package exports:
 
-- `./` - Core primitives (`action`, `module`, `triggers`, `guards`, `t`, `defineConfig`, `BunbaseConfig`), auth utilities, SaaS services, error classes
-- `./db` - Database client (`TypedQueryBuilder`)
-- `./logger` - Logging utilities (`Logger`, `LoggerSession`)
+- `./` - Core primitives (`action`, `module`, `triggers`, `guards`, `t`, `defineConfig`, `BunbaseConfig`), database client (`createDB`, `DatabaseClient`), logging utilities (`Logger`, `LoggerSession`), auth utilities, SaaS services, error classes
 - `./cli` - CLI tooling (bin: `bunbase`)
 
 > Runtime internals (`BunbaseServer`, `ActionRegistry`, `loadActions`, `WriteBuffer`, `Scheduler`, `McpService`) are NOT exported. They are initialized internally by the `bunbase dev` CLI command.
@@ -307,7 +305,7 @@ The `bunbase typegen` command introspects a live PostgreSQL database and generat
 1. Run `bunbase typegen` after adding/modifying database tables
 2. The command queries `information_schema.columns` and `pg_enum` to introspect the schema
 3. Generates a `.bunbase/database.d.ts` file with Row/Insert/Update types for all tables
-4. The types are automatically resolved via module augmentation of `bunbase/db`
+4. The types are automatically resolved via module augmentation of `bunbase`
 
 **Type mapping:**
 
@@ -322,7 +320,7 @@ The `bunbase typegen` command introspects a live PostgreSQL database and generat
 **Usage:**
 
 ```typescript
-import { createDB } from 'bunbase/db'
+import { createDB } from 'bunbase'
 
 const db = createDB(sql) // Automatically typed with generated schema
 const user = await db.from('users').eq('email', 'test@example.com').single()

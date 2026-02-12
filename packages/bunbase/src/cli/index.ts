@@ -3,6 +3,7 @@ import { devCommand } from './commands/dev.ts'
 import { initCommand } from './commands/init.ts'
 import { generateCommand } from './commands/generate.ts'
 import { migrateCommand } from './commands/migrate.ts'
+import { typegenCommand } from './commands/typegen.ts'
 
 const version = '0.0.9'
 
@@ -54,6 +55,14 @@ migrate
 	.description('Show migration status')
 	.action(async () => {
 		await migrateCommand('status')
+	})
+
+program
+	.command('typegen')
+	.description('Generate TypeScript types from database schema')
+	.option('--schema <schema>', 'PostgreSQL schema to introspect', 'public')
+	.action(async (opts: { schema?: string }) => {
+		await typegenCommand(opts)
 	})
 
 // Parse CLI arguments when run directly (bin entry)

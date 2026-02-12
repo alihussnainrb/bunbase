@@ -18,6 +18,10 @@ export interface RunEntry {
 	error: string | null
 	duration_ms: number
 	started_at: number
+	/** Which attempt this run entry represents (1-indexed). Null for actions without retry config. */
+	attempt: number | null
+	/** Total configured max attempts. Null for actions without retry config. */
+	max_attempts: number | null
 }
 
 export interface WriteBufferOptions {

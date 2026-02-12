@@ -243,6 +243,8 @@ export interface Database {
 					output: string | null
 					error: string | null
 					duration_ms: number
+					attempt: number | null
+					max_attempts: number | null
 					started_at: number
 					created_at: string
 				}
@@ -257,6 +259,8 @@ export interface Database {
 					output?: string | null
 					error?: string | null
 					duration_ms: number
+					attempt?: number | null
+					max_attempts?: number | null
 					started_at: number
 					created_at?: string
 				}

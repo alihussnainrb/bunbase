@@ -25,6 +25,7 @@ export type {
 	HttpMethod,
 	ModuleConfig,
 	ModuleDefinition,
+	RetryConfig,
 	ToolTriggerConfig,
 	TriggerConfig,
 	WebhookTriggerConfig,

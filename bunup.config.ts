@@ -9,8 +9,7 @@ export default defineWorkspace([
 			entry: [
 				'./src/index.ts',
 				'./src/cli/index.ts',
-				'./src/db/client.ts',
-				'./src/db/types.ts',
+				'./src/db/index.ts',
 				'./src/logger/index.ts',
 			],
 			format: 'esm',

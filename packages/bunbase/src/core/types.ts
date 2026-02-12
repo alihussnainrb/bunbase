@@ -48,6 +48,21 @@ export type TriggerConfig =
 	| ToolTriggerConfig
 	| WebhookTriggerConfig
 
+// ── Retry Configuration ─────────────────────────────────
+
+export interface RetryConfig {
+	/** Total attempts including the first (default: 1 = no retries). Set to 3 for 1 initial + 2 retries. */
+	readonly maxAttempts?: number
+	/** Backoff strategy: 'exponential' (default) or 'fixed' */
+	readonly backoff?: 'fixed' | 'exponential'
+	/** Base delay in ms before first retry (default: 1000) */
+	readonly backoffMs?: number
+	/** Max delay cap in ms for exponential (default: 30000) */
+	readonly maxBackoffMs?: number
+	/** Custom predicate — return true to retry, false to stop. Runs after built-in classification. */
+	readonly retryIf?: (error: Error) => boolean
+}
+
 // ── Guard Types ──────────────────────────────────────────
 
 export type GuardFn = (ctx: ActionContext) => void | Promise<void>
@@ -69,6 +84,14 @@ export interface ActionContext {
 
 	/** Unique trace ID for this invocation */
 	traceId: string
+
+	/** Retry state for the current attempt */
+	retry: {
+		/** Current attempt number (1-indexed) */
+		attempt: number
+		/** Total max attempts configured */
+		maxAttempts: number
+	}
 
 	/** Emit an event on the internal event bus */
 	event: {
@@ -176,6 +199,7 @@ export interface ActionConfig<
 	readonly output: TOutput
 	readonly triggers?: TriggerConfig[]
 	readonly guards?: GuardFn[]
+	readonly retry?: RetryConfig
 }
 
 export type ActionHandler<

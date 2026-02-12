@@ -9,6 +9,7 @@
 - [Event-Driven Architecture](#event-driven-architecture)
 - [Cron Tasks](#cron-tasks)
 - [Caching with KV](#caching-with-kv)
+- [Retry Patterns](#retry-patterns)
 
 ## CRUD Actions
 
@@ -419,5 +420,64 @@ export const getOrgFeatures = action({
   await ctx.kv.set(cacheKey, featureKeys, { ttl: 300 })
 
   return { features: featureKeys }
+})
+```
+
+## Retry Patterns
+
+### External API Call with Retry
+
+```typescript
+export const callExternalApi = action({
+  name: 'integrations.callApi',
+  input: t.Object({ endpoint: t.String(), payload: t.Any() }),
+  output: t.Object({ response: t.Any() }),
+  triggers: [triggers.api('POST', '/integrations/call')],
+  guards: [guards.authenticated()],
+  retry: {
+    maxAttempts: 3,
+    backoff: 'exponential',
+    backoffMs: 1000,
+    maxBackoffMs: 10000,
+  },
+}, async (input, ctx) => {
+  ctx.logger.info(`Calling external API (attempt ${ctx.retry.attempt})`)
+  const res = await fetch(input.endpoint, {
+    method: 'POST',
+    body: JSON.stringify(input.payload),
+  })
+  if (!res.ok) throw new Error(`API returned ${res.status}`)
+  return { response: await res.json() }
+})
+```
+
+### Custom Retry Filter
+
+```typescript
+import { NonRetriableError } from 'bunbase'
+
+export const processPayment = action({
+  name: 'billing.processPayment',
+  input: t.Object({ amount: t.Number(), cardToken: t.String() }),
+  output: t.Object({ chargeId: t.String() }),
+  triggers: [triggers.api('POST', '/payments')],
+  guards: [guards.authenticated()],
+  retry: {
+    maxAttempts: 3,
+    backoffMs: 2000,
+    retryIf: (err) => {
+      // Only retry network/timeout errors, not business logic errors
+      return err.message.includes('ETIMEDOUT') ||
+             err.message.includes('ECONNRESET') ||
+             err.message.includes('socket hang up')
+    },
+  },
+}, async (input, ctx) => {
+  // If card is declined, throw NonRetriableError to skip retries
+  const result = await chargeCard(input.cardToken, input.amount)
+  if (result.declined) {
+    throw new NonRetriableError('Card declined')
+  }
+  return { chargeId: result.id }
 })
 ```

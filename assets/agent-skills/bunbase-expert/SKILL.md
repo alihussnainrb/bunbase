@@ -89,6 +89,35 @@ saasGuards.trialActiveOrPaid()                // Subscription check
 
 Module guards run first, then action guards. First failure short-circuits.
 
+### Retry
+
+Actions can configure automatic handler retry on transient failures:
+
+```typescript
+export const syncExternalData = action({
+  name: 'sync.external',
+  input: t.Object({ url: t.String() }),
+  output: t.Object({ synced: t.Boolean() }),
+  triggers: [triggers.cron('0 * * * *')],
+  retry: {
+    maxAttempts: 3,
+    backoff: 'exponential',
+    backoffMs: 1000,
+    maxBackoffMs: 30000,
+  },
+}, async (input, ctx) => {
+  ctx.logger.info(`Attempt ${ctx.retry.attempt}/${ctx.retry.maxAttempts}`)
+  const response = await fetch(input.url)
+  if (!response.ok) throw new Error(`HTTP ${response.status}`)
+  return { synced: true }
+})
+```
+
+- Guards run once; only the handler retries
+- Client errors (4xx), `NonRetriableError`, `GuardError` never retry
+- Server errors (5xx) and generic `Error` retry by default
+- Custom `retryIf` predicate for fine-grained control
+
 ## Action Context (ctx)
 
 Every handler receives `ctx` with these services:
@@ -104,6 +133,7 @@ Every handler receives `ctx` with these services:
 | `ctx.queue` | Background job queue |
 | `ctx.scheduler` | Cron and delayed tasks |
 | `ctx.traceId` | Unique execution trace ID |
+| `ctx.retry` | Retry state (attempt, maxAttempts) |
 
 For detailed API of each service, see [references/context-api.md](references/context-api.md).
 
@@ -176,7 +206,28 @@ bunbase migrate new <name>   # Create migration
 bunbase migrate status       # Check migration status
 bunbase generate action <n>  # Generate action
 bunbase generate module <n>  # Generate module
+bunbase typegen              # Generate TypeScript types from database
 ```
+
+### Type Generation
+
+The `bunbase typegen` command introspects your PostgreSQL database and generates TypeScript types at `.bunbase/database.d.ts`. The generated types are automatically picked up by the database client via the `BunbaseDBRegister` type registration pattern:
+
+```typescript
+// After running bunbase typegen, the DB client is automatically typed
+const db = createDB(sql) // No generic needed — types auto-resolved
+const user = await db.from('users').single() // Full autocomplete
+
+// You can still override with explicit generic
+const db = createDB<CustomDB>(sql)
+```
+
+**How it works:**
+
+- The generated `.bunbase/database.d.ts` augments `bunbase/db` module
+- Types include Row (all columns), Insert (optionals for defaults/nullables), and Update (all optional)
+- PostgreSQL types mapped to TypeScript: uuid→string, int→number, jsonb→unknown, timestamptz→string
+- Run after schema changes to keep types in sync
 
 ## Critical Rules
 

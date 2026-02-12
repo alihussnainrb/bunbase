@@ -7,7 +7,13 @@
     "esModuleInterop": true,
     "skipLibCheck": true,
     "noEmit": true,
-    "types": ["bun-types"]
+    "types": [
+      "bun-types"
+    ]
   },
-  "include": ["src/**/*.ts", "bunbase.config.ts"]
+  "include": [
+    "src/**/*.ts",
+    "bunbase.config.ts",
+    ".bunbase/**/*"
+  ]
 }

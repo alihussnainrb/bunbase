@@ -175,7 +175,20 @@ Built-in guards (`packages/bunbase/src/guards/`):
 - Guards are factory functions
 
 ### Execution Pipeline
-Guards → Input Validation → Handler → Output Validation → Persistence
+Guards → Input Validation → Handler (with retry loop) → Output Validation → Persistence
+
+### Retry Support
+Actions can configure automatic retry with exponential or fixed backoff:
+
+- `retry.maxAttempts`: Total attempts including first (default: 1 = no retry)
+- `retry.backoff`: 'exponential' (default) or 'fixed'
+- `retry.backoffMs`: Base delay (default: 1000ms)
+- `retry.maxBackoffMs`: Cap for exponential (default: 30000ms)
+- `retry.retryIf`: Custom predicate for error filtering
+- Guards run once; only the handler retries
+- `NonRetriableError`, `GuardError`, client errors (< 500) never retry
+- Server errors (>= 500) and generic errors are retryable by default
+- `ctx.retry.attempt` and `ctx.retry.maxAttempts` available in handler
 
 ### Write Buffering
 High-frequency writes batched and flushed periodically
@@ -232,9 +245,45 @@ The main `bunbase` package exports:
 ## CLI Tool
 
 `packages/bunbase/src/cli/` provides the `bunbase` command for:
-- Project scaffolding
-- Action generation
-- Development utilities
+
+- Project scaffolding (`bunbase init <name>`)
+- Action/module generation (`bunbase generate action <name>`)
+- Database migrations (`bunbase migrate`, `bunbase migrate new <name>`)
+- Type generation (`bunbase typegen`) - introspects PostgreSQL and generates TypeScript types
+- Development server (`bunbase dev`)
+
+### Database Type Generation
+
+The `bunbase typegen` command introspects a live PostgreSQL database and generates TypeScript types at `.bunbase/database.d.ts`. The generated types are automatically picked up by the database client via a type registration pattern — no explicit generic parameter needed.
+
+**Workflow:**
+
+1. Run `bunbase typegen` after adding/modifying database tables
+2. The command queries `information_schema.columns` and `pg_enum` to introspect the schema
+3. Generates a `.bunbase/database.d.ts` file with Row/Insert/Update types for all tables
+4. The types are automatically resolved via module augmentation of `bunbase/db`
+
+**Type mapping:**
+
+- PostgreSQL `uuid`, `text`, `varchar` → TypeScript `string`
+- `int2`, `int4`, `float4`, `float8` → `number`
+- `int8` → `string` (to avoid precision loss)
+- `jsonb` → `unknown`
+- `timestamptz`, `date` → `string`
+- Nullable columns → `| null`
+- Columns with defaults → optional in Insert type
+
+**Usage:**
+
+```typescript
+import { createDB } from 'bunbase/db'
+
+const db = createDB(sql) // Automatically typed with generated schema
+const user = await db.from('users').eq('email', 'test@example.com').single()
+// ✓ Full autocomplete for 'users' table and columns
+```
+
+You can still pass an explicit generic to override: `createDB<CustomDB>(sql)`
 
 ## Important Context for Code Changes
 
@@ -244,6 +293,7 @@ The main `bunbase` package exports:
 3. Add guards for authorization
 4. Use `ctx.db` for database, `ctx.logger` for logging
 5. File location determines discovery (standalone `.ts` or in `_module.ts`)
+6. Consider adding `retry` config for actions that call external services or may face transient failures
 
 ### When Modifying Database Queries
 - Use TypedQueryBuilder methods, not raw SQL strings

@@ -23,6 +23,26 @@ type Database = {
 	}
 }
 
+/**
+ * Type registration interface. Augment this via `bunbase typegen` to get
+ * automatic type inference without passing generics.
+ *
+ * @example
+ * // .bunbase/database.d.ts (auto-generated)
+ * declare module 'bunbase/db' {
+ *   interface BunbaseDBRegister {
+ *     database: { public: { Tables: { ... } } }
+ *   }
+ * }
+ */
+export interface BunbaseDBRegister {}
+
+type ResolvedDatabase = BunbaseDBRegister extends {
+	database: infer DB extends Database
+}
+	? DB
+	: Database
+
 type InferTables<DB extends Database> = DB['public']['Tables']
 
 type InferTable<
@@ -30,7 +50,7 @@ type InferTable<
 	T extends keyof InferTables<DB>,
 > = InferTables<DB>[T]
 
-export type DatabaseClient<DB extends Database = Database> = {
+export type DatabaseClient<DB extends Database = ResolvedDatabase> = {
 	from: <T extends keyof InferTables<DB>>(
 		table: T,
 	) => TypedQueryBuilder<InferTable<DB, T>>
@@ -39,7 +59,7 @@ export type DatabaseClient<DB extends Database = Database> = {
 	// transaction: <T>(cb: (tx: DatabaseClient<DB>) => Promise<T>) => Promise<T>
 }
 
-export function createDB<DB extends Database = Database>(sql?: SQL): DatabaseClient<DB> {
+export function createDB<DB extends Database = ResolvedDatabase>(sql?: SQL): DatabaseClient<DB> {
 	type Tables = InferTables<DB>
 	const pool = sql ?? getSQLPool()
 

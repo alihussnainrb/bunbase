@@ -81,3 +81,23 @@ export class NonRetriableError extends BunbaseError {
     this.name = 'NonRetriableError'
   }
 }
+
+// ── Retry Classification ────────────────────────────────
+
+/**
+ * Determines whether an error is retryable based on built-in classification.
+ *
+ * Non-retryable: NonRetriableError, ActionValidationError, GuardError,
+ * BunbaseError with statusCode < 500 (client errors)
+ *
+ * Retryable: BunbaseError with statusCode >= 500 (server errors),
+ * generic Error (unknown errors assumed transient)
+ */
+export function isRetryable(error: unknown): boolean {
+  if (!(error instanceof Error)) return false
+  if (error instanceof NonRetriableError) return false
+  if (error.name === 'ActionValidationError') return false
+  if (error.name === 'GuardError') return false
+  if (error instanceof BunbaseError) return error.statusCode >= 500
+  return true
+}

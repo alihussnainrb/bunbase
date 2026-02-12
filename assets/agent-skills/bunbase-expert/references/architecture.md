@@ -56,7 +56,9 @@
 
 ### Database (`src/db/`)
 - `pool.ts`: Connection pooling (default 20 connections, 30s idle timeout)
-- `client.ts`: `TypedQueryBuilder` with fluent chainable API
+- `client.ts`: `TypedQueryBuilder` with fluent chainable API, type registration via `BunbaseDBRegister`
+- `types.ts`: Base `Database` type structure
+- `index.ts`: Barrel export for `bunbase/db` module
 - `migrator.ts`: SQL file-based migrations with `_migrations` tracking table
 - `init-sql.ts`: Schema initialization + SaaS seed data
 
@@ -128,23 +130,41 @@
 - Embedded in server at `/_studio`
 
 ### CLI (`src/cli/`)
+
 - Commander.js based
-- Commands: init, dev, migrate, generate
+- Commands: init, dev, migrate, generate, typegen
 - Config loading from bunbase.config.ts (or variants)
+
+### Type Generation (`src/cli/commands/typegen.ts`)
+
+- Introspects PostgreSQL schema via `information_schema.columns` and `pg_enum`
+- Generates `.bunbase/database.d.ts` with Row/Insert/Update types for all tables
+- Uses module augmentation pattern to extend `bunbase/db`
+- Type registration via `BunbaseDBRegister` interface allows automatic type resolution
+- Conditional type `ResolvedDatabase` checks if `BunbaseDBRegister` is augmented, falls back to base `Database` if empty
+- Generated types: Row (all columns), Insert (defaults/nullables optional), Update (all optional)
+- PostgreSQL to TypeScript mapping: uuid→string, int→number, int8→string, jsonb→unknown, timestamptz→string
+- Nullable columns get `| null`, arrays get `[]` suffix
 
 ## Execution Pipeline
 
 ```
 1. Trigger fires (HTTP request / event / cron / webhook)
 2. Generate unique traceId
-3. Build ActionContext (db, storage, kv, logger, auth, event, queue, scheduler)
+3. Build ActionContext (db, storage, kv, logger, auth, event, queue, scheduler, retry)
 4. Run guards sequentially (module guards first, then action guards)
-   - Any guard throws GuardError -> return error response
-5. Validate input against TypeBox schema
-6. Execute handler function
-7. Validate output against TypeBox schema
-8. Queue run entry to write buffer (async, non-blocking)
-9. Return result
+   - Any guard throws GuardError -> return error response (no retry)
+5. Enter retry loop (attempt 1..maxAttempts):
+   a. Update ctx.retry.attempt
+   b. Validate input against TypeBox schema
+   c. Execute handler function
+   d. Validate output against TypeBox schema
+   e. If handler throws:
+      - Check isRetryable() and custom retryIf
+      - If retryable and attempts remaining: sleep(backoff), continue loop
+      - If not retryable or attempts exhausted: record failure, return error
+   f. Record run entry to write buffer
+6. Return result
 ```
 
 ## Data Flows

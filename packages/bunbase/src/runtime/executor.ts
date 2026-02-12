@@ -138,7 +138,7 @@ export async function executeAction(
 					// Backward compatibility: check for old _http field
 					else if ('_http' in result) {
 						console.warn(
-							'[DEPRECATED] Use _meta.http instead of _http. Support for _http will be removed in v2.0.0',
+							'[DEPRECATED] Use _meta.http instead of _http. Support for _http will be removed in v1.0.0',
 						)
 						transportMeta = { http: (result as any)._http }
 					}

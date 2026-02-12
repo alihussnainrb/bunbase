@@ -1,7 +1,7 @@
 import type { ActionContext } from '../types.ts'
 import { GuardError, type GuardFn } from './types.ts'
 
-export const saasGuards = {
+export const authGuards = {
 	/**
 	 * Ensure the request is within an organization context.
 	 * Looks for orgId in header (x-org-id) or query params.

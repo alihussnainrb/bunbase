@@ -1,5 +1,5 @@
 import type { ActionContext } from '../types.ts'
-import { saasGuards } from './saas.ts'
+import { authGuards } from './auth.ts'
 import { GuardError, type GuardFn, type RateLimitOptions } from './types.ts'
 
 // Export Redis rate limiter for server initialization
@@ -17,9 +17,9 @@ export const guards: {
 	hasPermission: (permission: string) => GuardFn
 	rateLimit: (opts: RateLimitOptions) => GuardFn
 } = {
-	inOrg: saasGuards.inOrg,
-	hasFeature: saasGuards.hasFeature,
-	trialActiveOrPaid: saasGuards.trialActiveOrPaid,
+	inOrg: authGuards.inOrg,
+	hasFeature: authGuards.hasFeature,
+	trialActiveOrPaid: authGuards.trialActiveOrPaid,
 
 	/**
 	 * Ensure the user is authenticated.

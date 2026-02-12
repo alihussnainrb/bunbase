@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'bun:test'
-import { saasGuards } from '../src/core/guards/saas.ts'
+import { authGuards } from '../src/core/guards/auth.ts'
 import type { GuardError } from '../src/core/guards/types.ts'
 import type { ActionContext } from '../src/core/types.ts'
 
@@ -70,9 +70,9 @@ function createMockContext(
 	} as ActionContext
 }
 
-describe('saasGuards.inOrg()', () => {
+describe('authGuards.inOrg()', () => {
 	it('should throw 401 when user is not authenticated', async () => {
-		const guard = saasGuards.inOrg()
+		const guard = authGuards.inOrg()
 		const ctx = createMockContext({ auth: {} as any })
 
 		let error: GuardError | undefined
@@ -86,7 +86,7 @@ describe('saasGuards.inOrg()', () => {
 	})
 
 	it('should throw 400 when orgId is not found in headers or query', async () => {
-		const guard = saasGuards.inOrg()
+		const guard = authGuards.inOrg()
 		const request = new Request('http://localhost:3000/test')
 		const ctx = createMockContext({
 			auth: { userId: 'user-123' } as any,
@@ -105,7 +105,7 @@ describe('saasGuards.inOrg()', () => {
 	})
 
 	it('should find orgId in x-org-id header', async () => {
-		const guard = saasGuards.inOrg()
+		const guard = authGuards.inOrg()
 		const request = new Request('http://localhost:3000/test', {
 			headers: { 'x-org-id': 'org-123' },
 		})
@@ -134,7 +134,7 @@ describe('saasGuards.inOrg()', () => {
 	})
 
 	it('should find orgId in query params', async () => {
-		const guard = saasGuards.inOrg()
+		const guard = authGuards.inOrg()
 		const request = new Request('http://localhost:3000/test?orgId=org-456')
 
 		const iam = createMockIAM({
@@ -160,7 +160,7 @@ describe('saasGuards.inOrg()', () => {
 	})
 
 	it('should throw 404 when organization not found', async () => {
-		const guard = saasGuards.inOrg()
+		const guard = authGuards.inOrg()
 		const request = new Request('http://localhost:3000/test', {
 			headers: { 'x-org-id': 'non-existent' },
 		})
@@ -182,7 +182,7 @@ describe('saasGuards.inOrg()', () => {
 	})
 
 	it('should throw 403 when user is not a member', async () => {
-		const guard = saasGuards.inOrg()
+		const guard = authGuards.inOrg()
 		const request = new Request('http://localhost:3000/test', {
 			headers: { 'x-org-id': 'org-123' },
 		})
@@ -210,7 +210,7 @@ describe('saasGuards.inOrg()', () => {
 	})
 
 	it('should set plan and features from subscription', async () => {
-		const guard = saasGuards.inOrg()
+		const guard = authGuards.inOrg()
 		const request = new Request('http://localhost:3000/test', {
 			headers: { 'x-org-id': 'org-123' },
 		})
@@ -246,7 +246,7 @@ describe('saasGuards.inOrg()', () => {
 	})
 
 	it('should default to free plan when no subscription', async () => {
-		const guard = saasGuards.inOrg()
+		const guard = authGuards.inOrg()
 		const request = new Request('http://localhost:3000/test', {
 			headers: { 'x-org-id': 'org-123' },
 		})
@@ -281,9 +281,9 @@ describe('saasGuards.inOrg()', () => {
 	})
 })
 
-describe('saasGuards.hasFeature()', () => {
+describe('authGuards.hasFeature()', () => {
 	it('should pass when org has the feature', () => {
-		const guard = saasGuards.hasFeature('org:create')
+		const guard = authGuards.hasFeature('org:create')
 		const ctx = createMockContext({
 			auth: {
 				userId: 'user-123',
@@ -296,7 +296,7 @@ describe('saasGuards.hasFeature()', () => {
 	})
 
 	it('should throw 500 when org context is missing', () => {
-		const guard = saasGuards.hasFeature('org:create')
+		const guard = authGuards.hasFeature('org:create')
 		const ctx = createMockContext({
 			auth: { userId: 'user-123' } as any,
 		})
@@ -313,7 +313,7 @@ describe('saasGuards.hasFeature()', () => {
 	})
 
 	it('should throw 403 when org lacks the feature', () => {
-		const guard = saasGuards.hasFeature('org:analytics')
+		const guard = authGuards.hasFeature('org:analytics')
 		const ctx = createMockContext({
 			auth: {
 				userId: 'user-123',
@@ -333,9 +333,9 @@ describe('saasGuards.hasFeature()', () => {
 	})
 })
 
-describe('saasGuards.trialActiveOrPaid()', () => {
+describe('authGuards.trialActiveOrPaid()', () => {
 	it('should pass when org is on paid plan', () => {
-		const guard = saasGuards.trialActiveOrPaid()
+		const guard = authGuards.trialActiveOrPaid()
 		const ctx = createMockContext({
 			auth: {
 				userId: 'user-123',
@@ -348,7 +348,7 @@ describe('saasGuards.trialActiveOrPaid()', () => {
 	})
 
 	it('should throw 500 when org context is missing', () => {
-		const guard = saasGuards.trialActiveOrPaid()
+		const guard = authGuards.trialActiveOrPaid()
 		const ctx = createMockContext({
 			auth: { userId: 'user-123' } as any,
 		})
@@ -364,7 +364,7 @@ describe('saasGuards.trialActiveOrPaid()', () => {
 	})
 
 	it('should throw 403 when org is on free plan', () => {
-		const guard = saasGuards.trialActiveOrPaid()
+		const guard = authGuards.trialActiveOrPaid()
 		const ctx = createMockContext({
 			auth: {
 				userId: 'user-123',

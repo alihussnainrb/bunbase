@@ -4,6 +4,14 @@
 // TypeBox schema builder (re-exported as `t`)
 export { default as t } from 'typebox'
 
+// Database type contracts (used for module augmentation via typegen output)
+export type {
+	BaseDatabase,
+	Database,
+	DatabaseClient,
+	GeneratedDatabase,
+} from './db/index.ts'
+
 // Config
 export { defineConfig } from './config/types.ts'
 export type { BunbaseConfig } from './config/types.ts'

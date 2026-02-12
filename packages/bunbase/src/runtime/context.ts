@@ -12,6 +12,7 @@ import type { IAMManager } from '../iam/context.ts'
 import { createIAMManager } from '../iam/context.ts'
 import type { KVStore } from '../kv/types.ts'
 import type { Logger } from '../logger/index.ts'
+import type { MailerAdapter } from '../mailer/types.ts'
 import type { StorageAdapter } from '../storage/types.ts'
 import { eventBus } from './event-bus.ts'
 import type { Queue } from './queue.ts'
@@ -24,6 +25,7 @@ export interface CreateLazyContextOptions {
 	request?: Request
 	db?: DatabaseClient
 	storage?: StorageAdapter
+	mailer?: MailerAdapter
 	kv?: KVStore
 	queue?: Queue
 	scheduler?: Scheduler
@@ -53,6 +55,7 @@ export function createLazyContext(
 	// Cached lazy services (undefined = not yet accessed)
 	let _db: DatabaseClient | null | undefined
 	let _storage: StorageAdapter | null | undefined
+	let _mailer: MailerAdapter | null | undefined
 	let _kv: KVStore | null | undefined
 	let _queue: ActionContext['queue'] | undefined
 	let _iam: IAMManager | undefined
@@ -93,6 +96,19 @@ export function createLazyContext(
 				)
 			}
 			return _storage
+		},
+
+		// Lazy mailer getter
+		get mailer() {
+			if (_mailer === undefined) {
+				_mailer = opts.mailer ?? null
+			}
+			if (_mailer === null) {
+				throw new Error(
+					'Mailer not configured. Add mailer config to bunbase.config.ts',
+				)
+			}
+			return _mailer
 		},
 
 		// Lazy kv getter

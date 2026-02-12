@@ -89,8 +89,9 @@ export async function devCommand(): Promise<void> {
 		}
 	}
 
-	// 6. Create storage and KV
+	// 6. Create storage, mailer, and KV
 	let storage: import('../../storage/types.ts').StorageAdapter | undefined
+	let mailer: import('../../mailer/types.ts').MailerAdapter | undefined
 	let kv: import('../../kv/types.ts').KVStore | undefined
 
 	try {
@@ -98,6 +99,18 @@ export async function devCommand(): Promise<void> {
 		storage = createStorage(config.storage)
 	} catch {
 		// Storage module not yet available
+	}
+
+	if (config.mailer) {
+		try {
+			const { createMailer } = await import('../../mailer/index.ts')
+			mailer = createMailer(config.mailer) ?? undefined
+			if (mailer) {
+				console.log(`✓ Mailer configured (${config.mailer.provider ?? 'smtp'})`)
+			}
+		} catch (err) {
+			console.warn('⚠ Failed to initialize mailer:', err)
+		}
 	}
 
 	try {
@@ -131,6 +144,7 @@ export async function devCommand(): Promise<void> {
 	const server = new BunbaseServer(registry, logger, writeBuffer, config, {
 		db,
 		storage,
+		mailer,
 		kv,
 	})
 

@@ -71,6 +71,46 @@ export interface BunbaseConfig {
 		}
 	}
 
+	/** Email mailer configuration */
+	mailer?: {
+		/** Mailer provider (default: smtp) */
+		provider?: 'smtp' | 'resend' | 'sendgrid' | 'mailgun' | 'ses'
+		/** Default sender information */
+		from: {
+			name: string
+			email: string
+		}
+		/** SMTP configuration */
+		smtp?: {
+			host: string
+			port: number
+			secure?: boolean
+			auth: {
+				user: string
+				pass: string
+			}
+		}
+		/** Resend configuration */
+		resend?: {
+			apiKey: string
+		}
+		/** SendGrid configuration */
+		sendgrid?: {
+			apiKey: string
+		}
+		/** Mailgun configuration */
+		mailgun?: {
+			apiKey: string
+			domain: string
+		}
+		/** AWS SES configuration */
+		ses?: {
+			region: string
+			accessKeyId: string
+			secretAccessKey: string
+		}
+	}
+
 	/** Enable SaaS features (Organizations, Billing) */
 	saas?: boolean
 

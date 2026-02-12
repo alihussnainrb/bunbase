@@ -31,6 +31,7 @@ export async function executeAction(
 		writeBuffer: WriteBuffer
 		db?: DatabaseClient
 		storage?: StorageAdapter
+		mailer?: import('../mailer/types.ts').MailerAdapter
 		kv?: KVStore
 		queue?: Queue
 		scheduler?: Scheduler
@@ -91,6 +92,7 @@ export async function executeAction(
 		request: opts.request,
 		db: opts.db,
 		storage: opts.storage,
+		mailer: opts.mailer,
 		kv: opts.kv,
 		queue: opts.queue,
 		scheduler: opts.scheduler,

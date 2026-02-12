@@ -78,6 +78,12 @@ export type { KVStore } from './kv/types.ts'
 export type { LoggerOptions, LogLevel, LogListener } from './logger/index.ts'
 // Logger (useful for custom logging in action handlers)
 export { Logger, LoggerSession } from './logger/index.ts'
+// Mailer adapter types (for custom adapter implementations)
+export type {
+	EmailAttachment,
+	MailerAdapter,
+	SendEmailOptions,
+} from './mailer/types.ts'
 // Storage adapter types (for custom adapter implementations)
 export type { StorageAdapter, UploadOptions } from './storage/types.ts'
 export type { TestActionOptions, TestActionResult } from './test/index.ts'

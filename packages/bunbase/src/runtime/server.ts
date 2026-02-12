@@ -25,6 +25,7 @@ import type { Scheduler } from './scheduler.ts'
 export interface ServerServices {
 	db?: DatabaseClient
 	storage?: StorageAdapter
+	mailer?: import('../mailer/types.ts').MailerAdapter
 	kv?: KVStore
 }
 
@@ -113,6 +114,7 @@ export class BunbaseServer {
 								writeBuffer: this.writeBuffer,
 								db: this.services?.db,
 								storage: this.services?.storage,
+								mailer: this.services?.mailer,
 								kv: this.services?.kv,
 								registry: this.registry,
 							})
@@ -400,6 +402,7 @@ export class BunbaseServer {
 				writeBuffer: this.writeBuffer,
 				db: this.services?.db,
 				storage: this.services?.storage,
+				mailer: this.services?.mailer,
 				kv: this.services?.kv,
 				queue: this.queue,
 				scheduler: this.scheduler,

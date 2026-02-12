@@ -4,6 +4,7 @@ import type { AuthContext } from '../iam/auth-context.ts'
 import type { IAMManager } from '../iam/context.ts'
 import type { KVStore } from '../kv/types.ts'
 import type { Logger } from '../logger/index.ts'
+import type { MailerAdapter } from '../mailer/types.ts'
 import type { StorageAdapter } from '../storage/types.ts'
 import type { ActionRegistry } from './registry.ts'
 
@@ -219,6 +220,9 @@ export interface ActionContext {
 
 	/** File storage (S3 or local filesystem) */
 	storage: StorageAdapter
+
+	/** Email mailer (SMTP, Resend, SendGrid, etc.) */
+	mailer: MailerAdapter
 
 	/** Key-value store (Postgres-backed) */
 	kv: KVStore

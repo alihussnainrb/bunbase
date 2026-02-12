@@ -19,12 +19,6 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Setup Node
-        uses: actions/setup-node@v6
-        with:
-          node-version: '24'
-          registry-url: 'https://registry.npmjs.org'
-
       - name: Setup Bun
         uses: oven-sh/setup-bun@v2
         with:
@@ -51,8 +45,8 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Update npm
-        run: npm install -g npm@latest
-
-      - name: Publish packages to npm
-        run: bun pm pack && npm publish ./*.tgz --access public
+      - name: Publish to NPM
+        working-directory: ./packages/bunbase
+        run: bun publish --access public --tolerate-republish
+        env:
+          NPM_CONFIG_TOKEN: ${{ secrets.NPM_TOKEN }}

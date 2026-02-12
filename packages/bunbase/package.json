@@ -1,7 +1,7 @@
 {
 	"name": "bunbase",
 	"version": "0.1.1",
-	"description": "A framework for building scalable applications",
+	"description": "Type-safe backend framework for Bun with actions, modules, and triggers",
 	"homepage": "https://github.com/alihussnainrb/bunbase#readme",
 	"bugs": {
 		"url": "https://github.com/alihussnainrb/bunbase/issues"
@@ -42,7 +42,7 @@
 	],
 	"repository": {
 		"type": "git",
-		"url": "git+https://github.com/alihussnainrb/gravity.git"
+		"url": "git+https://github.com/alihussnainrb/bunbase.git"
 	},
 	"scripts": {
 		"type-check": "tsc --noEmit"

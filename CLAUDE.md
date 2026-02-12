@@ -93,7 +93,7 @@ There is no `main.ts` or manual server setup in user projects. See `examples/bas
 
 **Action Discovery** (`packages/bunbase/src/runtime/loader.ts`):
 - Scans for `_module.ts` files (modules first)
-- Then scans for `.ts` action files (skips files in module directories)
+- Then scans for `.action.ts` action files (skips files in module directories)
 - Uses Bun's `Glob` API for discovery
 
 **Scheduler** (`packages/bunbase/src/runtime/scheduler.ts`):
@@ -245,7 +245,7 @@ Every execution gets unique `traceId` for observability
 ## File Structure Conventions
 
 - `_module.ts`: Module definitions (discovered first by loader)
-- `*.ts`: Standalone actions in packages/bunbase/src/
+- `*.action.ts`: Standalone action files
 - Actions organized by domain: `auth/`, `guards/`, `saas/`, etc.
 - Tests co-located with source (Bun's default)
 
@@ -336,7 +336,7 @@ You can still pass an explicit generic to override: `createDB<CustomDB>(sql)`
 2. Choose appropriate trigger(s): API, event, cron, webhook, or MCP
 3. Add guards for authorization
 4. Use `ctx.db` for database, `ctx.logger` for logging
-5. File location determines discovery (standalone `.ts` or in `_module.ts`)
+5. File location determines discovery (standalone `.action.ts` or in `_module.ts`)
 6. Consider adding `retry` config for actions that call external services or may face transient failures
 
 ### When Modifying Database Queries

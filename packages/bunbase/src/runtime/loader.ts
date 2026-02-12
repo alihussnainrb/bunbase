@@ -8,7 +8,7 @@ import type { Logger } from '../logger/index.ts'
  *
  * Scan order:
  *   1. Find all `_module.ts` files → register as modules
- *   2. Find remaining `.ts` files that default-export an action → register standalone
+ *   2. Find remaining `.action.ts` files that default-export an action → register standalone
  */
 export async function loadActions(
 	dir: string,
@@ -56,7 +56,7 @@ export async function loadActions(
 	// 2. Discover standalone action files (skip _module.ts and files in module dirs)
 	const moduleDirs = moduleFiles.map((f) => f.replace(/[\\/]_module\.ts$/, ''))
 
-	const actionGlob = new Glob('**/*.ts')
+	const actionGlob = new Glob('**/*.action.ts')
 
 	for await (const path of actionGlob.scan({
 		cwd: resolvedDir,

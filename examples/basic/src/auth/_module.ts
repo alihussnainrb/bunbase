@@ -1,6 +1,6 @@
 import { module } from 'bunbase'
-import { login } from './login.ts'
-import { me } from './me.ts'
+import { login } from './login.action.ts'
+import { me } from './me.action.ts'
 
 /**
  * Auth module — groups authentication actions under /auth prefix.

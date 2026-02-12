@@ -1,9 +1,9 @@
 import { guards, module } from 'bunbase'
-import { createTaskAction } from './create-task.ts'
-import { deleteTaskAction } from './delete-task.ts'
-import { getTaskAction } from './get-task.ts'
-import { listTasksAction } from './list-tasks.ts'
-import { updateTaskAction } from './update-task.ts'
+import { createTaskAction } from './create-task.action.ts'
+import { deleteTaskAction } from './delete-task.action.ts'
+import { getTaskAction } from './get-task.action.ts'
+import { listTasksAction } from './list-tasks.action.ts'
+import { updateTaskAction } from './update-task.action.ts'
 
 /**
  * Tasks module — groups all task CRUD actions under /tasks prefix.

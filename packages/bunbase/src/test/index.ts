@@ -1,3 +1,4 @@
+import type { TSchema } from 'typebox'
 import { ActionRegistry } from '../core/registry.ts'
 import type { ActionContext, ActionDefinition } from '../core/types.ts'
 import type { DatabaseClient } from '../db/client.ts'
@@ -46,7 +47,10 @@ export interface TestActionResult<TOutput> {
  * expect(result.data).toEqual({ message: 'Hello, World' })
  * ```
  */
-export async function testAction<TInput, TOutput>(
+export async function testAction<
+	TInput extends TSchema,
+	TOutput extends TSchema,
+>(
 	actionDef: ActionDefinition<TInput, TOutput>,
 	input: TInput,
 	opts: TestActionOptions = {},

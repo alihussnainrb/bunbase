@@ -37,12 +37,14 @@ export interface CreateLazyContextOptions {
  * Services like db, storage, kv, and queue are only initialized when accessed.
  * This prevents unnecessary overhead for simple handlers that don't need these services.
  */
-export function createLazyContext(opts: CreateLazyContextOptions): ActionContext {
+export function createLazyContext(
+	opts: CreateLazyContextOptions,
+): ActionContext {
 	// Cached lazy services (undefined = not yet accessed)
-	let _db: DatabaseClient | null | undefined = undefined
-	let _storage: StorageAdapter | null | undefined = undefined
-	let _kv: KVStore | null | undefined = undefined
-	let _queue: ActionContext['queue'] | undefined = undefined
+	let _db: DatabaseClient | null | undefined
+	let _storage: StorageAdapter | null | undefined
+	let _kv: KVStore | null | undefined
+	let _queue: ActionContext['queue'] | undefined
 
 	const queue = opts.queue
 	const _scheduler = opts.scheduler

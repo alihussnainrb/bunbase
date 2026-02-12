@@ -61,7 +61,7 @@ export async function executeAction(
 	})
 
 	// Loop detection: Check for circular action dependencies
-	const callStack = opts.auth?._callStack || []
+	const callStack = (opts.auth?._callStack as string[] | undefined) || []
 	const actionName = action.definition.config.name
 	const maxDepth = 50 // Prevent infinite loops while allowing deep legitimate chains
 

@@ -17,7 +17,9 @@ export const login = action(
 			userId: t.String(),
 			name: t.String(),
 		}),
-		triggers: [triggers.api('POST', '/login')],
+		triggers: [
+			triggers.api('POST', '/login')
+		],
 		// No guards — login must be accessible without auth
 	},
 	async (input, ctx) => {

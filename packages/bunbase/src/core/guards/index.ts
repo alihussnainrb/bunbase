@@ -61,14 +61,30 @@ export const guards: {
 	},
 
 	/**
-	 * Simple in-memory rate limiter.
-	 * Note: Does not persist across server restarts or scale horizontally.
+	 * Rate limiter that automatically uses Redis when available, falls back to in-memory.
+	 *
+	 * - With Redis: Persists across restarts, works across multiple instances
+	 * - Without Redis: In-memory only, does not persist or scale horizontally
+	 *
+	 * To enable Redis rate limiting, configure redis in bunbase.config.ts
 	 */
 	rateLimit: (opts: RateLimitOptions): GuardFn => {
 		const hits = new Map<string, number[]>()
+		let redisGuard: GuardFn | null = null
 
-		return (ctx: ActionContext) => {
-			// Default key is IP address or user ID
+		return async (ctx: ActionContext) => {
+			// Use Redis rate limiter if available
+			if (ctx.redis) {
+				if (!redisGuard) {
+					const { createRedisRateLimiter } = await import(
+						'./rate-limit-redis.ts'
+					)
+					redisGuard = createRedisRateLimiter(ctx.redis, opts)
+				}
+				return await redisGuard(ctx)
+			}
+
+			// Fall back to in-memory rate limiter
 			const key = opts.key ? opts.key(ctx) : ctx.auth.userId || 'anonymous'
 			const now = Date.now()
 

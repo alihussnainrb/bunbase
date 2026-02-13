@@ -29,6 +29,7 @@ export interface ServerServices {
 	storage?: StorageAdapter
 	mailer?: import('../mailer/types.ts').MailerAdapter
 	kv?: KVStore
+	redis?: import('bun').RedisClient
 }
 
 interface Route {
@@ -334,6 +335,7 @@ export class BunbaseServer {
 					storage: this.services?.storage,
 					mailer: this.services?.mailer,
 					kv: this.services?.kv,
+					redis: this.services?.redis,
 					queue: this.queue,
 					scheduler: this.scheduler,
 					sessionManager: this.sessionManager,
@@ -440,6 +442,43 @@ export class BunbaseServer {
 	}
 
 	/**
+	 * Match a URL pathname against a route pattern with path parameters.
+	 * Returns params object if match, null otherwise.
+	 */
+	private matchPattern(
+		pathname: string,
+		pattern: string,
+	): { params: Record<string, string> } | null {
+		const patternParts = pattern.split('/')
+		const pathParts = pathname.split('/')
+
+		if (patternParts.length !== pathParts.length) {
+			return null
+		}
+
+		const params: Record<string, string> = {}
+
+		for (let i = 0; i < patternParts.length; i++) {
+			const patternPart = patternParts[i]
+			const pathPart = pathParts[i]
+
+			if (!patternPart || !pathPart) {
+				return null
+			}
+
+			if (patternPart.startsWith(':')) {
+				// Path parameter
+				params[patternPart.slice(1)] = pathPart
+			} else if (patternPart !== pathPart) {
+				// Static segment doesn't match
+				return null
+			}
+		}
+
+		return { params }
+	}
+
+	/**
 	 * Main request handler with optimized routing.
 	 */
 	private async handleRequest(req: Request): Promise<Response> {
@@ -458,6 +497,21 @@ export class BunbaseServer {
 		if (handler) {
 			const response = await handler(req)
 			return this.addCorsHeaders(req, response)
+		}
+
+		// Try pattern matching for dynamic routes (e.g., /users/:id)
+		for (const route of this.routePatterns) {
+			if (route.method !== method) continue
+
+			const match = this.matchPattern(pathname, route.pattern)
+			if (match) {
+				// Build route handler on-demand for this pattern
+				const handler = this.createRouteHandler(route.action, route.trigger)
+				// Store params on request object for extraction in createRouteHandler
+				;(req as any).params = match.params
+				const response = await handler(req)
+				return this.addCorsHeaders(req, response)
+			}
 		}
 
 		// Check special routes (OpenAPI, Studio)

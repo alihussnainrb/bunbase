@@ -33,6 +33,7 @@ export async function executeAction(
 		storage?: StorageAdapter
 		mailer?: import('../mailer/types.ts').MailerAdapter
 		kv?: KVStore
+		redis?: import('bun').RedisClient
 		queue?: Queue
 		scheduler?: Scheduler
 		registry?: ActionRegistry
@@ -94,6 +95,7 @@ export async function executeAction(
 		storage: opts.storage,
 		mailer: opts.mailer,
 		kv: opts.kv,
+		redis: opts.redis,
 		queue: opts.queue,
 		scheduler: opts.scheduler,
 		registry: opts.registry,

@@ -222,8 +222,11 @@ export interface ActionContext {
 	/** Email mailer (SMTP, Resend, SendGrid, etc.) */
 	mailer: MailerAdapter
 
-	/** Key-value store (Postgres-backed) */
+	/** Key-value store (Postgres-backed or Redis) */
 	kv: KVStore
+
+	/** Redis client (optional, for distributed rate limiting and caching) */
+	redis?: import('bun').RedisClient
 
 	/** Child logger scoped to this action + traceId */
 	logger: Logger

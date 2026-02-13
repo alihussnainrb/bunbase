@@ -27,6 +27,7 @@ export interface CreateLazyContextOptions {
 	storage?: StorageAdapter
 	mailer?: MailerAdapter
 	kv?: KVStore
+	redis?: import('bun').RedisClient
 	queue?: Queue
 	scheduler?: Scheduler
 	registry?: ActionRegistry
@@ -123,6 +124,9 @@ export function createLazyContext(
 			}
 			return _kv
 		},
+
+		// Optional redis client
+		redis: opts.redis,
 
 		// Eager fields (lightweight, always needed)
 		logger: opts.logger,

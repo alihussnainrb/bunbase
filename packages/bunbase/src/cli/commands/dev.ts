@@ -146,6 +146,7 @@ export async function devCommand(): Promise<void> {
 		storage,
 		mailer,
 		kv,
+		redis,
 	})
 
 	try {

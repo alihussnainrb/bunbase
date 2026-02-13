@@ -89,7 +89,7 @@ function printResults(results: BenchmarkResult[]) {
 				bunbaseResult.requestsPerSecond) *
 			100
 
-		console.log('\n' + '='.repeat(80))
+		console.log(`\n${'='.repeat(80)}`)
 		console.log('OVERHEAD ANALYSIS:')
 		console.log('='.repeat(80))
 		console.log(
@@ -103,7 +103,7 @@ function printResults(results: BenchmarkResult[]) {
 		)
 	}
 
-	console.log('\n' + '='.repeat(80) + '\n')
+	console.log(`\n${'='.repeat(80)}\n`)
 }
 
 async function main() {

@@ -18,12 +18,12 @@ const outputSchema = Type.Object({
 
 // Simple logger
 class Logger {
-	child(meta: Record<string, any>) {
+	child(_meta: Record<string, any>) {
 		return new Logger()
 	}
-	debug(...args: any[]) {}
-	info(...args: any[]) {}
-	error(...args: any[]) {}
+	debug(..._args: any[]) {}
+	info(..._args: any[]) {}
+	error(..._args: any[]) {}
 }
 
 // Session manager (same HMAC logic as Bunbase)
@@ -112,12 +112,12 @@ Bun.serve({
 
 			// 3. Parse cookies and verify session
 			const cookies = parseCookies(req.headers.get('Cookie'))
-			const sessionToken = cookies['bunbase_session']
-			let authContext: any = {}
+			const sessionToken = cookies.bunbase_session
+			let _authContext: any = {}
 			if (sessionToken) {
 				const payload = verifySession(sessionToken)
 				if (payload) {
-					authContext = payload
+					_authContext = payload
 				}
 			}
 

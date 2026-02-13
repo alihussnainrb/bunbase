@@ -28,7 +28,7 @@ export const notifyAdmin = action(
 		}
 
 		// Get admin(s) to notify
-		let admins
+		let admins: any[]
 		if (input.admin_id) {
 			const admin = await ctx.db
 				.from('organization_admins')

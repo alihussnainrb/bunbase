@@ -313,7 +313,34 @@ export class BunbaseServer {
 						} else {
 							// Fallback: Default mapping: POST/PUT/PATCH → body, GET/DELETE → query params
 							if (['POST', 'PUT', 'PATCH'].includes(method)) {
-								input = await req.json().catch(() => ({}))
+								const contentType = req.headers.get('content-type') || ''
+
+								if (contentType.includes('multipart/form-data')) {
+									// Parse multipart form data (file uploads)
+									const formData = await req.formData()
+									input = {}
+
+									for (const [key, value] of formData.entries()) {
+										// FormDataEntryValue is string | File
+										if (typeof value === 'string') {
+											// Regular form field
+											;(input as Record<string, unknown>)[key] = value
+										} else {
+											// value is File - convert to UploadedFile
+											const file = value as File
+											const arrayBuffer = await file.arrayBuffer()
+											;(input as Record<string, unknown>)[key] = {
+												filename: file.name,
+												contentType: file.type,
+												size: file.size,
+												data: Buffer.from(arrayBuffer),
+											}
+										}
+									}
+								} else {
+									// Parse JSON (default)
+									input = await req.json().catch(() => ({}))
+								}
 							} else {
 								input = Object.fromEntries(url.searchParams)
 							}

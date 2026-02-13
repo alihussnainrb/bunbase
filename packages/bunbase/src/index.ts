@@ -37,6 +37,7 @@ export type {
 	ToolTriggerConfig,
 	TransportMetadata,
 	TriggerConfig,
+	UploadedFile,
 	WebhookTriggerConfig,
 } from './core/types.ts'
 export type {

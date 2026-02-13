@@ -13,6 +13,21 @@ import type { WrappedGuards } from './guards/execution.ts'
 
 export type HttpMethod = 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE'
 
+/**
+ * Uploaded file from multipart/form-data request.
+ * Available in action input when Content-Type is multipart/form-data.
+ */
+export interface UploadedFile {
+	/** Original filename from the upload */
+	filename: string
+	/** MIME type of the file (e.g., 'image/png', 'application/pdf') */
+	contentType: string
+	/** File size in bytes */
+	size: number
+	/** File data as Buffer */
+	data: Buffer
+}
+
 export interface ApiTriggerConfig {
 	readonly type: 'api'
 	readonly method: HttpMethod

@@ -1,0 +1,22 @@
+{
+  "name": "amantra-cpanel",
+  "version": "1.0.0",
+  "module": "index.ts",
+  "type": "module",
+  "private": true,
+  "scripts": {
+    "dev": "bunbase dev",
+    "migrate": "bunbase migrate",
+    "migrate:new": "bunbase migrate new",
+    "typegen": "bunbase typegen"
+  },
+  "devDependencies": {
+    "@types/bun": "latest"
+  },
+  "peerDependencies": {
+    "typescript": "^5"
+  },
+  "dependencies": {
+    "bunbase": "../../packages/bunbase"
+  }
+}

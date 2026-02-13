@@ -1,6 +1,6 @@
 {
 	"name": "bunbase",
-	"version": "0.1.1",
+	"version": "1.0.1",
 	"description": "Type-safe backend framework for Bun with actions, modules, and triggers",
 	"homepage": "https://github.com/alihussnainrb/bunbase#readme",
 	"bugs": {

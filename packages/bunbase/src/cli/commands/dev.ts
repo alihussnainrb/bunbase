@@ -7,6 +7,7 @@ import { createDB } from '../../db/client.ts'
 import { createSQLPool } from '../../db/pool.ts'
 import { Logger } from '../../logger/index.ts'
 import { WriteBuffer } from '../../persistence/write-buffer.ts'
+import { eventBus } from '../../runtime/event-bus.ts'
 import { loadActions } from '../../runtime/loader.ts'
 import { BunbaseServer } from '../../runtime/server.ts'
 
@@ -81,6 +82,10 @@ export async function devCommand(): Promise<void> {
 			// Test connection
 			await redis.connect()
 			logger.info(`Connected to Redis at ${redisUrl}`)
+
+			// Attach Redis to EventBus for distributed event propagation
+			await eventBus.attachRedis(redis)
+			logger.info('EventBus using Redis Pub/Sub for cross-instance events')
 		} catch (err: unknown) {
 			const message = err instanceof Error ? err.message : String(err)
 			logger.warn(`Failed to connect to Redis: ${message}`)
@@ -165,6 +170,7 @@ export async function devCommand(): Promise<void> {
 		process.on('SIGINT', async () => {
 			logger.info('Shutting down...')
 			server.stop()
+			await eventBus.detach()
 			await writeBuffer.shutdown()
 			sqlPool.close()
 			if (redis) {

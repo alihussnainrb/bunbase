@@ -1,11 +1,8 @@
-import { describe, expect, it, beforeEach, mock } from 'bun:test'
+import { beforeEach, describe, expect, it } from 'bun:test'
 import { ChannelManager } from './channel-manager.ts'
 import type { BunbaseWebSocket, WSConnectionData } from './types.ts'
 
-function createMockWS(
-	connectionId: string,
-	userId?: string,
-): BunbaseWebSocket {
+function createMockWS(connectionId: string, userId?: string): BunbaseWebSocket {
 	const sent: string[] = []
 	return {
 		data: {

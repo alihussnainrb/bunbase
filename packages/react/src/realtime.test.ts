@@ -1,6 +1,6 @@
-import { afterEach, beforeEach, describe, expect, it, mock } from 'bun:test'
-import { RealtimeClient } from './realtime.ts'
+import { afterEach, beforeEach, describe, expect, it } from 'bun:test'
 import type { ConnectionState } from './realtime.ts'
+import { RealtimeClient } from './realtime.ts'
 
 // Mock WebSocket
 class MockWebSocket {
@@ -50,6 +50,13 @@ class MockWebSocket {
 let mockWsInstances: MockWebSocket[] = []
 const originalWebSocket = globalThis.WebSocket
 
+/** Get mock WS instance, asserting it exists */
+function ws(index = 0): MockWebSocket {
+	const instance = mockWsInstances[index]
+	if (!instance) throw new Error(`No mock WebSocket at index ${index}`)
+	return instance
+}
+
 beforeEach(() => {
 	mockWsInstances = []
 	;(globalThis as any).WebSocket = class extends MockWebSocket {
@@ -83,7 +90,7 @@ describe('RealtimeClient', () => {
 			client.connect()
 
 			expect(mockWsInstances.length).toBe(1)
-			expect(mockWsInstances[0].url).toBe('ws://localhost:3000/ws')
+			expect(ws().url).toBe('ws://localhost:3000/ws')
 		})
 
 		it('should append token as query param', () => {
@@ -93,9 +100,7 @@ describe('RealtimeClient', () => {
 			})
 			client.connect()
 
-			expect(mockWsInstances[0].url).toBe(
-				'ws://localhost:3000/ws?token=my-token',
-			)
+			expect(ws().url).toBe('ws://localhost:3000/ws?token=my-token')
 		})
 
 		it('should set state to connecting', () => {
@@ -108,7 +113,7 @@ describe('RealtimeClient', () => {
 		it('should set state to connected on open', () => {
 			const client = new RealtimeClient({ url: 'ws://localhost:3000/ws' })
 			client.connect()
-			mockWsInstances[0].simulateOpen()
+			ws().simulateOpen()
 
 			expect(client.getState()).toBe('connected')
 		})
@@ -116,7 +121,7 @@ describe('RealtimeClient', () => {
 		it('should not create duplicate connections', () => {
 			const client = new RealtimeClient({ url: 'ws://localhost:3000/ws' })
 			client.connect()
-			mockWsInstances[0].simulateOpen()
+			ws().simulateOpen()
 			client.connect() // Should be a no-op
 
 			expect(mockWsInstances.length).toBe(1)
@@ -130,7 +135,7 @@ describe('RealtimeClient', () => {
 				autoReconnect: false,
 			})
 			client.connect()
-			mockWsInstances[0].simulateOpen()
+			ws().simulateOpen()
 			client.disconnect()
 
 			expect(client.getState()).toBe('disconnected')
@@ -142,7 +147,7 @@ describe('RealtimeClient', () => {
 				autoReconnect: true,
 			})
 			client.connect()
-			mockWsInstances[0].simulateOpen()
+			ws().simulateOpen()
 			client.disconnect()
 
 			// Should not create a new connection
@@ -154,12 +159,12 @@ describe('RealtimeClient', () => {
 		it('should send subscribe message when connected', () => {
 			const client = new RealtimeClient({ url: 'ws://localhost:3000/ws' })
 			client.connect()
-			mockWsInstances[0].simulateOpen()
+			ws().simulateOpen()
 
 			client.subscribe('chat:general')
 
-			expect(mockWsInstances[0].sent.length).toBe(1)
-			const msg = JSON.parse(mockWsInstances[0].sent[0])
+			expect(ws().sent.length).toBe(1)
+			const msg = JSON.parse(ws().sent[0]!)
 			expect(msg.type).toBe('subscribe')
 			expect(msg.channel).toBe('chat:general')
 		})
@@ -173,10 +178,10 @@ describe('RealtimeClient', () => {
 
 			// Now connect - should re-subscribe
 			client.connect()
-			mockWsInstances[0].simulateOpen()
+			ws().simulateOpen()
 
-			expect(mockWsInstances[0].sent.length).toBe(1)
-			const msg = JSON.parse(mockWsInstances[0].sent[0])
+			expect(ws().sent.length).toBe(1)
+			const msg = JSON.parse(ws().sent[0]!)
 			expect(msg.type).toBe('subscribe')
 			expect(msg.channel).toBe('chat:general')
 		})
@@ -184,13 +189,13 @@ describe('RealtimeClient', () => {
 		it('should send unsubscribe message', () => {
 			const client = new RealtimeClient({ url: 'ws://localhost:3000/ws' })
 			client.connect()
-			mockWsInstances[0].simulateOpen()
+			ws().simulateOpen()
 
 			client.subscribe('chat:general')
 			client.unsubscribe('chat:general')
 
-			expect(mockWsInstances[0].sent.length).toBe(2)
-			const msg = JSON.parse(mockWsInstances[0].sent[1])
+			expect(ws().sent.length).toBe(2)
+			const msg = JSON.parse(ws().sent[1]!)
 			expect(msg.type).toBe('unsubscribe')
 			expect(msg.channel).toBe('chat:general')
 		})
@@ -200,14 +205,14 @@ describe('RealtimeClient', () => {
 		it('should dispatch events to listeners', () => {
 			const client = new RealtimeClient({ url: 'ws://localhost:3000/ws' })
 			client.connect()
-			mockWsInstances[0].simulateOpen()
+			ws().simulateOpen()
 
 			const received: unknown[] = []
 			client.on('chat:general', 'message', (payload) => {
 				received.push(payload)
 			})
 
-			mockWsInstances[0].simulateMessage({
+			ws().simulateMessage({
 				type: 'event',
 				channel: 'chat:general',
 				event: 'message',
@@ -221,14 +226,14 @@ describe('RealtimeClient', () => {
 		it('should support wildcard listeners', () => {
 			const client = new RealtimeClient({ url: 'ws://localhost:3000/ws' })
 			client.connect()
-			mockWsInstances[0].simulateOpen()
+			ws().simulateOpen()
 
 			const received: unknown[] = []
 			client.on('chat:general', '*', (payload) => {
 				received.push(payload)
 			})
 
-			mockWsInstances[0].simulateMessage({
+			ws().simulateMessage({
 				type: 'event',
 				channel: 'chat:general',
 				event: 'message',
@@ -245,7 +250,7 @@ describe('RealtimeClient', () => {
 		it('should return unsubscribe function', () => {
 			const client = new RealtimeClient({ url: 'ws://localhost:3000/ws' })
 			client.connect()
-			mockWsInstances[0].simulateOpen()
+			ws().simulateOpen()
 
 			const received: unknown[] = []
 			const unsub = client.on('chat:general', 'message', (payload) => {
@@ -253,7 +258,7 @@ describe('RealtimeClient', () => {
 			})
 
 			// First event should be received
-			mockWsInstances[0].simulateMessage({
+			ws().simulateMessage({
 				type: 'event',
 				channel: 'chat:general',
 				event: 'message',
@@ -263,7 +268,7 @@ describe('RealtimeClient', () => {
 			unsub()
 
 			// Second event should not be received
-			mockWsInstances[0].simulateMessage({
+			ws().simulateMessage({
 				type: 'event',
 				channel: 'chat:general',
 				event: 'message',
@@ -276,14 +281,14 @@ describe('RealtimeClient', () => {
 		it('should not dispatch events for different channels', () => {
 			const client = new RealtimeClient({ url: 'ws://localhost:3000/ws' })
 			client.connect()
-			mockWsInstances[0].simulateOpen()
+			ws().simulateOpen()
 
 			const received: unknown[] = []
 			client.on('chat:general', 'message', (payload) => {
 				received.push(payload)
 			})
 
-			mockWsInstances[0].simulateMessage({
+			ws().simulateMessage({
 				type: 'event',
 				channel: 'chat:private',
 				event: 'message',
@@ -298,11 +303,11 @@ describe('RealtimeClient', () => {
 		it('should send publish message', () => {
 			const client = new RealtimeClient({ url: 'ws://localhost:3000/ws' })
 			client.connect()
-			mockWsInstances[0].simulateOpen()
+			ws().simulateOpen()
 
 			client.publish('chat:general', 'message', { text: 'Hello' })
 
-			const msg = JSON.parse(mockWsInstances[0].sent[0])
+			const msg = JSON.parse(ws().sent[0]!)
 			expect(msg.type).toBe('publish')
 			expect(msg.channel).toBe('chat:general')
 			expect(msg.event).toBe('message')
@@ -320,7 +325,7 @@ describe('RealtimeClient', () => {
 			})
 
 			client.connect()
-			mockWsInstances[0].simulateOpen()
+			ws().simulateOpen()
 
 			expect(states).toEqual(['connecting', 'connected'])
 		})
@@ -335,7 +340,7 @@ describe('RealtimeClient', () => {
 
 			client.connect()
 			unsub()
-			mockWsInstances[0].simulateOpen()
+			ws().simulateOpen()
 
 			// Only 'connecting' should be captured, not 'connected'
 			expect(states).toEqual(['connecting'])
@@ -349,8 +354,8 @@ describe('RealtimeClient', () => {
 				autoReconnect: false,
 			})
 			client.connect()
-			mockWsInstances[0].simulateOpen()
-			mockWsInstances[0].simulateClose()
+			ws().simulateOpen()
+			ws().simulateClose()
 
 			expect(client.getState()).toBe('disconnected')
 		})
@@ -366,10 +371,10 @@ describe('RealtimeClient', () => {
 			client.subscribe('chat:private')
 
 			client.connect()
-			mockWsInstances[0].simulateOpen()
+			ws().simulateOpen()
 
 			// Should have sent 2 subscribe messages
-			const subscribes = mockWsInstances[0].sent.filter(
+			const subscribes = ws().sent.filter(
 				(m) => JSON.parse(m).type === 'subscribe',
 			)
 			expect(subscribes.length).toBe(2)

@@ -52,6 +52,18 @@ export type DatabaseClient<DB extends Database = Database> = {
 	) => TypedQueryBuilder<InferTable<DB, T>>
 
 	raw: (strings: TemplateStringsArray, ...values: any[]) => Promise<any[]>
+
+	/**
+	 * Execute a function within a database transaction.
+	 * Automatically commits on success, rolls back on error.
+	 *
+	 * @example
+	 * await ctx.db.transaction(async (tx) => {
+	 *   await tx.from('accounts').eq('id', fromId).update({ balance: fromBalance - amount })
+	 *   await tx.from('accounts').eq('id', toId).update({ balance: toBalance + amount })
+	 * })
+	 */
+	transaction: <T>(fn: (tx: DatabaseClient<DB>) => Promise<T>) => Promise<T>
 }
 
 export function createDB<DB extends Database = Database>(
@@ -59,15 +71,28 @@ export function createDB<DB extends Database = Database>(
 ): DatabaseClient<DB> {
 	const pool = sql ?? getSQLPool()
 
-	return {
-		from: <T extends keyof InferTables<DB>>(table: T) => {
-			return new TypedQueryBuilder<InferTable<DB, T>>(table as string, pool)
-		},
+	function buildClient(conn: SQL): DatabaseClient<DB> {
+		return {
+			from: <T extends keyof InferTables<DB>>(table: T) => {
+				return new TypedQueryBuilder<InferTable<DB, T>>(table as string, conn)
+			},
 
-		raw: (strings: TemplateStringsArray, ...values: any[]) => {
-			return pool(strings, ...values)
-		},
+			raw: (strings: TemplateStringsArray, ...values: any[]) => {
+				return conn(strings, ...values)
+			},
+
+			transaction: <T>(
+				fn: (tx: DatabaseClient<DB>) => Promise<T>,
+			): Promise<T> => {
+				return conn.begin(async (txConn: SQL) => {
+					const txClient = buildClient(txConn)
+					return fn(txClient)
+				})
+			},
+		}
 	}
+
+	return buildClient(pool)
 }
 
 class TypedQueryBuilder<Table extends TableDef> {
@@ -75,6 +100,12 @@ class TypedQueryBuilder<Table extends TableDef> {
 	private sql: SQL
 	private selects: (keyof Table['Row'])[] | ['*'] = ['*']
 	private wheres: Array<{ col: keyof Table['Row']; op: string; val: any }> = []
+	private joins: Array<{
+		type: 'INNER' | 'LEFT'
+		table: string
+		thisCol: string
+		otherCol: string
+	}> = []
 	private limitNum: number | null = null
 	private offsetNum: number | null = null
 	private orderByCol: keyof Table['Row'] | null = null
@@ -177,6 +208,34 @@ class TypedQueryBuilder<Table extends TableDef> {
 		return this
 	}
 
+	/**
+	 * Add an INNER JOIN clause.
+	 *
+	 * @example
+	 * db.from('orders')
+	 *   .innerJoin('users', 'user_id', 'id')
+	 *   .select('*')
+	 *   .exec()
+	 */
+	innerJoin(table: string, thisCol: string, otherCol: string): this {
+		this.joins.push({ type: 'INNER', table, thisCol, otherCol })
+		return this
+	}
+
+	/**
+	 * Add a LEFT JOIN clause.
+	 *
+	 * @example
+	 * db.from('users')
+	 *   .leftJoin('profiles', 'id', 'user_id')
+	 *   .select('*')
+	 *   .exec()
+	 */
+	leftJoin(table: string, thisCol: string, otherCol: string): this {
+		this.joins.push({ type: 'LEFT', table, thisCol, otherCol })
+		return this
+	}
+
 	async single(ctx?: { session?: any }): Promise<Table['Row'] | null> {
 		const rows = await this.limit(1).exec(ctx)
 		return rows[0] ?? null
@@ -193,6 +252,10 @@ class TypedQueryBuilder<Table extends TableDef> {
 
 		let query = this.sql`SELECT COUNT(*) as count FROM ${this.sql(this.table)}`
 
+		if (this.joins.length > 0) {
+			query = this.buildJoinClauses(query)
+		}
+
 		if (this.wheres.length > 0) {
 			const whereClause = this.buildWhereClause()
 			query = this.sql`${query} WHERE ${whereClause}`
@@ -200,6 +263,16 @@ class TypedQueryBuilder<Table extends TableDef> {
 
 		const result = await query
 		return Number(result[0]?.count ?? 0)
+	}
+
+	private buildJoinClauses(query: any): any {
+		let q = query
+		for (const j of this.joins) {
+			const joinType = this.sql.unsafe(`${j.type} JOIN`)
+			q = this
+				.sql`${q} ${joinType} ${this.sql(j.table)} ON ${this.sql(this.table)}.${this.sql(j.thisCol)} = ${this.sql(j.table)}.${this.sql(j.otherCol)}`
+		}
+		return q
 	}
 
 	private buildWhereClause() {
@@ -228,6 +301,10 @@ class TypedQueryBuilder<Table extends TableDef> {
 
 		let query = this
 			.sql`SELECT ${this.sql(this.selects)} FROM ${this.sql(this.table)}`
+
+		if (this.joins.length > 0) {
+			query = this.buildJoinClauses(query)
+		}
 
 		if (this.wheres.length > 0) {
 			const whereClause = this.buildWhereClause()

@@ -142,7 +142,7 @@ describe('guards.hasPermission()', () => {
 })
 
 describe('guards.rateLimit()', () => {
-	it('should pass within rate limit', () => {
+	it('should pass within rate limit', async () => {
 		const guard = guards.rateLimit({ limit: 5, windowMs: 60000 })
 		const ctx = createMockContext({
 			auth: { userId: 'user-123' },
@@ -150,24 +150,24 @@ describe('guards.rateLimit()', () => {
 
 		// First 5 calls should pass
 		for (let i = 0; i < 5; i++) {
-			guard(ctx)
+			await guard(ctx)
 		}
 	})
 
-	it('should throw 429 when rate limit exceeded', () => {
+	it('should throw 429 when rate limit exceeded', async () => {
 		const guard = guards.rateLimit({ limit: 2, windowMs: 60000 })
 		const ctx = createMockContext({
 			auth: { userId: 'user-123' },
 		})
 
 		// First 2 calls pass
-		guard(ctx)
-		guard(ctx)
+		await guard(ctx)
+		await guard(ctx)
 
 		// Third call should throw
 		let error: GuardError | undefined
 		try {
-			guard(ctx)
+			await guard(ctx)
 		} catch (e) {
 			error = e as GuardError
 		}
@@ -176,7 +176,7 @@ describe('guards.rateLimit()', () => {
 		expect(error?.message).toBe('Too Many Requests')
 	})
 
-	it('should use custom key function when provided', () => {
+	it('should use custom key function when provided', async () => {
 		const keyFn = (ctx: ActionContext) => ctx.auth.orgId || 'anonymous'
 		const guard = guards.rateLimit({
 			limit: 2,
@@ -193,17 +193,17 @@ describe('guards.rateLimit()', () => {
 		})
 
 		// Both can hit their own limits independently
-		guard(ctx1)
-		guard(ctx1)
-		guard(ctx2)
-		guard(ctx2)
+		await guard(ctx1)
+		await guard(ctx1)
+		await guard(ctx2)
+		await guard(ctx2)
 
-		// Neither should throw yet
-		expect(() => guard(ctx1)).toThrow(GuardError)
-		expect(() => guard(ctx2)).toThrow(GuardError)
+		// Both should throw now
+		await expect(guard(ctx1)).rejects.toThrow(GuardError)
+		await expect(guard(ctx2)).rejects.toThrow(GuardError)
 	})
 
-	it('should use userId as default key', () => {
+	it('should use userId as default key', async () => {
 		const guard = guards.rateLimit({ limit: 1, windowMs: 60000 })
 
 		const ctx1 = createMockContext({
@@ -213,11 +213,11 @@ describe('guards.rateLimit()', () => {
 			auth: { userId: 'user-2' },
 		})
 
-		guard(ctx1)
-		guard(ctx2) // Different user, should not count against user-1
+		await guard(ctx1)
+		await guard(ctx2) // Different user, should not count against user-1
 
 		// user-1's second call should throw
-		expect(() => guard(ctx1)).toThrow(GuardError)
+		await expect(guard(ctx1)).rejects.toThrow(GuardError)
 	})
 })
 

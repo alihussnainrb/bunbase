@@ -1,0 +1,50 @@
+{
+	"name": "@bunbase/react",
+	"version": "0.1.0",
+	"description": "Fully-typed React client for Bunbase with TanStack Query integration",
+	"type": "module",
+	"main": "./dist/index.js",
+	"module": "./dist/index.js",
+	"types": "./dist/index.d.ts",
+	"exports": {
+		".": {
+			"types": "./dist/index.d.ts",
+			"import": "./dist/index.js"
+		}
+	},
+	"files": [
+		"dist",
+		"README.md"
+	],
+	"scripts": {
+		"build": "bunup",
+		"dev": "bunup --watch",
+		"type-check": "tsc --noEmit"
+	},
+	"keywords": [
+		"bunbase",
+		"react",
+		"typescript",
+		"api-client",
+		"tanstack-query",
+		"react-query"
+	],
+	"author": "Bunbase",
+	"license": "MIT",
+	"peerDependencies": {
+		"@tanstack/react-query": "^5.0.0",
+		"react": "^18.0.0"
+	},
+	"devDependencies": {
+		"@tanstack/react-query": "^5.62.11",
+		"@types/react": "^18.3.18",
+		"bunup": "^1.0.2",
+		"react": "^18.3.1",
+		"typescript": "^5.7.3"
+	},
+	"repository": {
+		"type": "git",
+		"url": "https://github.com/bunbase/bunbase.git",
+		"directory": "packages/react"
+	}
+}

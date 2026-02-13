@@ -11,8 +11,10 @@ Bunbase is a type-safe backend framework for Bun built around three core primiti
 
 This is a monorepo with:
 - `packages/bunbase`: Core framework (published to NPM)
+- `packages/react`: React client with TanStack Query integration (published as `@bunbase/react`)
 - `packages/studio`: React-based development UI (private, uses Vite)
 - `examples/basic`: Working example app demonstrating all features
+- `examples/amantra-cpanel`: AMANTRA compliance management control panel
 
 ## Development Commands
 
@@ -279,12 +281,38 @@ Follow Conventional Commits:
 
 ## Package Exports
 
+### `bunbase`
+
 The main `bunbase` package exports:
 
 - `./` - Core primitives (`action`, `module`, `triggers`, `guards`, `t`, `defineConfig`, `BunbaseConfig`), database client (`createDB`, `DatabaseClient`), logging utilities (`Logger`, `LoggerSession`), auth utilities, SaaS services, error classes
 - `./cli` - CLI tooling (bin: `bunbase`)
 
 > Runtime internals (`BunbaseServer`, `ActionRegistry`, `loadActions`, `WriteBuffer`, `Scheduler`, `McpService`) are NOT exported. They are initialized internally by the `bunbase dev` CLI command.
+
+### `@bunbase/react`
+
+React client package (`packages/react`) for consuming Bunbase backends with full type safety:
+
+**Core exports:**
+- `createBunbaseClient<API>(options)` - Creates typed client with hooks
+- `BunbaseClient` - Low-level client class
+- `BunbaseError` - Error class with status codes
+- Type helpers: `ActionName`, `ActionInput`, `ActionOutput`, `BaseAPI`
+
+**Features:**
+- TanStack Query integration for `useQuery` and `useMutation` hooks
+- Direct API calls via `client.call(action, input)` for non-React code
+- Request/response interceptors
+- Global error handling
+- Authentication header management
+
+**Usage pattern:**
+1. Generate types: `bunbase typegen:react --url http://localhost:3000`
+2. Create client: `createBunbaseClient<BunbaseAPI>({ baseUrl: '...' })`
+3. Use hooks: `bunbase.useQuery('action-name', input)` or `bunbase.useMutation('action-name')`
+
+See `packages/react/README.md` for full documentation and examples.
 
 ## CLI Tool
 
@@ -293,19 +321,27 @@ The main `bunbase` package exports:
 - Project scaffolding (`bunbase init <name>`)
 - Action/module generation (`bunbase generate action <name>`)
 - Database migrations (`bunbase migrate`, `bunbase migrate new <name>`)
-- Type generation (`bunbase typegen`) - introspects PostgreSQL and generates TypeScript types
+- Type generation:
+
+  - `bunbase typegen:db` - introspects PostgreSQL and generates TypeScript types
+  - `bunbase typegen:react --url <backend-url>` - fetches OpenAPI spec and generates React client types
+
 - Development server (`bunbase dev`)
 
-### Database Type Generation
+### Database Type Generation (`typegen:db`)
 
-The `bunbase typegen` command introspects a live PostgreSQL database and generates TypeScript types at `.bunbase/database.d.ts`. The generated types are automatically picked up by the database client via a type registration pattern — no explicit generic parameter needed.
+The `bunbase typegen:db` command introspects a live PostgreSQL database and generates TypeScript types at `.bunbase/database.d.ts`. The generated types are automatically picked up by the database client via a type registration pattern — no explicit generic parameter needed.
 
 **Workflow:**
 
-1. Run `bunbase typegen` after adding/modifying database tables
+1. Run `bunbase typegen:db` after adding/modifying database tables
 2. The command queries `information_schema.columns` and `pg_enum` to introspect the schema
 3. Generates a `.bunbase/database.d.ts` file with Row/Insert/Update types for all tables
 4. The types are automatically resolved via module augmentation of `bunbase`
+
+**Options:**
+- `--schema <schema>` - PostgreSQL schema to introspect (default: `public`)
+- `--output <path>` - Output file path (default: `.bunbase/database.d.ts`)
 
 **Type mapping:**
 
@@ -328,6 +364,41 @@ const user = await db.from('users').eq('email', 'test@example.com').single()
 ```
 
 You can still pass an explicit generic to override: `createDB<CustomDB>(sql)`
+
+### React Type Generation (`typegen:react`)
+
+The `bunbase typegen:react` command fetches the OpenAPI spec from a running Bunbase backend and generates TypeScript types for use with `@bunbase/react` client.
+
+**Workflow:**
+
+1. Run your Bunbase backend: `bunbase dev` (serves OpenAPI at `/openapi.json`)
+2. In your React project, run: `bunbase typegen:react --url http://localhost:3000`
+3. Generates `.bunbase/api.d.ts` with full action types (input/output schemas)
+4. Import types in your React client for end-to-end type safety
+
+**Options:**
+
+- `--url <url>` - Backend URL (required, e.g., `http://localhost:3000`)
+- `--output <path>` - Output file path (default: `.bunbase/api.d.ts`)
+
+**Usage:**
+
+```typescript
+// After running: bunbase typegen:react --url http://localhost:3000
+import { createBunbaseClient } from '@bunbase/react'
+import type { BunbaseAPI } from './.bunbase/api'
+
+export const bunbase = createBunbaseClient<BunbaseAPI>({
+  baseUrl: 'http://localhost:3000',
+})
+
+// Fully typed queries and mutations
+const { data } = bunbase.useQuery('list-tasks', { status: 'active' })
+//    ^? { tasks: Task[] }
+
+const createTask = bunbase.useMutation('create-task')
+//    ^? (input: { title: string; description?: string }) => Promise<{ id: string; ... }>
+```
 
 ## Important Context for Code Changes
 

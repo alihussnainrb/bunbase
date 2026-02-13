@@ -57,12 +57,26 @@ migrate
 		await migrateCommand('status')
 	})
 
-program
+const typegen = program
 	.command('typegen')
+	.description('Generate TypeScript types (use typegen:db or typegen:react)')
+
+typegen
+	.command('db')
 	.description('Generate TypeScript types from database schema')
 	.option('--schema <schema>', 'PostgreSQL schema to introspect', 'public')
-	.action(async (opts: { schema?: string }) => {
-		await typegenCommand(opts)
+	.option('--output <path>', 'Output file path', '.bunbase/database.d.ts')
+	.action(async (opts: { schema?: string; output?: string }) => {
+		await typegenCommand('db', opts)
+	})
+
+typegen
+	.command('react')
+	.description('Generate TypeScript types from Bunbase backend API')
+	.requiredOption('--url <url>', 'Backend URL (e.g., http://localhost:3000)')
+	.option('--output <path>', 'Output file path', '.bunbase/api.d.ts')
+	.action(async (opts: { url: string; output?: string }) => {
+		await typegenCommand('react', opts)
 	})
 
 // Parse CLI arguments when run directly (bin entry)

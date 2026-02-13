@@ -5,6 +5,9 @@ import { GuardError, type GuardFn, type RateLimitOptions } from './types.ts'
 // Export Redis rate limiter for server initialization
 export { createRedisRateLimiter } from './rate-limit-redis.ts'
 
+// Export guard execution control
+export { sequential, parallel } from './execution.ts'
+
 /**
  * Standard guards for common checks.
  */

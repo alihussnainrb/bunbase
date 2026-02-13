@@ -1,3 +1,7 @@
+import {
+	isWrappedGuards,
+	type WrappedGuards,
+} from './guards/execution.ts'
 import type {
 	ActionDefinition,
 	GuardFn,
@@ -32,10 +36,18 @@ export class ActionRegistry {
 			throw new Error(`Action "${name}" is already registered`)
 		}
 
+		// Unwrap guards if needed
+		const unwrapGuards = (
+			g: GuardFn[] | WrappedGuards | undefined,
+		): GuardFn[] => {
+			if (!g) return []
+			return isWrappedGuards(g) ? g.guards : g
+		}
+
 		this.actions.set(name, {
 			definition,
 			moduleName: null,
-			guards: [...(definition.config.guards ?? [])],
+			guards: unwrapGuards(definition.config.guards),
 			triggers: [...(definition.config.triggers ?? [])],
 		})
 	}
@@ -78,10 +90,18 @@ export class ActionRegistry {
 				},
 			)
 
+			// Unwrap guards if needed before merging
+			const unwrapGuards = (
+				g: GuardFn[] | WrappedGuards | undefined,
+			): GuardFn[] => {
+				if (!g) return []
+				return isWrappedGuards(g) ? g.guards : g
+			}
+
 			// Module guards run first, then action guards
 			const guards: GuardFn[] = [
-				...(moduleGuards ?? []),
-				...(definition.config.guards ?? []),
+				...unwrapGuards(moduleGuards),
+				...unwrapGuards(definition.config.guards),
 			]
 
 			this.actions.set(actionName, {

@@ -57,6 +57,7 @@ export class BunbaseServer {
 	private mcp: McpService
 	private sessionManager?: SessionManager
 	private wsHandler?: WebSocketHandler
+	private config?: BunbaseConfig
 	private openapiConfig?: BunbaseConfig['openapi']
 	private studioConfig?: BunbaseConfig['studio']
 	private corsConfig?: BunbaseConfig['cors']
@@ -70,6 +71,7 @@ export class BunbaseServer {
 		private readonly services: ServerServices | undefined,
 	) {
 		this.mcp = new McpService(registry, logger, writeBuffer)
+		this.config = config
 		this.openapiConfig = config?.openapi
 		this.studioConfig = config?.studio
 		this.corsConfig = config?.cors
@@ -148,6 +150,7 @@ export class BunbaseServer {
 								kv: this.services?.kv,
 								redis: this.services?.redis,
 								channelManager: this.getChannelManager(),
+								config: this.config,
 								registry: this.registry,
 							})
 
@@ -366,6 +369,7 @@ export class BunbaseServer {
 					queue: this.queue,
 					scheduler: this.scheduler,
 					sessionManager: this.sessionManager,
+					config: this.config,
 					auth: authContext,
 					response: { headers, setCookie },
 					registry: this.registry,
@@ -645,6 +649,7 @@ export class BunbaseServer {
 			hostname,
 			fetch: (req: Request, server: Server<any>) =>
 				this.handleRequest(req, server),
+			maxRequestBodySize: this.config?.maxRequestBodySize ?? 10485760, // 10MB default
 		}
 
 		// Add WebSocket handlers if realtime is enabled

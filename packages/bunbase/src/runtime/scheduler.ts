@@ -1,5 +1,6 @@
 import type { SQL } from 'bun'
 import { Cron } from 'croner'
+import type { BunbaseConfig } from '../config/types.ts'
 import type { ActionRegistry } from '../core/registry.ts'
 import type { Logger } from '../logger/index.ts'
 import type { WriteBuffer } from '../persistence/write-buffer.ts'
@@ -34,6 +35,7 @@ export class Scheduler {
 		private readonly logger: Logger,
 		private readonly writeBuffer: WriteBuffer,
 		readonly _sql: SQL,
+		private readonly config: BunbaseConfig | undefined = undefined,
 	) {}
 
 	/**
@@ -140,6 +142,7 @@ export class Scheduler {
 									triggerType: 'cron',
 									logger: this.logger,
 									writeBuffer: this.writeBuffer,
+									config: this.config,
 								})
 
 								// Handle cron transport metadata
@@ -259,6 +262,7 @@ export class Scheduler {
 						triggerType: 'cron',
 						logger: this.logger,
 						writeBuffer: this.writeBuffer,
+						config: this.config,
 					})
 
 					// Handle metadata recursively

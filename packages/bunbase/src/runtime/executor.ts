@@ -1,4 +1,9 @@
 import type { SessionManager } from '../auth/session.ts'
+import type { BunbaseConfig } from '../config/types.ts'
+import {
+	isWrappedGuards,
+	type WrappedGuards,
+} from '../core/guards/execution.ts'
 import type { ActionRegistry, RegisteredAction } from '../core/registry.ts'
 import type { ActionContext, TransportMetadata } from '../core/types.ts'
 import type { DatabaseClient } from '../db/client.ts'
@@ -39,6 +44,7 @@ export async function executeAction(
 		scheduler?: Scheduler
 		registry?: ActionRegistry
 		sessionManager?: SessionManager
+		config?: BunbaseConfig
 		auth?: {
 			userId?: string
 			role?: string
@@ -109,8 +115,24 @@ export async function executeAction(
 
 	try {
 		// Run guards (once, not retried)
-		for (const guard of action.guards) {
-			await guard(ctx)
+		const guardArray = action.guards
+		if (guardArray.length > 0) {
+			// Check if guards are wrapped with execution mode
+			const isWrapped = isWrappedGuards(guardArray)
+			const mode = isWrapped
+				? (guardArray as WrappedGuards)._mode
+				: opts.config?.guards?.defaultMode ?? 'sequential'
+			const guards = isWrapped
+				? (guardArray as WrappedGuards).guards
+				: (guardArray as import('../core/types.ts').GuardFn[])
+
+			if (mode === 'parallel') {
+				await Promise.all(guards.map((guard) => guard(ctx)))
+			} else {
+				for (const guard of guards) {
+					await guard(ctx)
+				}
+			}
 		}
 
 		// Resolve retry configuration

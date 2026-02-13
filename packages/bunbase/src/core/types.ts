@@ -7,6 +7,7 @@ import type { Logger } from '../logger/index.ts'
 import type { MailerAdapter } from '../mailer/types.ts'
 import type { StorageAdapter } from '../storage/types.ts'
 import type { ActionRegistry } from './registry.ts'
+import type { WrappedGuards } from './guards/execution.ts'
 
 // ── Trigger Types ────────────────────────────────────────
 
@@ -380,7 +381,7 @@ export interface ActionConfig<
 	readonly input: TInput
 	readonly output: TOutput
 	readonly triggers?: TriggerConfig[]
-	readonly guards?: GuardFn[]
+	readonly guards?: GuardFn[] | WrappedGuards
 	readonly retry?: RetryConfig
 }
 
@@ -406,7 +407,7 @@ export interface ModuleConfig {
 	readonly name: string
 	readonly description?: string
 	readonly apiPrefix?: string
-	readonly guards?: GuardFn[]
+	readonly guards?: GuardFn[] | WrappedGuards
 	readonly actions: ActionDefinition[]
 }
 

@@ -166,8 +166,8 @@ export async function devCommand(): Promise<void> {
 			logger.info(`WebSocket: ws://${hostname}:${port}${wsPath}`)
 		}
 
-		// Handle shutdown
-		process.on('SIGINT', async () => {
+		// Graceful shutdown handler (shared for SIGINT and SIGTERM)
+		const shutdown = async () => {
 			logger.info('Shutting down...')
 			server.stop()
 			await eventBus.detach()
@@ -177,7 +177,13 @@ export async function devCommand(): Promise<void> {
 				redis.close()
 			}
 			process.exit(0)
-		})
+		}
+
+		// Handle SIGINT (Ctrl+C)
+		process.on('SIGINT', shutdown)
+
+		// Handle SIGTERM (Docker/K8s graceful shutdown)
+		process.on('SIGTERM', shutdown)
 	} catch (err) {
 		logger.error('Failed to start server:', err)
 		process.exit(1)

@@ -7,6 +7,9 @@ export interface BunbaseConfig {
 	/** Directory to scan for actions and modules (default: src/actions) */
 	actionsDir?: string
 
+	/** Maximum HTTP request body size in bytes (default: 10485760 = 10MB) */
+	maxRequestBodySize?: number
+
 	/** CORS configuration */
 	cors?: {
 		/** Allowed origins (default: *) */
@@ -59,6 +62,12 @@ export interface BunbaseConfig {
 		sessionSecret: string
 		cookieName?: string
 		expiresIn?: number
+	}
+
+	/** Guards configuration */
+	guards?: {
+		/** Default guard execution mode (default: sequential) */
+		defaultMode?: 'sequential' | 'parallel'
 	}
 
 	/** Persistence configuration */

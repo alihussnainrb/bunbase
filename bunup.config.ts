@@ -14,6 +14,19 @@ export default defineWorkspace([
 			dts: true,
 		},
 	},
+	{
+		name: "@bunbase/react",
+		root: 'packages/react',
+		config: {
+			target: 'bun',
+			entry: ['./src/index.ts'],
+			format: 'esm',
+			minify: true,
+			sourcemap: true,
+			clean: true,
+			dts: true,
+		},
+	}
 	// Studio uses Vite for building, not bunup.
 	// Build it separately with: cd packages/studio && bun run build
 ])

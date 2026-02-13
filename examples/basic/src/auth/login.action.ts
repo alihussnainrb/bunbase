@@ -1,4 +1,6 @@
 import { action, t, triggers } from 'bunbase'
+import { Type } from 'typebox'
+
 
 /**
  * Simple login action — authenticates a user and sets a session cookie automatically.
@@ -32,10 +34,12 @@ export const login = action(
 
 		ctx.logger.info('Login successful', { userId: user.id })
 
+		Type
+
 		return {
 			success: true,
 			userId: user.id,
-			name: user.name,
+			name: user.email,
 		}
 	},
 )

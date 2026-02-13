@@ -208,8 +208,7 @@ export interface TransportMetadata {
 export type ActionOutput<T> = T & {
 	/** Unified transport metadata for all trigger types */
 	_meta?: TransportMetadata
-	/** @deprecated Use _meta.http instead. Support for _http will be removed in v1.0.0 */
-	_http?: HttpMetadata
+
 }
 
 // ── Action Context ───────────────────────────────────────

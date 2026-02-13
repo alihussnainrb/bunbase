@@ -64,7 +64,8 @@ export class ActionRegistry {
 		} = mod.config
 
 		for (const definition of actions) {
-			const actionName = definition.config.name
+			// Auto-namespace module actions: moduleName.actionName
+			const actionName = `${moduleName}.${definition.config.name}`
 			if (this.actions.has(actionName)) {
 				throw new Error(
 					`Action "${actionName}" is already registered (module: ${moduleName})`,
@@ -126,5 +127,10 @@ export class ActionRegistry {
 	/** Get count of registered actions */
 	get size(): number {
 		return this.actions.size
+	}
+
+	/** Clear all registered actions (used for hot reload) */
+	clear(): void {
+		this.actions.clear()
 	}
 }

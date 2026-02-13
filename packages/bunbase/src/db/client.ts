@@ -111,6 +111,8 @@ class TypedQueryBuilder<Table extends TableDef> {
 	private orderByCol: keyof Table['Row'] | null = null
 	private orderByDir: 'ASC' | 'DESC' = 'ASC'
 	private returningFields: (keyof Table['Row'])[] | null = null
+	private groupByColumns: (keyof Table['Row'] | string)[] = []
+	private havings: Array<{ col: keyof Table['Row'] | string; op: string; val: any }> = []
 
 	constructor(table: string, sql: SQL) {
 		this.table = table
@@ -236,6 +238,52 @@ class TypedQueryBuilder<Table extends TableDef> {
 		return this
 	}
 
+	/**
+	 * Add GROUP BY clause for aggregation queries.
+	 *
+	 * @example
+	 * db.from('orders')
+	 *   .select('status', 'COUNT(*) as count')
+	 *   .groupBy('status')
+	 *   .exec()
+	 */
+	groupBy(...columns: (keyof Table['Row'] | string)[]): this {
+		this.groupByColumns.push(...columns)
+		return this
+	}
+
+	/**
+	 * Add HAVING clause for filtering aggregated results.
+	 * Use with GROUP BY to filter groups based on aggregate conditions.
+	 *
+	 * @example
+	 * db.from('orders')
+	 *   .select('user_id', 'COUNT(*) as order_count')
+	 *   .groupBy('user_id')
+	 *   .having('COUNT(*)', '>', 5)
+	 *   .exec()
+	 */
+	having(column: keyof Table['Row'] | string, op: string, value: any): this {
+		this.havings.push({ col: column, op, val: value })
+		return this
+	}
+
+	/**
+	 * Select with raw aggregate expressions.
+	 * Useful for COUNT, SUM, AVG, MIN, MAX, etc.
+	 *
+	 * @example
+	 * db.from('orders')
+	 *   .aggregate('COUNT(*) as total', 'SUM(amount) as revenue')
+	 *   .groupBy('status')
+	 *   .exec()
+	 */
+	aggregate(...expressions: string[]): this {
+		// Store raw SQL expressions for SELECT clause
+		this.selects = expressions as any
+		return this
+	}
+
 	async single(ctx?: { session?: any }): Promise<Table['Row'] | null> {
 		const rows = await this.limit(1).exec(ctx)
 		return rows[0] ?? null
@@ -259,6 +307,15 @@ class TypedQueryBuilder<Table extends TableDef> {
 		if (this.wheres.length > 0) {
 			const whereClause = this.buildWhereClause()
 			query = this.sql`${query} WHERE ${whereClause}`
+		}
+
+		if (this.groupByColumns.length > 0) {
+			query = this.sql`${query} GROUP BY ${this.sql(this.groupByColumns)}`
+		}
+
+		if (this.havings.length > 0) {
+			const havingClause = this.buildHavingClause()
+			query = this.sql`${query} HAVING ${havingClause}`
 		}
 
 		const result = await query
@@ -296,6 +353,22 @@ class TypedQueryBuilder<Table extends TableDef> {
 		}, this.sql``)
 	}
 
+	private buildHavingClause() {
+		const conditions = this.havings.map((h) => {
+			const op = this.sql.unsafe(h.op)
+			// For aggregate functions or raw expressions, use unsafe
+			if (typeof h.col === 'string' && (h.col.includes('(') || h.col.includes(')'))) {
+				return this.sql`${this.sql.unsafe(h.col)} ${op} ${h.val}`
+			}
+			return this.sql`${this.sql(h.col as string)} ${op} ${h.val}`
+		})
+
+		return conditions.reduce((acc, curr, i) => {
+			if (i === 0) return curr
+			return this.sql`${acc} AND ${curr}`
+		}, this.sql``)
+	}
+
 	async exec(ctx?: { session?: any }): Promise<Table['Row'][]> {
 		if (ctx) await setRLSContext(this.sql, ctx)
 
@@ -309,6 +382,15 @@ class TypedQueryBuilder<Table extends TableDef> {
 		if (this.wheres.length > 0) {
 			const whereClause = this.buildWhereClause()
 			query = this.sql`${query} WHERE ${whereClause}`
+		}
+
+		if (this.groupByColumns.length > 0) {
+			query = this.sql`${query} GROUP BY ${this.sql(this.groupByColumns)}`
+		}
+
+		if (this.havings.length > 0) {
+			const havingClause = this.buildHavingClause()
+			query = this.sql`${query} HAVING ${havingClause}`
 		}
 
 		if (this.orderByCol !== null) {

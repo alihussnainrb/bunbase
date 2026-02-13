@@ -16,12 +16,47 @@ import type {
 } from './types.ts'
 
 /**
+ * Return type for createHooks - explicit for --isolatedDeclarations
+ */
+export interface BunbaseHooks<API extends BaseAPI> {
+	useQuery: <Action extends ActionName<API>>(
+		action: Action,
+		input?: ActionInput<API, Action>,
+		options?: Omit<
+			UseQueryOptions<
+				ActionOutput<API, Action>,
+				BunbaseError,
+				ActionOutput<API, Action>,
+				[Action, ActionInput<API, Action>?]
+			>,
+			'queryKey' | 'queryFn'
+		>,
+	) => UseQueryResult<ActionOutput<API, Action>, BunbaseError>
+	useMutation: <Action extends ActionName<API>>(
+		action: Action,
+		options?: Omit<
+			UseMutationOptions<
+				ActionOutput<API, Action>,
+				BunbaseError,
+				ActionInput<API, Action>,
+				unknown
+			>,
+			'mutationFn'
+		>,
+	) => UseMutationResult<
+		ActionOutput<API, Action>,
+		BunbaseError,
+		ActionInput<API, Action>,
+		unknown
+	>
+}
+
+/**
  * Create hooks for a Bunbase client
  */
-export function createHooks<API extends BaseAPI>(client: BunbaseClient<API>) {
-	/**
-	 * React hook for query actions (typically GET operations)
-	 */
+export function createHooks<API extends BaseAPI>(
+	client: BunbaseClient<API>,
+): BunbaseHooks<API> {
 	function useQuery<Action extends ActionName<API>>(
 		action: Action,
 		input?: ActionInput<API, Action>,
@@ -44,9 +79,6 @@ export function createHooks<API extends BaseAPI>(client: BunbaseClient<API>) {
 		})
 	}
 
-	/**
-	 * React hook for mutation actions (POST, PATCH, DELETE operations)
-	 */
 	function useMutation<Action extends ActionName<API>>(
 		action: Action,
 		options?: Omit<
@@ -73,7 +105,7 @@ export function createHooks<API extends BaseAPI>(client: BunbaseClient<API>) {
 	}
 
 	return {
-		useQuery,
-		useMutation,
+		useQuery: useQuery,
+		useMutation: useMutation,
 	}
 }

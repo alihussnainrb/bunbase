@@ -356,6 +356,16 @@ export interface ActionContext {
 	 *   { mcp: { format: 'structured', includeSchema: true } }
 	 * )
 	 */
+	/**
+	 * Access a realtime channel for publishing messages to WebSocket subscribers.
+	 * Works from any action context (API, cron, event, etc.)
+	 *
+	 * @example
+	 * ctx.channel('chat:general').publish('message', { text: 'Hello!' })
+	 * const count = ctx.channel('chat:general').subscriberCount()
+	 */
+	channel: (name: string) => import('../realtime/types.ts').ChannelAPI
+
 	withMeta: <T>(data: T, metadata?: TransportMetadata) => ActionOutput<T>
 }
 

@@ -13,6 +13,8 @@ import {
 	generateScalarDocs,
 } from '../openapi/generator.ts'
 import type { WriteBuffer } from '../persistence/write-buffer.ts'
+import type { ChannelManager } from '../realtime/channel-manager.ts'
+import { WebSocketHandler } from '../realtime/websocket-handler.ts'
 import { generateBunbaseSchema } from '../schema/generator.ts'
 import type { StorageAdapter } from '../storage/types.ts'
 import { studioModule } from '../studio/module.ts'
@@ -20,8 +22,8 @@ import { BunbaseError } from '../utils/errors.ts'
 import { eventBus } from './event-bus.ts'
 import { executeAction } from './executor.ts'
 import { McpService } from './mcp-server.ts'
-import { mapRequestToInput } from './request-mapper.ts'
 import type { Queue } from './queue.ts'
+import { mapRequestToInput } from './request-mapper.ts'
 import type { Scheduler } from './scheduler.ts'
 
 export interface ServerServices {
@@ -54,9 +56,11 @@ export class BunbaseServer {
 	private queue?: Queue
 	private mcp: McpService
 	private sessionManager?: SessionManager
+	private wsHandler?: WebSocketHandler
 	private openapiConfig?: BunbaseConfig['openapi']
 	private studioConfig?: BunbaseConfig['studio']
 	private corsConfig?: BunbaseConfig['cors']
+	private realtimeConfig?: BunbaseConfig['realtime']
 
 	constructor(
 		private readonly registry: ActionRegistry,
@@ -69,6 +73,7 @@ export class BunbaseServer {
 		this.openapiConfig = config?.openapi
 		this.studioConfig = config?.studio
 		this.corsConfig = config?.cors
+		this.realtimeConfig = config?.realtime
 		if (config?.auth) {
 			this.sessionManager = new SessionManager({
 				secret: config.auth.sessionSecret,
@@ -77,10 +82,26 @@ export class BunbaseServer {
 			})
 		}
 
+		// Create WebSocket handler if realtime is enabled
+		if (this.realtimeConfig?.enabled) {
+			this.wsHandler = new WebSocketHandler(
+				this.realtimeConfig,
+				this.logger,
+				this.sessionManager,
+			)
+		}
+
 		// Register studio actions if studio is enabled
 		if (this.studioConfig?.enabled) {
 			this.registry.registerModule(studioModule)
 		}
+	}
+
+	/**
+	 * Get the channel manager for realtime pub/sub (if enabled).
+	 */
+	getChannelManager(): ChannelManager | null {
+		return this.wsHandler?.channelManager ?? null
 	}
 
 	/**
@@ -125,6 +146,8 @@ export class BunbaseServer {
 								storage: this.services?.storage,
 								mailer: this.services?.mailer,
 								kv: this.services?.kv,
+								redis: this.services?.redis,
+								channelManager: this.getChannelManager(),
 								registry: this.registry,
 							})
 
@@ -293,7 +316,10 @@ export class BunbaseServer {
 							}
 							// Merge path parameters into input
 							if (Object.keys(params).length > 0) {
-								input = { ...((input as Record<string, unknown>) ?? {}), ...params }
+								input = {
+									...((input as Record<string, unknown>) ?? {}),
+									...params,
+								}
 							}
 						}
 					}
@@ -336,6 +362,7 @@ export class BunbaseServer {
 					mailer: this.services?.mailer,
 					kv: this.services?.kv,
 					redis: this.services?.redis,
+					channelManager: this.getChannelManager(),
 					queue: this.queue,
 					scheduler: this.scheduler,
 					sessionManager: this.sessionManager,
@@ -481,7 +508,10 @@ export class BunbaseServer {
 	/**
 	 * Main request handler with optimized routing.
 	 */
-	private async handleRequest(req: Request): Promise<Response> {
+	private async handleRequest(
+		req: Request,
+		server: Server<any>,
+	): Promise<Response> {
 		const url = new URL(req.url)
 		const method = req.method.toUpperCase()
 		const pathname = url.pathname
@@ -489,6 +519,20 @@ export class BunbaseServer {
 		// Handle CORS preflight
 		if (method === 'OPTIONS' && this.corsConfig) {
 			return this.handleCorsPreflightRequest(req)
+		}
+
+		// Handle WebSocket upgrade
+		if (this.wsHandler) {
+			if (this.wsHandler.isAtConnectionLimit(req)) {
+				return Response.json(
+					{ error: 'Too many WebSocket connections' },
+					{ status: 503 },
+				)
+			}
+			if (this.wsHandler.tryUpgrade(req, server)) {
+				// Upgrade was successful — Bun handles the rest
+				return undefined as any
+			}
 		}
 
 		// Try pre-compiled route handler first (O(1) lookup)
@@ -596,16 +640,41 @@ export class BunbaseServer {
 		this.routeHandlers = this.buildOptimizedRoutes()
 
 		// Start server with optimized fetch handler
-		this.server = Bun.serve({
+		const serveOptions: any = {
 			port,
 			hostname,
-			fetch: (req) => this.handleRequest(req),
-		})
+			fetch: (req: Request, server: Server<any>) =>
+				this.handleRequest(req, server),
+		}
+
+		// Add WebSocket handlers if realtime is enabled
+		if (this.wsHandler) {
+			serveOptions.websocket = this.wsHandler.getHandlers()
+			if (this.realtimeConfig?.maxPayloadLength) {
+				serveOptions.websocket.maxPayloadLength =
+					this.realtimeConfig.maxPayloadLength
+			}
+			if (this.realtimeConfig?.idleTimeoutMs) {
+				serveOptions.websocket.idleTimeout = Math.ceil(
+					this.realtimeConfig.idleTimeoutMs / 1000,
+				)
+			}
+		}
+
+		this.server = Bun.serve(serveOptions)
 
 		this.logger.info(`Server listening on ${hostname}:${port}`, {
 			routes: this.routeHandlers.size,
 			mcp,
+			realtime: !!this.wsHandler,
 		})
+
+		if (this.wsHandler) {
+			const wsPath = this.realtimeConfig?.path ?? '/ws'
+			this.logger.info(
+				`WebSocket realtime enabled at ws://${hostname}:${port}${wsPath}`,
+			)
+		}
 
 		return this.server
 	}
@@ -714,10 +783,13 @@ export class BunbaseServer {
 		return headers
 	}
 
-	/** Stop the server, scheduler, queue, and MCP server */
+	/** Stop the server, scheduler, queue, MCP server, and WebSocket handler */
 	async stop(): Promise<void> {
 		this.server?.stop()
 		this.mcp.stop()
+		if (this.wsHandler) {
+			this.wsHandler.close()
+		}
 		if (this.scheduler) {
 			this.scheduler.stop()
 		}

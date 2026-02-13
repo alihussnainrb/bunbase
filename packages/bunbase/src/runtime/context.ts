@@ -13,6 +13,7 @@ import { createIAMManager } from '../iam/context.ts'
 import type { KVStore } from '../kv/types.ts'
 import type { Logger } from '../logger/index.ts'
 import type { MailerAdapter } from '../mailer/types.ts'
+import type { ChannelManager } from '../realtime/channel-manager.ts'
 import type { StorageAdapter } from '../storage/types.ts'
 import { eventBus } from './event-bus.ts'
 import type { Queue } from './queue.ts'
@@ -42,6 +43,7 @@ export interface CreateLazyContextOptions {
 		headers: Headers
 		setCookie: (name: string, value: string, opts?: any) => void
 	}
+	channelManager?: ChannelManager | null
 	moduleName?: string
 }
 
@@ -245,6 +247,25 @@ export function createLazyContext(
 				}
 			}
 			return _queue
+		},
+
+		// Channel API for realtime pub/sub
+		channel: (name: string) => {
+			const cm = opts.channelManager ?? null
+			return {
+				publish: (event: string, payload?: unknown) => {
+					if (cm) {
+						cm.publish(name, event, payload)
+					} else {
+						// No ChannelManager available — still emit through EventBus
+						// so event-triggered actions can react
+						eventBus.emit(`ws:${name}:${event}`, payload)
+					}
+				},
+				subscriberCount: () => {
+					return cm?.getSubscriberCount(name) ?? 0
+				},
+			}
 		},
 
 		// withMeta helper

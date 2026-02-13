@@ -1,8 +1,27 @@
 import { BunbaseClient } from './client.ts'
+import type { BunbaseHooks } from './hooks.ts'
 import { createHooks } from './hooks.ts'
-import type { BaseAPI, BunbaseClientOptions } from './types.ts'
+import type { RealtimeOptions } from './realtime.ts'
+import { RealtimeClient } from './realtime.ts'
+import type {
+	ActionInput,
+	ActionName,
+	ActionOutput,
+	BaseAPI,
+	BunbaseClientOptions,
+} from './types.ts'
 
 export { BunbaseClient } from './client.ts'
+export type { BunbaseHooks } from './hooks.ts'
+export type { ConnectionState, RealtimeOptions } from './realtime.ts'
+// Realtime WebSocket client and hooks
+export { RealtimeClient } from './realtime.ts'
+export {
+	useConnectionState,
+	useRealtimeChannel,
+	useRealtimeEvent,
+	useRealtimeMessages,
+} from './realtime-hooks.ts'
 export type {
 	ActionInput,
 	ActionName,
@@ -12,6 +31,24 @@ export type {
 	HttpFieldMetadata,
 } from './types.ts'
 export { BunbaseError } from './types.ts'
+
+/**
+ * Return type for createBunbaseClient - explicit for --isolatedDeclarations
+ */
+export interface BunbaseClientInstance<API extends BaseAPI> {
+	call: <Action extends ActionName<API>>(
+		action: Action,
+		input?: ActionInput<API, Action>,
+	) => Promise<ActionOutput<API, Action>>
+	useQuery: BunbaseHooks<API>['useQuery']
+	useMutation: BunbaseHooks<API>['useMutation']
+	setHeaders: (headers: Record<string, string>) => void
+	getHeaders: () => Record<string, string>
+	setBaseUrl: (baseUrl: string) => void
+	getBaseUrl: () => string
+	connectRealtime: (opts?: Partial<RealtimeOptions>) => RealtimeClient
+	_client: BunbaseClient<API>
+}
 
 /**
  * Create a fully-typed Bunbase client with React hooks
@@ -38,52 +75,35 @@ export { BunbaseError } from './types.ts'
  */
 export function createBunbaseClient<API extends BaseAPI>(
 	options: BunbaseClientOptions<API>,
-) {
+): BunbaseClientInstance<API> {
 	const client = new BunbaseClient<API>(options)
 	const hooks = createHooks<API>(client)
 
 	return {
-		/**
-		 * Direct API call (without hooks)
-		 * Use in async functions or server-side code
-		 */
-		call: client.call.bind(client),
+		call: <Action extends ActionName<API>>(
+			action: Action,
+			input?: ActionInput<API, Action>,
+		): Promise<ActionOutput<API, Action>> => client.call(action, input),
 
-		/**
-		 * React hook for query actions
-		 * Automatically manages loading, error, and data states
-		 */
 		useQuery: hooks.useQuery,
 
-		/**
-		 * React hook for mutation actions
-		 * Handles create, update, delete operations
-		 */
 		useMutation: hooks.useMutation,
 
-		/**
-		 * Update default headers (e.g., for authentication)
-		 */
-		setHeaders: client.setHeaders.bind(client),
+		setHeaders: (headers: Record<string, string>): void =>
+			client.setHeaders(headers),
 
-		/**
-		 * Get current headers
-		 */
-		getHeaders: client.getHeaders.bind(client),
+		getHeaders: (): Record<string, string> => client.getHeaders(),
 
-		/**
-		 * Update base URL
-		 */
-		setBaseUrl: client.setBaseUrl.bind(client),
+		setBaseUrl: (baseUrl: string): void => client.setBaseUrl(baseUrl),
 
-		/**
-		 * Get current base URL
-		 */
-		getBaseUrl: client.getBaseUrl.bind(client),
+		getBaseUrl: (): string => client.getBaseUrl(),
 
-		/**
-		 * Access underlying client instance
-		 */
+		connectRealtime: (opts?: Partial<RealtimeOptions>): RealtimeClient => {
+			const baseUrl = client.getBaseUrl()
+			const wsUrl = baseUrl.replace(/^http/, 'ws') + (opts?.url ?? '/ws')
+			return new RealtimeClient({ ...opts, url: wsUrl })
+		},
+
 		_client: client,
 	}
 }
@@ -92,6 +112,4 @@ export function createBunbaseClient<API extends BaseAPI>(
  * Type helper to infer API type from client
  */
 export type InferAPI<T> =
-	T extends ReturnType<typeof createBunbaseClient<infer API extends BaseAPI>>
-		? API
-		: never
+	T extends BunbaseClientInstance<infer API extends BaseAPI> ? API : never

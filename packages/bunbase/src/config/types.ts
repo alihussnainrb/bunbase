@@ -150,6 +150,29 @@ export interface BunbaseConfig {
 		/** Studio API prefix (default: /_studio/api) */
 		apiPrefix?: string
 	}
+
+	/** WebSocket realtime configuration */
+	realtime?: {
+		/** Enable WebSocket realtime support (default: false) */
+		enabled?: boolean
+		/** WebSocket endpoint path (default: /ws) */
+		path?: string
+		/** Maximum concurrent WebSocket connections (default: 10000) */
+		maxConnections?: number
+		/** Ping interval in milliseconds (default: 30000) */
+		pingIntervalMs?: number
+		/** Idle timeout in milliseconds (default: 120000) */
+		idleTimeoutMs?: number
+		/** Rate limiting per connection */
+		rateLimit?: {
+			/** Maximum messages per window (default: 100) */
+			maxMessages: number
+			/** Window size in milliseconds (default: 10000) */
+			windowMs: number
+		}
+		/** Maximum message payload size in bytes (default: 65536) */
+		maxPayloadLength?: number
+	}
 }
 
 /**

@@ -7,10 +7,10 @@ import type { KVStore } from '../kv/types.ts'
 import type { Logger } from '../logger/index.ts'
 import type { RunEntry } from '../persistence/types.ts'
 import type { WriteBuffer } from '../persistence/write-buffer.ts'
+import type { ChannelManager } from '../realtime/channel-manager.ts'
 import type { StorageAdapter } from '../storage/types.ts'
 import { CircularDependencyError, isRetryable } from '../utils/errors.ts'
 import { createLazyContext } from './context.ts'
-
 import type { Queue } from './queue.ts'
 import type { Scheduler } from './scheduler.ts'
 
@@ -34,6 +34,7 @@ export async function executeAction(
 		mailer?: import('../mailer/types.ts').MailerAdapter
 		kv?: KVStore
 		redis?: import('bun').RedisClient
+		channelManager?: ChannelManager | null
 		queue?: Queue
 		scheduler?: Scheduler
 		registry?: ActionRegistry
@@ -96,6 +97,7 @@ export async function executeAction(
 		mailer: opts.mailer,
 		kv: opts.kv,
 		redis: opts.redis,
+		channelManager: opts.channelManager,
 		queue: opts.queue,
 		scheduler: opts.scheduler,
 		registry: opts.registry,

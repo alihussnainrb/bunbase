@@ -81,6 +81,8 @@ export type {
 	MailerAdapter,
 	SendEmailOptions,
 } from './mailer/types.ts'
+// Realtime types (for WebSocket channel pub/sub)
+export type { ChannelAPI } from './realtime/types.ts'
 // Storage adapter types (for custom adapter implementations)
 export type { StorageAdapter, UploadOptions } from './storage/types.ts'
 export type { TestActionOptions, TestActionResult } from './test/index.ts'

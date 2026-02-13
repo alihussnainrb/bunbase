@@ -156,6 +156,11 @@ export async function devCommand(): Promise<void> {
 			mcp: config.mcp,
 		})
 
+		if (config.realtime?.enabled) {
+			const wsPath = config.realtime.path ?? '/ws'
+			logger.info(`WebSocket: ws://${hostname}:${port}${wsPath}`)
+		}
+
 		// Handle shutdown
 		process.on('SIGINT', async () => {
 			logger.info('Shutting down...')

@@ -20,7 +20,10 @@ export const deleteOrganization = action(
 			throw new Error('Invalid password')
 		}
 
-		const organization = await ctx.db.from('organizations').eq('id', input.id).single()
+		const organization = await ctx.db
+			.from('organizations')
+			.eq('id', input.id)
+			.single()
 
 		if (!organization) {
 			throw new Error('Organization not found')

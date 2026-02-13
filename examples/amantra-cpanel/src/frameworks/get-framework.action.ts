@@ -26,7 +26,10 @@ export const getFramework = action(
 		triggers: [triggers.api('GET', '/:id')],
 	},
 	async ({ input, ctx }) => {
-		const framework = await ctx.db.from('frameworks').eq('id', input.id).single()
+		const framework = await ctx.db
+			.from('frameworks')
+			.eq('id', input.id)
+			.single()
 
 		if (!framework) {
 			throw new Error('Framework not found')

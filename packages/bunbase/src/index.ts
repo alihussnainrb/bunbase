@@ -1,8 +1,6 @@
 // ── Public API ───────────────────────────────────────────
-// import { action, module, t, triggers, guards, defineConfig } from 'bunbase'
+// import { action, module, t, http, triggers, guards, defineConfig } from 'bunbase'
 
-// TypeBox schema builder (re-exported as `t`)
-export { default as t } from 'typebox'
 // Auth utilities (used in action handlers for session management)
 export * from './auth/password.ts'
 export * from './auth/session.ts'
@@ -14,7 +12,6 @@ export { ActionValidationError, action } from './core/action.ts'
 // Guards
 export * from './core/guards/index.ts'
 export { module } from './core/module.ts'
-
 // Trigger builders
 export { triggers } from './core/triggers/index.ts'
 // Types (used by action/module authors)
@@ -91,5 +88,8 @@ export type { TestActionOptions, TestActionResult } from './test/index.ts'
 export { testAction } from './test/index.ts'
 // Error classes
 export * from './utils/errors.ts'
+export type { CookieOptions } from './utils/typebox.ts'
+// TypeBox schema builder (re-exported as `t`) and HTTP mapping utilities
+export { http, t } from './utils/typebox.ts'
 // Transport metadata helper
 export { withMeta } from './utils/with-meta.ts'

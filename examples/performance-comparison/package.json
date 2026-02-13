@@ -1,22 +1,22 @@
 {
-  "name": "performance-comparison",
-  "module": "index.ts",
-  "type": "module",
-  "private": true,
-  "scripts": {
-    "start:bunbase": "bunbase dev",
-    "start:raw": "bun raw-bun.ts",
-    "benchmark": "bun benchmark.ts",
-    "benchmark:all": "bun start:bunbase & bun start:raw & sleep 3 && bun benchmark; kill %1 %2"
-  },
-  "devDependencies": {
-    "@types/bun": "latest"
-  },
-  "peerDependencies": {
-    "typescript": "^5"
-  },
-  "dependencies": {
-    "bunbase": "../../packages/bunbase",
-    "typebox": "^1.0.81"
-  }
+	"name": "performance-comparison",
+	"module": "index.ts",
+	"type": "module",
+	"private": true,
+	"scripts": {
+		"start:bunbase": "bunbase dev",
+		"start:raw": "bun raw-bun.ts",
+		"benchmark": "bun benchmark.ts",
+		"benchmark:all": "bun start:bunbase & bun start:raw & sleep 3 && bun benchmark; kill %1 %2"
+	},
+	"devDependencies": {
+		"@types/bun": "latest"
+	},
+	"peerDependencies": {
+		"typescript": "^5"
+	},
+	"dependencies": {
+		"bunbase": "../../packages/bunbase",
+		"typebox": "^1.0.81"
+	}
 }

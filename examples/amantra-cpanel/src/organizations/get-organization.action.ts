@@ -40,7 +40,10 @@ export const getOrganization = action(
 		triggers: [triggers.api('GET', '/:id')],
 	},
 	async ({ input, ctx }) => {
-		const organization = await ctx.db.from('organizations').eq('id', input.id).single()
+		const organization = await ctx.db
+			.from('organizations')
+			.eq('id', input.id)
+			.single()
 
 		if (!organization) {
 			throw new Error('Organization not found')

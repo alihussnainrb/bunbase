@@ -22,7 +22,10 @@ export const deleteFramework = action(
 		}
 
 		// Check if framework exists
-		const framework = await ctx.db.from('frameworks').eq('id', input.id).single()
+		const framework = await ctx.db
+			.from('frameworks')
+			.eq('id', input.id)
+			.single()
 
 		if (!framework) {
 			throw new Error('Framework not found')
@@ -31,7 +34,10 @@ export const deleteFramework = action(
 		// Delete framework (CASCADE will delete versions)
 		await ctx.db.from('frameworks').eq('id', input.id).delete()
 
-		ctx.logger.info('Framework deleted', { frameworkId: input.id, frameworkName: framework.name })
+		ctx.logger.info('Framework deleted', {
+			frameworkId: input.id,
+			frameworkName: framework.name,
+		})
 
 		return {
 			success: true,

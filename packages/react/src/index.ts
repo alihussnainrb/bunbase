@@ -2,14 +2,16 @@ import { BunbaseClient } from './client.ts'
 import { createHooks } from './hooks.ts'
 import type { BaseAPI, BunbaseClientOptions } from './types.ts'
 
-export { BunbaseClient, BunbaseError } from './client.ts'
+export { BunbaseClient } from './client.ts'
 export type {
 	ActionInput,
 	ActionName,
 	ActionOutput,
 	BaseAPI,
 	BunbaseClientOptions,
+	HttpFieldMetadata,
 } from './types.ts'
+export { BunbaseError } from './types.ts'
 
 /**
  * Create a fully-typed Bunbase client with React hooks
@@ -17,19 +19,25 @@ export type {
  * @example
  * ```ts
  * import { createBunbaseClient } from '@bunbase/react'
- * import type { BunbaseAPI } from './api/bunbase'
+ * import type { BunbaseAPI } from './.bunbase/api'
+ * import { bunbaseAPISchema } from './.bunbase/api'
  *
  * export const bunbase = createBunbaseClient<BunbaseAPI>({
  *   baseUrl: 'http://localhost:3000',
+ *   schema: bunbaseAPISchema, // Enables automatic HTTP field routing
  * })
  *
- * // Use in components
- * const { data } = bunbase.useQuery('list-tasks', { status: 'active' })
- * const createTask = bunbase.useMutation('create-task')
+ * // Use in components - all HTTP fields automatically routed!
+ * const { data } = bunbase.useQuery('login', {
+ *   email: 'user@example.com',   // → body
+ *   password: 'secret',           // → body
+ *   apiKey: 'key',               // → X-API-Key header
+ *   remember: true               // → ?remember=true query
+ * })
  * ```
  */
 export function createBunbaseClient<API extends BaseAPI>(
-	options: BunbaseClientOptions,
+	options: BunbaseClientOptions<API>,
 ) {
 	const client = new BunbaseClient<API>(options)
 	const hooks = createHooks<API>(client)
@@ -83,6 +91,7 @@ export function createBunbaseClient<API extends BaseAPI>(
 /**
  * Type helper to infer API type from client
  */
-export type InferAPI<T> = T extends ReturnType<typeof createBunbaseClient<infer API>>
-	? API
-	: never
+export type InferAPI<T> =
+	T extends ReturnType<typeof createBunbaseClient<infer API extends BaseAPI>>
+		? API
+		: never

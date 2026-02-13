@@ -18,7 +18,10 @@ export const notifyAdmin = action(
 	},
 	async ({ input, ctx }) => {
 		// Verify organization exists
-		const organization = await ctx.db.from('organizations').eq('id', input.id).single()
+		const organization = await ctx.db
+			.from('organizations')
+			.eq('id', input.id)
+			.single()
 
 		if (!organization) {
 			throw new Error('Organization not found')
@@ -39,7 +42,10 @@ export const notifyAdmin = action(
 			admins = [admin]
 		} else {
 			// Notify all admins
-			admins = await ctx.db.from('organization_admins').eq('organization_id', input.id).exec()
+			admins = await ctx.db
+				.from('organization_admins')
+				.eq('organization_id', input.id)
+				.exec()
 
 			if (admins.length === 0) {
 				throw new Error('No admins found for this organization')
@@ -77,7 +83,10 @@ export const notifyAdmin = action(
 
 				notificationIds.push(notification.id)
 			} catch (error) {
-				ctx.logger.error('Failed to send notification', { error, adminEmail: admin.email })
+				ctx.logger.error('Failed to send notification', {
+					error,
+					adminEmail: admin.email,
+				})
 
 				// Log failed notification
 				const notification = await ctx.db

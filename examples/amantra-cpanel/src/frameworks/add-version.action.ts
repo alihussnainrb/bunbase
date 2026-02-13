@@ -20,7 +20,10 @@ export const addVersion = action(
 	},
 	async ({ input, ctx }) => {
 		// Check if framework exists
-		const framework = await ctx.db.from('frameworks').eq('id', input.frameworkId).single()
+		const framework = await ctx.db
+			.from('frameworks')
+			.eq('id', input.frameworkId)
+			.single()
 
 		if (!framework) {
 			throw new Error('Framework not found')
@@ -34,7 +37,9 @@ export const addVersion = action(
 			.maybeSingle()
 
 		if (existingVersion) {
-			throw new Error(`Version ${input.version} already exists for this framework`)
+			throw new Error(
+				`Version ${input.version} already exists for this framework`,
+			)
 		}
 
 		const version = await ctx.db

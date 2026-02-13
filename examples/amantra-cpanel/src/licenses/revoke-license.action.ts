@@ -79,7 +79,10 @@ export const revokeLicense = action(
 			ctx.logger.error('Failed to send revocation notification', { error })
 		}
 
-		ctx.logger.info('License revoked', { licenseId: input.id, reason: input.reason })
+		ctx.logger.info('License revoked', {
+			licenseId: input.id,
+			reason: input.reason,
+		})
 
 		return {
 			id: updated.id,

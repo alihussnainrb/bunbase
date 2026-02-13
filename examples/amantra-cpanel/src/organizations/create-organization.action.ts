@@ -78,7 +78,10 @@ export const createOrganization = action(
 				status: 'sent',
 			})
 		} catch (error) {
-			ctx.logger.error('Failed to send admin invite email', { error, adminEmail: admin.email })
+			ctx.logger.error('Failed to send admin invite email', {
+				error,
+				adminEmail: admin.email,
+			})
 		}
 
 		ctx.logger.info('Organization created', {

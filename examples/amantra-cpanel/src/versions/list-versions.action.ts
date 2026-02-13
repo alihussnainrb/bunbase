@@ -5,7 +5,9 @@ export const listVersions = action(
 		name: 'list-product-versions',
 		description: 'List all AMANTRA product versions',
 		input: t.Object({
-			release_type: t.Optional(t.Union([t.Literal('Beta'), t.Literal('Stable'), t.Literal('Patch')])),
+			release_type: t.Optional(
+				t.Union([t.Literal('Beta'), t.Literal('Stable'), t.Literal('Patch')]),
+			),
 		}),
 		output: t.Object({
 			versions: t.Array(

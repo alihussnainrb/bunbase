@@ -6,7 +6,14 @@ export const listLicenses = action(
 		description: 'List all licenses',
 		input: t.Object({
 			organization_id: t.Optional(t.String()),
-			status: t.Optional(t.Union([t.Literal('Active'), t.Literal('Inactive'), t.Literal('Revoked'), t.Literal('Expired')])),
+			status: t.Optional(
+				t.Union([
+					t.Literal('Active'),
+					t.Literal('Inactive'),
+					t.Literal('Revoked'),
+					t.Literal('Expired'),
+				]),
+			),
 		}),
 		output: t.Object({
 			licenses: t.Array(

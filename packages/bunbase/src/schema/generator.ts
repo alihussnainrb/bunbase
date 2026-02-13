@@ -44,7 +44,9 @@ export interface BunbaseSchema {
 /**
  * Extract HTTP metadata from a schema's fields
  */
-function extractHttpMetadata(schema: TSchema): Record<string, HttpFieldMetadata> {
+function extractHttpMetadata(
+	schema: TSchema,
+): Record<string, HttpFieldMetadata> {
 	const metadata: Record<string, HttpFieldMetadata> = {}
 
 	// Check if schema has properties (TObject)

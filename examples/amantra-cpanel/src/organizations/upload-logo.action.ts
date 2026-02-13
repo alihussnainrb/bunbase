@@ -18,7 +18,10 @@ export const uploadLogo = action(
 	},
 	async ({ input, ctx }) => {
 		// Verify organization exists
-		const organization = await ctx.db.from('organizations').eq('id', input.id).single()
+		const organization = await ctx.db
+			.from('organizations')
+			.eq('id', input.id)
+			.single()
 
 		if (!organization) {
 			throw new Error('Organization not found')
@@ -45,7 +48,10 @@ export const uploadLogo = action(
 			throw new Error('Failed to update organization logo')
 		}
 
-		ctx.logger.info('Organization logo uploaded', { organizationId: input.id, path })
+		ctx.logger.info('Organization logo uploaded', {
+			organizationId: input.id,
+			path,
+		})
 
 		return {
 			id: updated.id,

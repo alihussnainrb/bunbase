@@ -31,7 +31,9 @@ export const reactivateLicense = action(
 		// Calculate new validity period
 		const validFrom = new Date()
 		const durationDays = input.new_duration_days || license.duration_days
-		const validUntil = new Date(validFrom.getTime() + durationDays * 24 * 60 * 60 * 1000)
+		const validUntil = new Date(
+			validFrom.getTime() + durationDays * 24 * 60 * 60 * 1000,
+		)
 
 		// Reactivate license
 		const updated = await ctx.db

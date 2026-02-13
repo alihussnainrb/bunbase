@@ -1,7 +1,7 @@
 import { module } from 'bunbase'
 import { addVersion } from './add-version.action.ts'
-import { listVersions } from './list-versions.action.ts'
 import { getVersion } from './get-version.action.ts'
+import { listVersions } from './list-versions.action.ts'
 import { updateVersion } from './update-version.action.ts'
 
 /**

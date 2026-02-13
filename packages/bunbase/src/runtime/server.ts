@@ -12,8 +12,8 @@ import {
 	generateOpenAPISpec,
 	generateScalarDocs,
 } from '../openapi/generator.ts'
-import { generateBunbaseSchema } from '../schema/generator.ts'
 import type { WriteBuffer } from '../persistence/write-buffer.ts'
+import { generateBunbaseSchema } from '../schema/generator.ts'
 import type { StorageAdapter } from '../storage/types.ts'
 import { studioModule } from '../studio/module.ts'
 import { BunbaseError } from '../utils/errors.ts'

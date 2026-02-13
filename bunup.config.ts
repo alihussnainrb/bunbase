@@ -15,7 +15,7 @@ export default defineWorkspace([
 		},
 	},
 	{
-		name: "@bunbase/react",
+		name: '@bunbase/react',
 		root: 'packages/react',
 		config: {
 			target: 'bun',
@@ -26,7 +26,7 @@ export default defineWorkspace([
 			clean: true,
 			dts: true,
 		},
-	}
+	},
 	// Studio uses Vite for building, not bunup.
 	// Build it separately with: cd packages/studio && bun run build
 ])

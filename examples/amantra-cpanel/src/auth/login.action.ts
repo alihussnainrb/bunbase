@@ -20,7 +20,10 @@ export const login = action(
 	},
 	async ({ input, ctx }) => {
 		// Get user by email
-		const user = await ctx.db.from('users').eq('email', input.email).maybeSingle()
+		const user = await ctx.db
+			.from('users')
+			.eq('email', input.email)
+			.maybeSingle()
 
 		if (!user) {
 			throw new Error('Invalid credentials')

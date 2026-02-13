@@ -208,7 +208,6 @@ export interface TransportMetadata {
 export type ActionOutput<T> = T & {
 	/** Unified transport metadata for all trigger types */
 	_meta?: TransportMetadata
-
 }
 
 // ── Action Context ───────────────────────────────────────

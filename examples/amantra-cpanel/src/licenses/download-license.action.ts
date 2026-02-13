@@ -33,7 +33,8 @@ export const downloadLicense = action(
 		}
 
 		// Extract filename from path
-		const filename = license.license_file_path.split('/').pop() || 'license.json'
+		const filename =
+			license.license_file_path.split('/').pop() || 'license.json'
 
 		ctx.logger.info('License downloaded', { licenseId: input.id })
 

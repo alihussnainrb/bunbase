@@ -81,7 +81,8 @@ function printResults(results: BenchmarkResult[]) {
 
 	if (bunbaseResult && rawResult) {
 		const overhead =
-			((bunbaseResult.avgLatency - rawResult.avgLatency) / rawResult.avgLatency) *
+			((bunbaseResult.avgLatency - rawResult.avgLatency) /
+				rawResult.avgLatency) *
 			100
 		const throughputDiff =
 			((rawResult.requestsPerSecond - bunbaseResult.requestsPerSecond) /

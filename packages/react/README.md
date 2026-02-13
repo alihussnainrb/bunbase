@@ -5,6 +5,7 @@ Fully-typed React client for Bunbase backends with TanStack Query integration.
 ## Features
 
 - 🎯 **End-to-end type safety** - Generated types from your Bunbase backend
+- 🚀 **Automatic HTTP field routing** - Fields automatically routed to body, headers, query, cookies, path based on backend schema
 - ⚡ **TanStack Query integration** - Optimized data fetching with caching, refetching, and mutations
 - 🔌 **Direct API client** - Use without hooks for server-side or non-React code
 - 🔄 **Automatic retries** - Built-in retry logic for failed requests
@@ -23,22 +24,29 @@ bun add @bunbase/react @tanstack/react-query
 In your React project root:
 
 ```bash
-bunbase typegen:react --url http://localhost:3000 --output src/api/bunbase.d.ts
+bunbase typegen:react --url http://localhost:3000
 ```
 
-This fetches the OpenAPI spec from your Bunbase backend and generates TypeScript types.
+This fetches the schema from your Bunbase backend and generates:
+
+- TypeScript types in `.bunbase/api.d.ts`
+- Runtime schema object for automatic HTTP field routing
 
 ### 2. Create Bunbase Client
 
 ```tsx
 // src/api/client.ts
 import { createBunbaseClient } from '@bunbase/react'
-import type { BunbaseAPI } from './bunbase'
+import type { BunbaseAPI } from '../.bunbase/api'
+import { bunbaseAPISchema } from '../.bunbase/api'
 
 export const bunbase = createBunbaseClient<BunbaseAPI>({
   baseUrl: 'http://localhost:3000',
+  schema: bunbaseAPISchema, // Enables automatic HTTP field routing
 })
 ```
+
+**Important:** Pass the `bunbaseAPISchema` runtime object to enable automatic HTTP field routing. This allows fields to be automatically routed to the correct HTTP locations (body, headers, query, cookies, path parameters) based on your backend action definitions.
 
 ### 3. Setup Query Provider
 
@@ -57,6 +65,57 @@ function App() {
   )
 }
 ```
+
+## Automatic HTTP Field Routing
+
+When you pass the `schema` option to `createBunbaseClient`, the client automatically routes fields to the correct HTTP locations based on your backend action definitions:
+
+```tsx
+// Backend action with HTTP field mappings
+export const advancedLogin = action({
+  name: 'advanced-login',
+  input: t.Object({
+    email: t.String({ format: 'email' }),      // → body
+    password: t.String(),                       // → body
+    apiKey: http.Header(t.String(), 'X-API-Key'), // → header
+    remember: http.Query(t.Boolean()),          // → query param
+    deviceId: http.Cookie(t.String()),          // → cookie
+  }),
+  output: t.Object({
+    user: t.Object({ id: t.String(), email: t.String() }), // → body
+    token: t.String(),                                       // → body
+    userId: http.Header(t.String(), 'X-User-ID'),           // → response header
+    refreshToken: http.Cookie(t.String(), 'refresh_token', {
+      httpOnly: true,
+      secure: true,
+      maxAge: 7 * 24 * 60 * 60
+    }), // → Set-Cookie header
+  }),
+  triggers: [triggers.api('POST', '/auth/advanced-login')],
+}, async ({ input }) => {
+  // Implementation
+})
+
+// Frontend - just pass all fields naturally!
+const { data } = await bunbase.call('advanced-login', {
+  email: 'user@example.com',
+  password: 'secret',
+  apiKey: 'my-key',
+  remember: true,
+  deviceId: 'device123'
+})
+
+// Client automatically:
+// - Sends email/password in JSON body
+// - Sends apiKey as X-API-Key header
+// - Sends remember as ?remember=true query parameter
+// - Sends deviceId as cookie
+// - Extracts userId from response X-User-ID header
+// - Extracts refreshToken from Set-Cookie header
+// - Returns: { user, token, userId, refreshToken }
+```
+
+This deep integration with Bunbase eliminates manual HTTP plumbing and provides a tRPC-like developer experience with full type safety.
 
 ## Usage
 
@@ -253,12 +312,14 @@ Creates a typed Bunbase client.
 
 **Options:**
 - `baseUrl` (required): Backend URL
+- `schema`: Runtime schema object for automatic HTTP field routing (import `bunbaseAPISchema` from generated types)
 - `headers`: Default headers for all requests
 - `beforeRequest`: Intercept requests before sending
 - `afterResponse`: Intercept responses after receiving
 - `onError`: Global error handler
+- `fetch`: Custom fetch implementation (defaults to global fetch)
 
-**Returns:** Client with `useQuery`, `useMutation`, and `call` methods
+**Returns:** Client with `useQuery`, `useMutation`, `call`, and helper methods
 
 ### `bunbase.useQuery<Action>(action, input?, options?)`
 

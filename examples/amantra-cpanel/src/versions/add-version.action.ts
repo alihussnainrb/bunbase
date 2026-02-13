@@ -9,7 +9,9 @@ export const addVersion = action(
 			backend_version: t.Optional(t.String()),
 			frontend_version: t.Optional(t.String()),
 			ai_services_version: t.Optional(t.String()),
-			release_type: t.Optional(t.Union([t.Literal('Beta'), t.Literal('Stable'), t.Literal('Patch')])),
+			release_type: t.Optional(
+				t.Union([t.Literal('Beta'), t.Literal('Stable'), t.Literal('Patch')]),
+			),
 			release_date: t.String(),
 			notes: t.Optional(t.String()),
 		}),
@@ -33,10 +35,19 @@ export const addVersion = action(
 				release_date: input.release_date,
 				notes: input.notes,
 			})
-			.returning('id', 'version_name', 'release_type', 'release_date', 'created_at')
+			.returning(
+				'id',
+				'version_name',
+				'release_type',
+				'release_date',
+				'created_at',
+			)
 			.single()
 
-		ctx.logger.info('Product version added', { versionId: version.id, versionName: input.version_name })
+		ctx.logger.info('Product version added', {
+			versionId: version.id,
+			versionName: input.version_name,
+		})
 
 		return {
 			id: version.id,

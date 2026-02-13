@@ -1,4 +1,4 @@
-import { action, t, triggers, guards } from 'bunbase'
+import { action, guards, t, triggers } from 'bunbase'
 
 export const me = action(
 	{

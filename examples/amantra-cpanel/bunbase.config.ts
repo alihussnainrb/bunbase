@@ -4,7 +4,9 @@ export default defineConfig({
 	port: 3002,
 	actionsDir: './src',
 	database: {
-		url: process.env.DATABASE_URL || 'postgresql://postgres:postgres@localhost:5432/amantra_cpanel',
+		url:
+			process.env.DATABASE_URL ||
+			'postgresql://postgres:postgres@localhost:5432/amantra_cpanel',
 	},
 	storage: {
 		provider: 'local',
@@ -28,5 +30,6 @@ export default defineConfig({
 			},
 		},
 	},
-	sessionSecret: process.env.SESSION_SECRET || 'amantra-cpanel-secret-change-in-production',
+	sessionSecret:
+		process.env.SESSION_SECRET || 'amantra-cpanel-secret-change-in-production',
 })

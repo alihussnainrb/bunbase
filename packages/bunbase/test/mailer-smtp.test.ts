@@ -18,7 +18,9 @@ describe('SMTPMailerAdapter', () => {
 		mockSendMail.mockClear()
 		mockCreateTransport.mockClear()
 
-		mockSendMail.mockImplementation(() => Promise.resolve({ messageId: 'test' }))
+		mockSendMail.mockImplementation(() =>
+			Promise.resolve({ messageId: 'test' }),
+		)
 
 		adapter = new SMTPMailerAdapter(
 			{

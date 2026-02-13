@@ -1,12 +1,31 @@
 /**
+ * HTTP field metadata for automatic field routing
+ */
+export interface HttpFieldMetadata {
+	location: 'query' | 'header' | 'path' | 'cookie' | 'body'
+	paramName?: string
+	cookieOptions?: {
+		httpOnly?: boolean
+		secure?: boolean
+		sameSite?: 'strict' | 'lax' | 'none'
+		maxAge?: number
+		path?: string
+		domain?: string
+	}
+}
+
+/**
  * Base API structure that all generated APIs should follow
  */
 export interface BaseAPI {
 	[actionName: string]: {
-		method: string
-		path: string
+		method?: string
+		path?: string
+		module?: string
 		input: any
 		output: any
+		_inputFields?: Record<string, HttpFieldMetadata>
+		_outputFields?: Record<string, HttpFieldMetadata>
 	}
 }
 
@@ -18,30 +37,42 @@ export type ActionName<API extends BaseAPI> = keyof API & string
 /**
  * Extract input type for an action
  */
-export type ActionInput<API extends BaseAPI, Action extends ActionName<API>> =
-	API[Action]['input']
+export type ActionInput<
+	API extends BaseAPI,
+	Action extends ActionName<API>,
+> = API[Action]['input']
 
 /**
  * Extract output type for an action
  */
-export type ActionOutput<API extends BaseAPI, Action extends ActionName<API>> =
-	API[Action]['output']
+export type ActionOutput<
+	API extends BaseAPI,
+	Action extends ActionName<API>,
+> = API[Action]['output']
 
 /**
  * HTTP method for an action
  */
-export type ActionMethod<API extends BaseAPI, Action extends ActionName<API>> =
-	API[Action]['method']
+export type ActionMethod<
+	API extends BaseAPI,
+	Action extends ActionName<API>,
+> = API[Action]['method']
 
 /**
  * Client configuration options
  */
-export interface BunbaseClientOptions {
+export interface BunbaseClientOptions<API extends BaseAPI = BaseAPI> {
 	/**
 	 * Base URL of the Bunbase backend
 	 * @example "http://localhost:3000"
 	 */
 	baseUrl: string
+
+	/**
+	 * Runtime schema with HTTP field metadata for automatic field routing
+	 * Import from generated types: bunbaseAPISchema
+	 */
+	schema?: API
 
 	/**
 	 * Default headers to include in all requests

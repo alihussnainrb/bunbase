@@ -15,7 +15,9 @@ export const uploadVersionContent = action(
 			has_content: t.Boolean(),
 			updated_at: t.String(),
 		}),
-		triggers: [triggers.api('POST', '/:frameworkId/versions/:versionId/upload')],
+		triggers: [
+			triggers.api('POST', '/:frameworkId/versions/:versionId/upload'),
+		],
 	},
 	async ({ input, ctx }) => {
 		// Verify version exists and belongs to framework

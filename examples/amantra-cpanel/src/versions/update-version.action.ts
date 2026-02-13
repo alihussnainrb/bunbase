@@ -9,7 +9,9 @@ export const updateVersion = action(
 			backend_version: t.Optional(t.String()),
 			frontend_version: t.Optional(t.String()),
 			ai_services_version: t.Optional(t.String()),
-			release_type: t.Optional(t.Union([t.Literal('Beta'), t.Literal('Stable'), t.Literal('Patch')])),
+			release_type: t.Optional(
+				t.Union([t.Literal('Beta'), t.Literal('Stable'), t.Literal('Patch')]),
+			),
 			notes: t.Optional(t.String()),
 		}),
 		output: t.Object({
@@ -22,8 +24,10 @@ export const updateVersion = action(
 	async ({ input, ctx }) => {
 		const updates: Record<string, any> = {}
 
-		if (input.backend_version !== undefined) updates.backend_version = input.backend_version
-		if (input.frontend_version !== undefined) updates.frontend_version = input.frontend_version
+		if (input.backend_version !== undefined)
+			updates.backend_version = input.backend_version
+		if (input.frontend_version !== undefined)
+			updates.frontend_version = input.frontend_version
 		if (input.ai_services_version !== undefined)
 			updates.ai_services_version = input.ai_services_version
 		if (input.release_type) updates.release_type = input.release_type

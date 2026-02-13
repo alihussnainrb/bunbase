@@ -41,7 +41,10 @@ export const getLicense = action(
 			.eq('id', license.organization_id)
 			.single()
 
-		const licenseModules = await ctx.db.from('license_modules').eq('license_id', license.id).exec()
+		const licenseModules = await ctx.db
+			.from('license_modules')
+			.eq('license_id', license.id)
+			.exec()
 
 		const moduleIds = licenseModules.map((lm) => lm.module_id)
 		const modules = await ctx.db.from('modules').in('id', moduleIds).exec()

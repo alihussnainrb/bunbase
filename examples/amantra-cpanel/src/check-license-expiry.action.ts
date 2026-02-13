@@ -24,7 +24,10 @@ export default action(
 		const sevenDaysFromNow = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000)
 
 		// Get all active licenses
-		const activeLicenses = await ctx.db.from('licenses').eq('status', 'Active').exec()
+		const activeLicenses = await ctx.db
+			.from('licenses')
+			.eq('status', 'Active')
+			.exec()
 
 		let expiringSoon = 0
 		let expired = 0
@@ -36,7 +39,10 @@ export default action(
 			// Check if license has expired
 			if (validUntil < now) {
 				// Mark as expired
-				await ctx.db.update('licenses').eq('id', license.id).set({ status: 'Expired' })
+				await ctx.db
+					.update('licenses')
+					.eq('id', license.id)
+					.set({ status: 'Expired' })
 
 				expired++
 
@@ -80,14 +86,19 @@ export default action(
 						notificationsSent++
 					}
 				} catch (error) {
-					ctx.logger.error('Failed to send expiry notification', { error, licenseId: license.id })
+					ctx.logger.error('Failed to send expiry notification', {
+						error,
+						licenseId: license.id,
+					})
 				}
 			}
 			// Check if license is expiring within 7 days
 			else if (validUntil <= sevenDaysFromNow) {
 				expiringSoon++
 
-				const daysRemaining = Math.ceil((validUntil.getTime() - now.getTime()) / (1000 * 60 * 60 * 24))
+				const daysRemaining = Math.ceil(
+					(validUntil.getTime() - now.getTime()) / (1000 * 60 * 60 * 24),
+				)
 
 				// Send expiring soon notification
 				try {

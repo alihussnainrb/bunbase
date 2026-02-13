@@ -21,7 +21,10 @@ export const getVersion = action(
 		triggers: [triggers.api('GET', '/:id')],
 	},
 	async ({ input, ctx }) => {
-		const version = await ctx.db.from('product_versions').eq('id', input.id).single()
+		const version = await ctx.db
+			.from('product_versions')
+			.eq('id', input.id)
+			.single()
 
 		if (!version) {
 			throw new Error('Product version not found')

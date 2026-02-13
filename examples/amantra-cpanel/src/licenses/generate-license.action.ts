@@ -1,5 +1,5 @@
-import { action, t, triggers } from 'bunbase'
 import { randomBytes } from 'node:crypto'
+import { action, t, triggers } from 'bunbase'
 
 export const generateLicense = action(
 	{
@@ -35,7 +35,10 @@ export const generateLicense = action(
 		}
 
 		// Verify modules exist
-		const modules = await ctx.db.from('modules').in('id', input.module_ids).exec()
+		const modules = await ctx.db
+			.from('modules')
+			.in('id', input.module_ids)
+			.exec()
 
 		if (modules.length !== input.module_ids.length) {
 			throw new Error('One or more module IDs are invalid')
@@ -46,7 +49,9 @@ export const generateLicense = action(
 
 		// Calculate validity period
 		const validFrom = new Date()
-		const validUntil = new Date(validFrom.getTime() + input.duration_days * 24 * 60 * 60 * 1000)
+		const validUntil = new Date(
+			validFrom.getTime() + input.duration_days * 24 * 60 * 60 * 1000,
+		)
 
 		// Create license
 		const license = await ctx.db
@@ -60,7 +65,14 @@ export const generateLicense = action(
 				valid_until: validUntil.toISOString(),
 				status: 'Active',
 			})
-			.returning('id', 'license_key', 'organization_id', 'valid_from', 'valid_until', 'status')
+			.returning(
+				'id',
+				'license_key',
+				'organization_id',
+				'valid_from',
+				'valid_until',
+				'status',
+			)
 			.single()
 
 		// Associate modules with license
@@ -92,9 +104,13 @@ export const generateLicense = action(
 		const filename = `${organization.name.replace(/\s+/g, '')}-${new Date().toISOString().split('T')[0].replace(/-/g, '')}.json`
 		const licenseFilePath = `licenses/${license.id}/${filename}`
 
-		await ctx.storage.put(licenseFilePath, Buffer.from(JSON.stringify(licenseData, null, 2)), {
-			contentType: 'application/json',
-		})
+		await ctx.storage.put(
+			licenseFilePath,
+			Buffer.from(JSON.stringify(licenseData, null, 2)),
+			{
+				contentType: 'application/json',
+			},
+		)
 
 		// Update license with file path
 		await ctx.db

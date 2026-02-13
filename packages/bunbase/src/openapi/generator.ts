@@ -4,10 +4,85 @@ import type {
 	PathItemObject,
 	ResponseObject,
 } from 'openapi3-ts/oas31'
-import type { TSchema } from 'typebox'
+import type { TObject, TSchema } from 'typebox'
 import type { ActionRegistry } from '../core/registry.ts'
+import { getHttpMetadata } from '../utils/typebox.ts'
 
 export type { OpenApiBuilder }
+
+/**
+ * Extract parameters from input schema based on HTTP metadata
+ */
+function extractParameters(schema: TObject): Array<{
+	name: string
+	in: 'query' | 'header' | 'path' | 'cookie'
+	required: boolean
+	schema: any
+}> {
+	const parameters: Array<any> = []
+	const required = schema.required || []
+
+	for (const [fieldName, fieldSchema] of Object.entries(schema.properties)) {
+		const meta = getHttpMetadata(fieldSchema, fieldName)
+		if (!meta) continue // Body field, skip
+
+		parameters.push({
+			name: meta.paramName!,
+			in: meta.location,
+			required: required.includes(fieldName),
+			schema: typeboxToOpenAPI(fieldSchema),
+		})
+	}
+
+	return parameters
+}
+
+/**
+ * Extract body schema (fields without HTTP metadata)
+ */
+function extractBodySchema(schema: TObject): TObject | null {
+	const bodyProperties: Record<string, any> = {}
+	const required: string[] = []
+
+	for (const [fieldName, fieldSchema] of Object.entries(schema.properties)) {
+		const meta = getHttpMetadata(fieldSchema, fieldName)
+		if (meta) continue // Has HTTP mapping, skip
+
+		bodyProperties[fieldName] = fieldSchema
+		if (schema.required?.includes(fieldName)) {
+			required.push(fieldName)
+		}
+	}
+
+	if (Object.keys(bodyProperties).length === 0) {
+		return null // No body fields
+	}
+
+	return {
+		type: 'object',
+		properties: bodyProperties,
+		required: required.length > 0 ? required : undefined,
+	} as TObject
+}
+
+/**
+ * Extract response headers from output schema
+ */
+function extractResponseHeaders(schema: TObject): Record<string, any> {
+	const headers: Record<string, any> = {}
+
+	for (const [fieldName, fieldSchema] of Object.entries(schema.properties)) {
+		const meta = getHttpMetadata(fieldSchema, fieldName)
+		if (!meta || meta.location !== 'header') continue
+
+		headers[meta.paramName!] = {
+			description: `Response header ${meta.paramName}`,
+			schema: typeboxToOpenAPI(fieldSchema),
+		}
+	}
+
+	return headers
+}
 
 /**
  * Generate OpenAPI 3.1 spec from registered actions.
@@ -43,28 +118,68 @@ export function generateOpenAPISpec(
 
 				const config = action.definition.config
 
+				// Check if schemas have properties (TObject)
+				const inputHasProperties =
+					'properties' in config.input &&
+					typeof config.input.properties === 'object'
+				const outputHasProperties =
+					'properties' in config.output &&
+					typeof config.output.properties === 'object'
+
 				const operation: OperationObject = {
 					operationId: config.name,
 					summary: config.description,
 					description: config.description,
+					// Extract parameters from input schema
+					parameters: inputHasProperties
+						? extractParameters(config.input as TObject)
+						: [],
+					// Extract body schema (only non-HTTP-mapped fields)
 					requestBody: ['post', 'put', 'patch'].includes(method)
-						? {
-								content: {
-									'application/json': {
-										schema: typeboxToOpenAPI(config.input) as any,
-									},
-								},
-								required: true,
-							}
+						? (() => {
+								if (!inputHasProperties) {
+									return {
+										content: {
+											'application/json': {
+												schema: typeboxToOpenAPI(config.input) as any,
+											},
+										},
+										required: true,
+									}
+								}
+								const bodySchema = extractBodySchema(config.input as TObject)
+								return bodySchema
+									? {
+											content: {
+												'application/json': {
+													schema: bodySchema as any,
+												},
+											},
+											required: true,
+										}
+									: undefined
+							})()
 						: undefined,
 					responses: {
 						'200': {
 							description: 'Success',
 							content: {
 								'application/json': {
-									schema: typeboxToOpenAPI(config.output) as any,
+									schema: (() => {
+										if (!outputHasProperties) {
+											return typeboxToOpenAPI(config.output) as any
+										}
+										const bodySchema = extractBodySchema(
+											config.output as TObject,
+										)
+										return bodySchema ? (bodySchema as any) : { type: 'object' }
+									})(),
 								},
 							},
+							// Add response headers
+							headers: outputHasProperties
+								? extractResponseHeaders(config.output as TObject)
+								: undefined,
 						} as ResponseObject,
 						'400': { description: 'Validation error' },
 						'401': { description: 'Unauthorized' },

@@ -1,7 +1,6 @@
 import { action, t, triggers } from 'bunbase'
 import { Type } from 'typebox'
 
-
 /**
  * Simple login action — authenticates a user and sets a session cookie automatically.
  * Demonstrates: POST trigger, ctx.auth.loginWithEmail() which handles credential

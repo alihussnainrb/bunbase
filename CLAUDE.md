@@ -432,7 +432,64 @@ const createTask = bunbase.useMutation('create-task')
 
 ### When Building HTTP APIs
 
-- Use `triggers.api(method, path)` with optional `{ map }` for custom request mapping
+Actions can read from and write to HTTP headers, query parameters, path parameters, and cookies using the `http` namespace:
+
+**HTTP Field Mapping:**
+
+- `http.Header(schema, name?)` - Read from request headers, write to response headers
+- `http.Query(schema, name?)` - Read from query parameters (input only)
+- `http.Path(schema, name?)` - Read from path parameters (input only)
+- `http.Cookie(schema, name?, options?)` - Read from Cookie header, write to Set-Cookie header
+
+**Auto-matching:** If the name parameter is omitted, the field name is used automatically.
+
+**Example:**
+```typescript
+export const login = action({
+  name: 'login',
+  input: t.Object({
+    // Body fields (no wrapper)
+    email: t.String({ format: 'email' }),
+    password: t.String(),
+    // Read from header
+    apiKey: t.Optional(http.Header(t.String(), 'X-API-Key')),
+    // Read from query (auto-match field name)
+    remember: t.Optional(http.Query(t.Boolean())),
+    // Read from cookie
+    deviceId: t.Optional(http.Cookie(t.String())),
+  }),
+  output: t.Object({
+    // Body fields
+    user: t.Object({ id: t.String(), email: t.String() }),
+    token: t.String(),
+    // Write to response header
+    userId: http.Header(t.String(), 'X-User-ID'),
+    // Write to Set-Cookie with options
+    refreshToken: http.Cookie(t.String(), 'refresh_token', {
+      httpOnly: true,
+      secure: true,
+      sameSite: 'strict',
+      maxAge: 7 * 24 * 60 * 60, // 7 days
+    }),
+  }),
+  triggers: [triggers.api('POST', '/auth/login')],
+}, async ({ input, ctx }) => {
+  // All HTTP-mapped fields automatically extracted
+  return { user, token, userId, refreshToken }
+})
+```
+
+**Implementation Details:**
+
+- Cookie parsing uses Bun's native `CookieMap` for optimal performance
+- HTTP metadata stored via Symbol-based metadata (`Symbol.for('bunbase.http')`)
+- Output schema validation prevents using `http.Query()` and `http.Path()` (input-only)
+- OpenAPI generator automatically reflects HTTP mappings in parameters array and response headers
+- Fields without HTTP mapping go to/from JSON body
+
+**Basic API Usage:**
+
+- Use `triggers.api(method, path)` to create HTTP endpoints
 - Routes automatically include module API prefix
 - Path parameters supported: `triggers.api('GET', '/users/:id')`
 - Session cookies handled automatically

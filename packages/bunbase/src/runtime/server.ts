@@ -1,4 +1,5 @@
 import type { Server } from 'bun'
+import { CookieMap } from 'bun'
 import { SessionManager } from '../auth/session.ts'
 import type { BunbaseConfig } from '../config/types.ts'
 import { GuardError } from '../core/guards/types.ts'
@@ -41,7 +42,10 @@ interface Route {
 export class BunbaseServer {
 	private routes = new Map<string, Route>()
 	private routePatterns: Route[] = []
-	private routeHandlers = new Map<string, (req: Request) => Response | Promise<Response>>()
+	private routeHandlers = new Map<
+		string,
+		(req: Request) => Response | Promise<Response>
+	>()
 	private server: Server<any> | null = null
 	private scheduler?: Scheduler
 	private queue?: Queue
@@ -188,13 +192,18 @@ export class BunbaseServer {
 		}
 	}
 
-
 	/**
 	 * Build optimized route map with pre-compiled handlers.
 	 * Instead of using Bun's routes API, we use a pre-compiled Map for O(1) lookups.
 	 */
-	private buildOptimizedRoutes(): Map<string, (req: Request) => Response | Promise<Response>> {
-		const routeHandlers = new Map<string, (req: Request) => Response | Promise<Response>>()
+	private buildOptimizedRoutes(): Map<
+		string,
+		(req: Request) => Response | Promise<Response>
+	> {
+		const routeHandlers = new Map<
+			string,
+			(req: Request) => Response | Promise<Response>
+		>()
 
 		for (const action of this.registry.getAll()) {
 			for (const trigger of action.triggers) {
@@ -385,7 +394,10 @@ export class BunbaseServer {
 				let status = 500
 				if (errorObject instanceof GuardError) {
 					status = errorObject.statusCode
-				} else if (errorObject instanceof BunbaseError && errorObject.statusCode) {
+				} else if (
+					errorObject instanceof BunbaseError &&
+					errorObject.statusCode
+				) {
 					status = errorObject.statusCode
 				} else if (errorMessage.toLowerCase().includes('validation failed')) {
 					status = 400
@@ -508,22 +520,17 @@ export class BunbaseServer {
 	}
 
 	/**
-	 * Parsing cookies manually since we want to avoid external deps and Bun req.headers is standard.
+	 * Parse cookies using Bun's native CookieMap for better performance
 	 */
 	private parseCookies(cookieHeader: string | null): Record<string, string> {
 		if (!cookieHeader) return {}
-		return cookieHeader.split(';').reduce(
-			(acc, cookie) => {
-				const [key, value] = cookie.split('=').map((c) => c.trim())
-				if (key && value) {
-					acc[key] = decodeURIComponent(value)
-				}
-				return acc
-			},
-			{} as Record<string, string>,
-		)
+		const cookieMap = new CookieMap(cookieHeader)
+		const cookies: Record<string, string> = {}
+		for (const [key, value] of cookieMap) {
+			cookies[key] = value
+		}
+		return cookies
 	}
-
 
 	/** Stop the server, scheduler, queue, and MCP server */
 	async stop(): Promise<void> {

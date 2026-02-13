@@ -4,7 +4,6 @@ import type { BunbaseConfig } from '../config/types.ts'
 import { GuardError } from '../core/guards/types.ts'
 import type { ActionRegistry, RegisteredAction } from '../core/registry.ts'
 import type { ApiTriggerConfig, WebhookTriggerConfig } from '../core/types.ts'
-import { matchViewPath, parsePathParams } from '../core/url-parser.ts'
 import type { DatabaseClient } from '../db/client.ts'
 import type { KVStore } from '../kv/types.ts'
 import type { Logger } from '../logger/index.ts'
@@ -42,6 +41,7 @@ interface Route {
 export class BunbaseServer {
 	private routes = new Map<string, Route>()
 	private routePatterns: Route[] = []
+	private routeHandlers = new Map<string, (req: Request) => Response | Promise<Response>>()
 	private server: Server<any> | null = null
 	private scheduler?: Scheduler
 	private queue?: Queue
@@ -188,102 +188,242 @@ export class BunbaseServer {
 		}
 	}
 
-	/**
-	 * Find a route matching the given method and pathname.
-	 * First tries exact match, then falls back to pattern matching for path params.
-	 */
-	private findRoute(
-		method: string,
-		pathname: string,
-	): { route: Route; params: Record<string, string> } | null {
-		// 1. Try exact match
-		const routeKey = `${method}:${pathname}`
-		const exactRoute = this.routes.get(routeKey)
-		if (exactRoute) {
-			return { route: exactRoute, params: {} }
-		}
 
-		// 2. Try pattern matching for routes with path parameters
-		for (const route of this.routePatterns) {
-			if (route.method !== method) continue
-			if (matchViewPath(pathname, route.pattern)) {
-				const params = parsePathParams(pathname, route.pattern)
-				return { route, params: params as Record<string, string> }
+	/**
+	 * Build optimized route map with pre-compiled handlers.
+	 * Instead of using Bun's routes API, we use a pre-compiled Map for O(1) lookups.
+	 */
+	private buildOptimizedRoutes(): Map<string, (req: Request) => Response | Promise<Response>> {
+		const routeHandlers = new Map<string, (req: Request) => Response | Promise<Response>>()
+
+		for (const action of this.registry.getAll()) {
+			for (const trigger of action.triggers) {
+				if (trigger.type === 'api' || trigger.type === 'webhook') {
+					const method = trigger.type === 'webhook' ? 'POST' : trigger.method
+					const path = trigger.path
+					const routeKey = `${method}:${path}`
+
+					// Check for duplicates
+					if (routeHandlers.has(routeKey)) {
+						throw new Error(
+							`Duplicate route: ${method} ${path} (action: ${action.definition.config.name})`,
+						)
+					}
+
+					// Create pre-compiled handler for this route
+					routeHandlers.set(routeKey, this.createRouteHandler(action, trigger))
+
+					this.logger.debug(`Registered route: ${routeKey}`)
+				}
 			}
 		}
 
-		return null
+		return routeHandlers
 	}
 
 	/**
-	 * Start Bun HTTP server, scheduler, and optionally MCP server.
+	 * Create a handler function for a specific route.
+	 * This handler is called by Bun's native router.
 	 */
-	start(opts?: {
-		port?: number
-		hostname?: string
-		mcp?: boolean
-	}): Server<any> {
-		const { port = 3000, hostname = '0.0.0.0', mcp = false } = opts ?? {}
+	private createRouteHandler(
+		action: RegisteredAction,
+		trigger: ApiTriggerConfig | WebhookTriggerConfig,
+	): (req: Request) => Promise<Response> {
+		return async (req: Request): Promise<Response> => {
+			const url = new URL(req.url)
+			const method = req.method.toUpperCase()
 
-		this.buildRoutes()
-		this.registerEventListeners()
+			// Extract path parameters (Bun provides these in req.params)
+			const params = (req as any).params || {}
 
-		// Start scheduler if configured (handles cron-triggered actions)
-		if (this.scheduler) {
-			this.scheduler.start()
-		}
-
-		// Debug: Log all routes
-		for (const routeKey of this.routes.keys()) {
-			this.logger.debug(`Registered route: ${routeKey}`)
-		}
-
-		if (mcp) {
-			this.mcp.start().catch((err) => {
-				this.logger.error('Failed to start MCP server:', err)
-			})
-		}
-
-		this.server = Bun.serve({
-			port,
-			hostname,
-			fetch: (req) => this.handleRequest(req),
-		})
-
-		this.logger.info(`Server listening on ${hostname}:${port}`, {
-			routes: this.routes.size,
-			mcp,
-		})
-
-		return this.server
-	}
-
-	/**
-	 * Parsing cookies manually since we want to avoid external deps and Bun req.headers is standard.
-	 */
-	private parseCookies(cookieHeader: string | null): Record<string, string> {
-		if (!cookieHeader) return {}
-		return cookieHeader.split(';').reduce(
-			(acc, cookie) => {
-				const [key, value] = cookie.split('=').map((c) => c.trim())
-				if (key && value) {
-					acc[key] = decodeURIComponent(value)
+			// Authenticate (if session manager is configured)
+			let authContext: any = {}
+			if (this.sessionManager) {
+				const cookies = this.parseCookies(req.headers.get('Cookie'))
+				const sessionToken = cookies[this.sessionManager.getCookieName()]
+				if (sessionToken) {
+					const payload = this.sessionManager.verifySession(sessionToken)
+					if (payload) {
+						authContext = payload
+					}
 				}
-				return acc
-			},
-			{} as Record<string, string>,
-		)
+			}
+
+			try {
+				// Extract input from request
+				let input: unknown
+
+				if (trigger.type === 'api') {
+					if (trigger.map) {
+						input = await trigger.map(req)
+					} else {
+						// Default mapping: POST/PUT/PATCH → body, GET/DELETE → query params
+						if (['POST', 'PUT', 'PATCH'].includes(method)) {
+							input = await req.json().catch(() => ({}))
+						} else {
+							input = Object.fromEntries(url.searchParams)
+						}
+					}
+					// Merge path parameters into input
+					if (Object.keys(params).length > 0) {
+						input = { ...((input as Record<string, unknown>) ?? {}), ...params }
+					}
+				} else if (trigger.type === 'webhook') {
+					// Webhooks: verify first, then map
+					if (trigger.verify) {
+						const valid = await trigger.verify(req)
+						if (!valid) {
+							return Response.json(
+								{ error: 'Webhook verification failed' },
+								{ status: 401 },
+							)
+						}
+					}
+					const body = await req.json().catch(() => ({}))
+					input = trigger.map ? trigger.map(body) : body
+				}
+
+				// Response context
+				const headers = new Headers()
+				const setCookie = (name: string, value: string, opts?: any) => {
+					let cookie = `${name}=${encodeURIComponent(value)}`
+					if (opts?.path) cookie += `; Path=${opts.path}`
+					if (opts?.httpOnly) cookie += '; HttpOnly'
+					if (opts?.secure) cookie += '; Secure'
+					if (opts?.sameSite) cookie += `; SameSite=${opts.sameSite}`
+					if (opts?.expires) cookie += `; Expires=${opts.expires.toUTCString()}`
+					if (opts?.maxAge) cookie += `; Max-Age=${opts.maxAge}`
+					headers.append('Set-Cookie', cookie)
+				}
+
+				// Execute action
+				const result = await executeAction(action, input, {
+					triggerType: trigger.type,
+					request: req,
+					logger: this.logger,
+					writeBuffer: this.writeBuffer,
+					db: this.services?.db,
+					storage: this.services?.storage,
+					mailer: this.services?.mailer,
+					kv: this.services?.kv,
+					queue: this.queue,
+					scheduler: this.scheduler,
+					sessionManager: this.sessionManager,
+					auth: authContext,
+					response: { headers, setCookie },
+					registry: this.registry,
+				})
+
+				// Apply session actions (set/clear cookies from ctx.auth)
+				if (result.sessionActions && this.sessionManager) {
+					for (const sa of result.sessionActions) {
+						if (sa.type === 'create' && sa.token) {
+							setCookie(this.sessionManager.getCookieName(), sa.token, {
+								path: '/',
+								httpOnly: true,
+								secure: true,
+								sameSite: 'Lax',
+							})
+						} else if (sa.type === 'destroy') {
+							setCookie(this.sessionManager.getCookieName(), '', {
+								path: '/',
+								httpOnly: true,
+								secure: true,
+								sameSite: 'Lax',
+								maxAge: 0,
+							})
+						}
+					}
+				}
+
+				if (result.success) {
+					// Apply HTTP transport metadata if present
+					let status = 200
+					if (result.transportMeta?.http) {
+						const httpMeta = result.transportMeta.http
+
+						// Apply custom status code
+						if (httpMeta.status) {
+							status = httpMeta.status
+						}
+
+						// Apply custom headers
+						if (httpMeta.headers) {
+							for (const [key, value] of Object.entries(httpMeta.headers)) {
+								headers.set(key, value)
+							}
+						}
+
+						// Apply cookies
+						if (httpMeta.cookies) {
+							for (const cookie of httpMeta.cookies) {
+								let cookieStr = `${cookie.name}=${cookie.value}`
+								if (cookie.httpOnly) cookieStr += '; HttpOnly'
+								if (cookie.secure) cookieStr += '; Secure'
+								if (cookie.sameSite) {
+									// Capitalize first letter: 'strict' -> 'Strict'
+									cookieStr += `; SameSite=${cookie.sameSite.charAt(0).toUpperCase()}${cookie.sameSite.slice(1)}`
+								}
+								if (cookie.path) cookieStr += `; Path=${cookie.path}`
+								if (cookie.domain) cookieStr += `; Domain=${cookie.domain}`
+								if (cookie.maxAge) cookieStr += `; Max-Age=${cookie.maxAge}`
+								if (cookie.expires)
+									cookieStr += `; Expires=${cookie.expires.toUTCString()}`
+								headers.append('Set-Cookie', cookieStr)
+							}
+						}
+					}
+
+					return Response.json({ data: result.data }, { status, headers })
+				}
+
+				// Error response
+				const errorMessage = result.error ?? 'Unknown error'
+				const errorObject = result.errorObject
+
+				// Extract status code from error
+				let status = 500
+				if (errorObject instanceof GuardError) {
+					status = errorObject.statusCode
+				} else if (errorObject instanceof BunbaseError && errorObject.statusCode) {
+					status = errorObject.statusCode
+				} else if (errorMessage.toLowerCase().includes('validation failed')) {
+					status = 400
+				}
+
+				return Response.json({ error: errorMessage }, { status, headers })
+			} catch (err: unknown) {
+				const errorMessage = err instanceof Error ? err.message : String(err)
+
+				// Extract status code from error
+				let status = 500
+				if (err instanceof GuardError) {
+					status = err.statusCode
+				} else if (err instanceof BunbaseError && (err as any).statusCode) {
+					status = (err as any).statusCode
+				}
+
+				return Response.json({ error: errorMessage }, { status })
+			}
+		}
 	}
 
 	/**
-	 * Handle incoming HTTP requests.
+	 * Main request handler with optimized routing.
 	 */
 	private async handleRequest(req: Request): Promise<Response> {
 		const url = new URL(req.url)
 		const method = req.method.toUpperCase()
 		const pathname = url.pathname
 
-		// OpenAPI spec endpoint
+		// Try pre-compiled route handler first (O(1) lookup)
+		const routeKey = `${method}:${pathname}`
+		const handler = this.routeHandlers.get(routeKey)
+		if (handler) {
+			return handler(req)
+		}
+
+		// Check special routes (OpenAPI, Studio)
 		if (this.openapiConfig?.enabled) {
 			const specPath = this.openapiConfig.path ?? '/api/openapi.json'
 			const docsPath = '/api/docs'
@@ -318,188 +458,72 @@ export class BunbaseServer {
 			}
 		}
 
-		// Find matching route (exact or pattern match)
-		const match = this.findRoute(method, pathname)
-
-		this.logger.debug(
-			`[Request] ${method} ${pathname} -> ${match ? 'ACTION' : 'MISS'}`,
+		// Not found
+		return Response.json(
+			{ error: 'Not Found', path: pathname },
+			{ status: 404 },
 		)
-
-		if (!match) {
-			return Response.json(
-				{ error: 'Not Found', path: pathname },
-				{ status: 404 },
-			)
-		}
-
-		const { route, params } = match
-
-		// Authenticate (if session manager is configured)
-		let authContext: any = {}
-		if (this.sessionManager) {
-			const cookies = this.parseCookies(req.headers.get('Cookie'))
-			const sessionToken = cookies[this.sessionManager.getCookieName()]
-			if (sessionToken) {
-				const payload = this.sessionManager.verifySession(sessionToken)
-				if (payload) {
-					authContext = payload
-				}
-			}
-		}
-
-		try {
-			// Extract input from request
-			let input: unknown
-
-			if (route.trigger.type === 'api') {
-				if (route.trigger.map) {
-					input = await route.trigger.map(req)
-				} else {
-					// Default mapping: POST/PUT/PATCH → body, GET/DELETE → query params
-					if (['POST', 'PUT', 'PATCH'].includes(method)) {
-						input = await req.json().catch(() => ({}))
-					} else {
-						input = Object.fromEntries(url.searchParams)
-					}
-				}
-				// Merge path parameters into input
-				if (Object.keys(params).length > 0) {
-					input = { ...((input as Record<string, unknown>) ?? {}), ...params }
-				}
-			} else if (route.trigger.type === 'webhook') {
-				// Webhooks: verify first, then map
-				if (route.trigger.verify) {
-					const valid = await route.trigger.verify(req)
-					if (!valid) {
-						return Response.json(
-							{ error: 'Webhook verification failed' },
-							{ status: 401 },
-						)
-					}
-				}
-				const body = await req.json().catch(() => ({}))
-				input = route.trigger.map ? route.trigger.map(body) : body
-			}
-
-			// Response context
-			const headers = new Headers()
-			const setCookie = (name: string, value: string, opts?: any) => {
-				let cookie = `${name}=${encodeURIComponent(value)}`
-				if (opts?.path) cookie += `; Path=${opts.path}`
-				if (opts?.httpOnly) cookie += '; HttpOnly'
-				if (opts?.secure) cookie += '; Secure'
-				if (opts?.sameSite) cookie += `; SameSite=${opts.sameSite}`
-				if (opts?.expires) cookie += `; Expires=${opts.expires.toUTCString()}`
-				if (opts?.maxAge) cookie += `; Max-Age=${opts.maxAge}`
-				headers.append('Set-Cookie', cookie)
-			}
-
-			// Execute action
-			const result = await executeAction(route.action, input, {
-				triggerType: route.trigger.type,
-				request: req,
-				logger: this.logger,
-				writeBuffer: this.writeBuffer,
-				db: this.services?.db,
-				storage: this.services?.storage,
-				mailer: this.services?.mailer,
-				kv: this.services?.kv,
-				queue: this.queue,
-				scheduler: this.scheduler,
-				sessionManager: this.sessionManager,
-				auth: authContext,
-				response: { headers, setCookie },
-				registry: this.registry,
-			})
-
-			// Apply session actions (set/clear cookies from ctx.auth)
-			if (result.sessionActions && this.sessionManager) {
-				for (const sa of result.sessionActions) {
-					if (sa.type === 'create' && sa.token) {
-						setCookie(this.sessionManager.getCookieName(), sa.token, {
-							path: '/',
-							httpOnly: true,
-							secure: true,
-							sameSite: 'Lax',
-						})
-					} else if (sa.type === 'destroy') {
-						setCookie(this.sessionManager.getCookieName(), '', {
-							path: '/',
-							httpOnly: true,
-							secure: true,
-							sameSite: 'Lax',
-							maxAge: 0,
-						})
-					}
-				}
-			}
-
-			if (result.success) {
-				// Apply HTTP transport metadata if present
-				let status = 200
-				if (result.transportMeta?.http) {
-					const httpMeta = result.transportMeta.http
-
-					// Apply custom status code
-					if (httpMeta.status) {
-						status = httpMeta.status
-					}
-
-					// Apply custom headers
-					if (httpMeta.headers) {
-						for (const [key, value] of Object.entries(httpMeta.headers)) {
-							headers.set(key, value)
-						}
-					}
-
-					// Apply cookies
-					if (httpMeta.cookies) {
-						for (const cookie of httpMeta.cookies) {
-							let cookieStr = `${cookie.name}=${cookie.value}`
-							if (cookie.httpOnly) cookieStr += '; HttpOnly'
-							if (cookie.secure) cookieStr += '; Secure'
-							if (cookie.sameSite) {
-								// Capitalize first letter: 'strict' -> 'Strict'
-								cookieStr += `; SameSite=${cookie.sameSite.charAt(0).toUpperCase()}${cookie.sameSite.slice(1)}`
-							}
-							if (cookie.path) cookieStr += `; Path=${cookie.path}`
-							if (cookie.domain) cookieStr += `; Domain=${cookie.domain}`
-							if (cookie.maxAge) cookieStr += `; Max-Age=${cookie.maxAge}`
-							if (cookie.expires)
-								cookieStr += `; Expires=${cookie.expires.toUTCString()}`
-							headers.append('Set-Cookie', cookieStr)
-						}
-					}
-				}
-
-				return Response.json({ data: result.data }, { status, headers })
-			}
-
-			// Determine error status from the error object
-			let status = 500
-			if (result.errorObject instanceof GuardError) {
-				status = result.errorObject.statusCode
-			} else if (result.errorObject instanceof BunbaseError) {
-				status = result.errorObject.statusCode
-			} else if (result.error?.includes('validation failed')) {
-				status = 400
-			}
-
-			return Response.json({ error: result.error }, { status, headers })
-		} catch (err: unknown) {
-			// Handle BunbaseError instances with their specific status codes
-			if (err instanceof BunbaseError) {
-				this.logger.error(`Action error: ${err.message}`)
-				return Response.json({ error: err.message }, { status: err.statusCode })
-			}
-
-			// Handle other errors as internal server errors
-			const message =
-				err instanceof Error ? err.message : 'Internal server error'
-			this.logger.error(`Unhandled error: ${message}`)
-			return Response.json({ error: message }, { status: 500 })
-		}
 	}
+
+	/**
+	 * Start Bun HTTP server, scheduler, and optionally MCP server.
+	 */
+	start(opts?: {
+		port?: number
+		hostname?: string
+		mcp?: boolean
+	}): Server<any> {
+		const { port = 3000, hostname = '0.0.0.0', mcp = false } = opts ?? {}
+
+		this.buildRoutes()
+		this.registerEventListeners()
+
+		// Start scheduler if configured (handles cron-triggered actions)
+		if (this.scheduler) {
+			this.scheduler.start()
+		}
+
+		if (mcp) {
+			this.mcp.start().catch((err) => {
+				this.logger.error('Failed to start MCP server:', err)
+			})
+		}
+
+		// Build optimized route handlers
+		this.routeHandlers = this.buildOptimizedRoutes()
+
+		// Start server with optimized fetch handler
+		this.server = Bun.serve({
+			port,
+			hostname,
+			fetch: (req) => this.handleRequest(req),
+		})
+
+		this.logger.info(`Server listening on ${hostname}:${port}`, {
+			routes: this.routeHandlers.size,
+			mcp,
+		})
+
+		return this.server
+	}
+
+	/**
+	 * Parsing cookies manually since we want to avoid external deps and Bun req.headers is standard.
+	 */
+	private parseCookies(cookieHeader: string | null): Record<string, string> {
+		if (!cookieHeader) return {}
+		return cookieHeader.split(';').reduce(
+			(acc, cookie) => {
+				const [key, value] = cookie.split('=').map((c) => c.trim())
+				if (key && value) {
+					acc[key] = decodeURIComponent(value)
+				}
+				return acc
+			},
+			{} as Record<string, string>,
+		)
+	}
+
 
 	/** Stop the server, scheduler, queue, and MCP server */
 	async stop(): Promise<void> {

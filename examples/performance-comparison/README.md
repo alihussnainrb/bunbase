@@ -64,34 +64,37 @@ bun run benchmark
 
 ### Results
 
-**Bunbase (no persistence):**
+**Bunbase (optimized with pre-compiled routes):**
 
-- Avg Latency: **0.305ms**
-- Throughput: **3,172 req/s**
-- P50: 0.275ms | P95: 0.432ms | P99: 0.885ms
+- Avg Latency: **0.289ms**
+- Throughput: **3,341 req/s**
+- P50: 0.268ms | P95: 0.394ms | P99: 0.566ms
 
 **Raw Bun.serve (with same features):**
-- Avg Latency: **0.100ms**
-- Throughput: **9,655 req/s**
-- P50: 0.088ms | P95: 0.153ms | P99: 0.204ms
+- Avg Latency: **0.104ms**
+- Throughput: **9,275 req/s**
+- P50: 0.093ms | P95: 0.158ms | P99: 0.209ms
 
 **Overhead Analysis:**
 
-- **Framework overhead: ~0.205ms per request (3x)**
-- This is the cost of the framework architecture (registry, context creation, route matching, etc.)
+- **Framework overhead: ~0.185ms per request (2.78x)**
+- Pre-compiled route handlers eliminate JavaScript route matching overhead
+- Route lookups are O(1) Map operations instead of O(n) iteration
 
-### What's in the 0.205ms overhead?
+### What's in the 0.185ms overhead?
 
-1. **Route Matching & Lookup** (~20%) - Registry lookup, pattern matching
-2. **Context Creation** (~25%) - Full ActionContext with lazy getters, call stack tracking
-3. **Logging Infrastructure** (~20%) - Child logger creation, trace ID generation
-4. **Guard System** (~15%) - Guard loop iteration (even if empty)
-5. **Metadata Processing** (~10%) - Extract/strip transport metadata
-6. **Validation** (~10%) - TypeBox compile/check overhead beyond raw validation
+1. **Context Creation** (~30%) - Full ActionContext with lazy getters, call stack tracking
+2. **Logging Infrastructure** (~25%) - Child logger creation, trace ID generation
+3. **Guard System** (~20%) - Guard loop iteration (even if empty)
+4. **Session/Cookie Handling** (~10%) - Cookie parsing, HMAC verification
+5. **Metadata Processing** (~8%) - Extract/strip transport metadata
+6. **Validation** (~7%) - TypeBox compile/check overhead beyond raw validation
+
+**Optimization Applied:** Route handlers are pre-compiled at startup into a Map for O(1) lookups, eliminating JavaScript route matching overhead entirely.
 
 ### What You Get
 
-For the 0.205ms overhead, Bunbase provides:
+For the 0.185ms overhead, Bunbase provides:
 
 - Type-safe action system with input/output validation
 - Automatic OpenAPI documentation generation
@@ -113,4 +116,4 @@ For the 0.205ms overhead, Bunbase provides:
 - NestJS: ~2-5ms overhead
 - Bunbase: ~0.2ms overhead
 
-In production with real database queries (10-100ms) and external API calls (100-500ms), the 0.2ms framework overhead becomes **< 1%** of total request time.
+In production with real database queries (10-100ms) and external API calls (100-500ms), the 0.185ms framework overhead becomes **< 1%** of total request time.

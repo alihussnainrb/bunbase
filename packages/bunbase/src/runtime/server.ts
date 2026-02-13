@@ -20,6 +20,7 @@ import { BunbaseError } from '../utils/errors.ts'
 import { eventBus } from './event-bus.ts'
 import { executeAction } from './executor.ts'
 import { McpService } from './mcp-server.ts'
+import { mapRequestToInput } from './request-mapper.ts'
 import type { Queue } from './queue.ts'
 import type { Scheduler } from './scheduler.ts'
 
@@ -269,16 +270,31 @@ export class BunbaseServer {
 					if (trigger.map) {
 						input = await trigger.map(req)
 					} else {
-						// Default mapping: POST/PUT/PATCH → body, GET/DELETE → query params
-						if (['POST', 'PUT', 'PATCH'].includes(method)) {
-							input = await req.json().catch(() => ({}))
+						// Use HTTP field mapping from schema metadata
+						const inputSchema = action.definition.config.input
+						if (
+							inputSchema &&
+							typeof inputSchema === 'object' &&
+							'properties' in inputSchema
+						) {
+							input = await mapRequestToInput(
+								req,
+								url,
+								inputSchema as any,
+								params,
+							)
 						} else {
-							input = Object.fromEntries(url.searchParams)
+							// Fallback: Default mapping: POST/PUT/PATCH → body, GET/DELETE → query params
+							if (['POST', 'PUT', 'PATCH'].includes(method)) {
+								input = await req.json().catch(() => ({}))
+							} else {
+								input = Object.fromEntries(url.searchParams)
+							}
+							// Merge path parameters into input
+							if (Object.keys(params).length > 0) {
+								input = { ...((input as Record<string, unknown>) ?? {}), ...params }
+							}
 						}
-					}
-					// Merge path parameters into input
-					if (Object.keys(params).length > 0) {
-						input = { ...((input as Record<string, unknown>) ?? {}), ...params }
 					}
 				} else if (trigger.type === 'webhook') {
 					// Webhooks: verify first, then map

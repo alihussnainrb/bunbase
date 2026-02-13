@@ -1126,11 +1126,9 @@ If you're getting CORS errors:
 
    ```typescript
    export default defineConfig({
-     server: {
-       cors: {
-         origin: ['http://localhost:5173'], // Your frontend URL
-         credentials: true,
-       },
+     cors: {
+       origin: ['http://localhost:5173'], // Your frontend URL
+       credentials: true,
      },
    })
    ```

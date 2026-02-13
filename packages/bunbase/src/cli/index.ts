@@ -1,3 +1,4 @@
+#!/usr/bin/env bun
 import { Command } from 'commander'
 import { devCommand } from './commands/dev.ts'
 import { generateCommand } from './commands/generate.ts'

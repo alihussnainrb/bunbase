@@ -27,6 +27,4 @@ export default defineWorkspace([
 			dts: true,
 		},
 	},
-	// Studio uses Vite for building, not bunup.
-	// Build it separately with: cd packages/studio && bun run build
 ])

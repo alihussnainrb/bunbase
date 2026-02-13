@@ -1,6 +1,13 @@
 {
-	"extends": "../../tsconfig.json",
 	"compilerOptions": {
+		"target": "ESNext",
+		"module": "ESNext",
+		"moduleResolution": "bundler",
+		"strict": true,
+		"esModuleInterop": true,
+		"skipLibCheck": true,
+		"noEmit": true,
 		"types": ["bun-types"]
-	}
+	},
+	"include": ["src/**/*.ts", "bunbase.config.ts", ".bunbase/**/*"]
 }

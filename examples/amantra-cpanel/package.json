@@ -17,6 +17,6 @@
 		"typescript": "^5"
 	},
 	"dependencies": {
-		"bunbase": "../../packages/bunbase"
+		"bunbase": "workspace:*"
 	}
 }

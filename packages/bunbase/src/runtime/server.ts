@@ -54,6 +54,7 @@ export class BunbaseServer {
 	private sessionManager?: SessionManager
 	private openapiConfig?: BunbaseConfig['openapi']
 	private studioConfig?: BunbaseConfig['studio']
+	private corsConfig?: BunbaseConfig['cors']
 
 	constructor(
 		private readonly registry: ActionRegistry,
@@ -65,6 +66,7 @@ export class BunbaseServer {
 		this.mcp = new McpService(registry, logger, writeBuffer)
 		this.openapiConfig = config?.openapi
 		this.studioConfig = config?.studio
+		this.corsConfig = config?.cors
 		if (config?.auth) {
 			this.sessionManager = new SessionManager({
 				secret: config.auth.sessionSecret,
@@ -429,11 +431,17 @@ export class BunbaseServer {
 		const method = req.method.toUpperCase()
 		const pathname = url.pathname
 
+		// Handle CORS preflight
+		if (method === 'OPTIONS' && this.corsConfig) {
+			return this.handleCorsPreflightRequest(req)
+		}
+
 		// Try pre-compiled route handler first (O(1) lookup)
 		const routeKey = `${method}:${pathname}`
 		const handler = this.routeHandlers.get(routeKey)
 		if (handler) {
-			return handler(req)
+			const response = await handler(req)
+			return this.addCorsHeaders(req, response)
 		}
 
 		// Check special routes (OpenAPI, Studio)
@@ -446,7 +454,7 @@ export class BunbaseServer {
 					title: this.openapiConfig.title,
 					version: this.openapiConfig.version,
 				})
-				return Response.json(spec)
+				return this.addCorsHeaders(req, Response.json(spec))
 			}
 
 			if (pathname === docsPath && method === 'GET') {
@@ -455,32 +463,38 @@ export class BunbaseServer {
 					version: this.openapiConfig.version,
 				})
 				const html = generateScalarDocs(spec)
-				return new Response(html, {
-					headers: { 'Content-Type': 'text/html' },
-				})
+				return this.addCorsHeaders(
+					req,
+					new Response(html, {
+						headers: { 'Content-Type': 'text/html' },
+					}),
+				)
 			}
 		}
 
 		// Bunbase schema endpoint (for React typegen)
 		if (pathname === '/_bunbase/schema' && method === 'GET') {
 			const schema = generateBunbaseSchema(this.registry)
-			return Response.json(schema)
+			return this.addCorsHeaders(req, Response.json(schema))
 		}
 
 		// Studio dashboard UI
 		if (this.studioConfig?.enabled) {
 			const studioPath = this.studioConfig.path ?? '/_studio'
 			if (pathname === studioPath || pathname === `${studioPath}/`) {
-				return new Response('Studio Dashboard - Coming Soon', {
-					headers: { 'Content-Type': 'text/html' },
-				})
+				return this.addCorsHeaders(
+					req,
+					new Response('Studio Dashboard - Coming Soon', {
+						headers: { 'Content-Type': 'text/html' },
+					}),
+				)
 			}
 		}
 
 		// Not found
-		return Response.json(
-			{ error: 'Not Found', path: pathname },
-			{ status: 404 },
+		return this.addCorsHeaders(
+			req,
+			Response.json({ error: 'Not Found', path: pathname }, { status: 404 }),
 		)
 	}
 
@@ -537,6 +551,97 @@ export class BunbaseServer {
 			cookies[key] = value
 		}
 		return cookies
+	}
+
+	/**
+	 * Handle CORS preflight OPTIONS request
+	 */
+	private handleCorsPreflightRequest(req: Request): Response {
+		const headers = this.buildCorsHeaders(req)
+		return new Response(null, { status: 204, headers })
+	}
+
+	/**
+	 * Add CORS headers to response
+	 */
+	private addCorsHeaders(req: Request, response: Response): Response {
+		if (!this.corsConfig) return response
+
+		const corsHeaders = this.buildCorsHeaders(req)
+		const newHeaders = new Headers(response.headers)
+		for (const [key, value] of Object.entries(corsHeaders)) {
+			newHeaders.set(key, value)
+		}
+
+		return new Response(response.body, {
+			status: response.status,
+			statusText: response.statusText,
+			headers: newHeaders,
+		})
+	}
+
+	/**
+	 * Build CORS headers based on configuration
+	 */
+	private buildCorsHeaders(req: Request): Record<string, string> {
+		if (!this.corsConfig) return {}
+
+		const headers: Record<string, string> = {}
+		const origin = req.headers.get('origin')
+
+		// Handle origin
+		if (
+			this.corsConfig.origin === true ||
+			this.corsConfig.origin === undefined
+		) {
+			// Allow all origins
+			headers['Access-Control-Allow-Origin'] = origin || '*'
+		} else if (this.corsConfig.origin === false) {
+			// Don't set CORS headers
+			return {}
+		} else if (typeof this.corsConfig.origin === 'string') {
+			headers['Access-Control-Allow-Origin'] = this.corsConfig.origin
+		} else if (Array.isArray(this.corsConfig.origin)) {
+			// Check if origin is in allowed list
+			if (origin && this.corsConfig.origin.includes(origin)) {
+				headers['Access-Control-Allow-Origin'] = origin
+			}
+		}
+
+		// Handle credentials
+		if (this.corsConfig.credentials !== false) {
+			headers['Access-Control-Allow-Credentials'] = 'true'
+		}
+
+		// Handle methods
+		const methods = this.corsConfig.methods || [
+			'GET',
+			'POST',
+			'PUT',
+			'PATCH',
+			'DELETE',
+			'OPTIONS',
+		]
+		headers['Access-Control-Allow-Methods'] = methods.join(', ')
+
+		// Handle headers
+		const allowedHeaders = this.corsConfig.headers || [
+			'Content-Type',
+			'Authorization',
+		]
+		headers['Access-Control-Allow-Headers'] = allowedHeaders.join(', ')
+
+		// Handle exposed headers
+		if (this.corsConfig.exposedHeaders) {
+			headers['Access-Control-Expose-Headers'] =
+				this.corsConfig.exposedHeaders.join(', ')
+		}
+
+		// Handle max age
+		const maxAge = this.corsConfig.maxAge ?? 86400
+		headers['Access-Control-Max-Age'] = String(maxAge)
+
+		return headers
 	}
 
 	/** Stop the server, scheduler, queue, and MCP server */

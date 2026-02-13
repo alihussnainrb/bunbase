@@ -12,6 +12,9 @@
 			"import": "./dist/index.js"
 		}
 	},
+	"publishConfig": {
+		"access": "public"
+	},
 	"files": [
 		"dist",
 		"README.md"
@@ -19,7 +22,8 @@
 	"scripts": {
 		"build": "bunup",
 		"dev": "bunup --watch",
-		"type-check": "tsc --noEmit"
+		"type-check": "tsc --noEmit",
+		"release": "bumpp -r --commit --push --tag"
 	},
 	"keywords": [
 		"bunbase",

@@ -33,7 +33,10 @@
 		"url": "git+https://github.com/alihussnainrb/bunbase.git"
 	},
 	"scripts": {
-		"type-check": "tsc --noEmit"
+		"build": "bunup",
+		"dev": "bunup --watch",
+		"type-check": "tsc --noEmit",
+		"release": "bumpp -r --commit --push --tag"
 	},
 	"devDependencies": {
 		"@biomejs/biome": "^2.3.14",

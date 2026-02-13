@@ -7,6 +7,22 @@ export interface BunbaseConfig {
 	/** Directory to scan for actions and modules (default: src/actions) */
 	actionsDir?: string
 
+	/** CORS configuration */
+	cors?: {
+		/** Allowed origins (default: *) */
+		origin?: string | string[] | boolean
+		/** Allow credentials (default: true) */
+		credentials?: boolean
+		/** Allowed methods (default: GET, POST, PUT, PATCH, DELETE, OPTIONS) */
+		methods?: string[]
+		/** Allowed headers (default: Content-Type, Authorization) */
+		headers?: string[]
+		/** Exposed headers */
+		exposedHeaders?: string[]
+		/** Max age for preflight cache in seconds (default: 86400) */
+		maxAge?: number
+	}
+
 	/** Database configuration */
 	database?: {
 		/** PostgreSQL connection URL. Falls back to DATABASE_URL env var */

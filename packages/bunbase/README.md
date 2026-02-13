@@ -37,11 +37,9 @@ Create a `bunbase.config.ts`:
 import { defineConfig } from 'bunbase'
 
 export default defineConfig({
-  db: {
+  port: 3000,
+  database: {
     url: process.env.DATABASE_URL || 'postgresql://localhost:5432/myapp',
-  },
-  server: {
-    port: 3000,
   },
 })
 ```
@@ -471,7 +469,7 @@ export default defineConfig({
     maxRetries: 10,
     tls: false,
   },
-  db: { /* ... */ },
+  database: { /* ... */ },
 })
 ```
 
@@ -523,18 +521,29 @@ Complete `bunbase.config.ts` example:
 import { defineConfig } from 'bunbase'
 
 export default defineConfig({
-  // Database configuration (required)
-  db: {
-    url: process.env.DATABASE_URL!,
+  // Server configuration
+  port: 3000,
+  hostname: '0.0.0.0',
+
+  // CORS configuration
+  cors: {
+    origin: ['http://localhost:3000', 'https://myapp.com'],
+    credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+    headers: ['Content-Type', 'Authorization'],
+    maxAge: 86400,
   },
 
-  // Server configuration
-  server: {
-    port: 3000,
-    hostname: '0.0.0.0',
-    cors: {
-      origin: ['http://localhost:3000', 'https://myapp.com'],
-      credentials: true,
+  // Directory to scan for actions and modules
+  actionsDir: 'src',
+
+  // Database configuration (required)
+  database: {
+    url: process.env.DATABASE_URL!,
+    maxConnections: 20,
+    idleTimeout: 30000,
+    migrations: {
+      directory: 'migrations',
     },
   },
 
@@ -548,29 +557,65 @@ export default defineConfig({
     tls: false,
   },
 
-  // Session configuration
-  session: {
-    secret: process.env.SESSION_SECRET!,
-    cookieName: 'my_session',
-    maxAge: 7 * 24 * 60 * 60, // 7 days
+  // Auth configuration
+  auth: {
+    sessionSecret: process.env.SESSION_SECRET!,
+    cookieName: 'bunbase_session',
+    expiresIn: 7 * 24 * 60 * 60, // 7 days in seconds
   },
 
-  // Logging configuration
-  logging: {
-    level: 'info',
-    pretty: true,
+  // Persistence configuration (for action logs/runs)
+  persistence: {
+    enabled: true,
+    flushIntervalMs: 2000, // Flush every 2 seconds
+    maxBufferSize: 500,    // Or when 500 entries buffered
   },
 
-  // Write buffer for action logs/runs
-  writeBuffer: {
-    flushInterval: 2000,  // Flush every 2 seconds
-    maxSize: 500,         // Or when 500 entries buffered
+  // File storage configuration
+  storage: {
+    adapter: 'local',
+    local: {
+      directory: '.storage',
+    },
   },
 
-  // Queue configuration
-  queue: {
-    pollInterval: 1000,   // Check for jobs every second
-    maxConcurrency: 10,   // Process up to 10 jobs concurrently
+  // Email mailer configuration
+  mailer: {
+    provider: 'smtp',
+    from: {
+      name: 'My App',
+      email: 'noreply@myapp.com',
+    },
+    smtp: {
+      host: 'smtp.example.com',
+      port: 587,
+      secure: false,
+      auth: {
+        user: process.env.SMTP_USER!,
+        pass: process.env.SMTP_PASS!,
+      },
+    },
+  },
+
+  // Enable SaaS features
+  saas: true,
+
+  // Enable MCP Server
+  mcp: true,
+
+  // OpenAPI configuration
+  openapi: {
+    enabled: true,
+    path: '/api/openapi.json',
+    title: 'My API',
+    version: '1.0.0',
+  },
+
+  // Studio configuration
+  studio: {
+    enabled: true,
+    path: '/_studio',
+    apiPrefix: '/_studio/api',
   },
 })
 ```

@@ -274,7 +274,7 @@ describe('executeAction()', () => {
 		})
 
 		registry.registerModule(testModule)
-		const registered = registry.get('testModuleContext')!
+		const registered = registry.get('testModule.testModuleContext')!
 
 		await executeAction(
 			registered,

@@ -1,0 +1,1216 @@
+{
+  "version": "2.8",
+  "children": [
+    {
+      "type": "frame",
+      "id": "Bc65P",
+      "x": 0,
+      "y": 0,
+      "name": "Landing Page",
+      "width": 1440,
+      "fill": "#FFFFFF",
+      "layout": "vertical",
+      "children": [
+        {
+          "type": "frame",
+          "id": "029uf",
+          "name": "Header",
+          "width": "fill_container",
+          "height": 80,
+          "gap": 40,
+          "padding": [
+            0,
+            120
+          ],
+          "justifyContent": "space_between",
+          "alignItems": "center",
+          "children": [
+            {
+              "type": "frame",
+              "id": "KWpbw",
+              "name": "logo",
+              "gap": 10,
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "text",
+                  "id": "lYddv",
+                  "name": "logoIcon",
+                  "content": "⚡",
+                  "fontFamily": "Inter",
+                  "fontSize": 28,
+                  "fontWeight": "normal"
+                },
+                {
+                  "type": "text",
+                  "id": "TUoSL",
+                  "name": "logoText",
+                  "fill": "#0A0A0A",
+                  "content": "bunbase",
+                  "fontFamily": "Inter",
+                  "fontSize": 20,
+                  "fontWeight": "semibold"
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "pZWVE",
+              "name": "nav",
+              "gap": 32,
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "text",
+                  "id": "T0k1o",
+                  "name": "navLink1",
+                  "fill": "#666666",
+                  "content": "Docs",
+                  "fontFamily": "Inter",
+                  "fontSize": 15,
+                  "fontWeight": "normal"
+                },
+                {
+                  "type": "text",
+                  "id": "8js7L",
+                  "name": "navLink2",
+                  "fill": "#666666",
+                  "content": "Examples",
+                  "fontFamily": "Inter",
+                  "fontSize": 15,
+                  "fontWeight": "normal"
+                },
+                {
+                  "type": "text",
+                  "id": "bLXuE",
+                  "name": "navLink3",
+                  "fill": "#666666",
+                  "content": "GitHub",
+                  "fontFamily": "Inter",
+                  "fontSize": 15,
+                  "fontWeight": "normal"
+                },
+                {
+                  "type": "frame",
+                  "id": "YHPu6",
+                  "name": "navCTA",
+                  "fill": "#0A0A0A",
+                  "cornerRadius": 8,
+                  "padding": [
+                    10,
+                    20
+                  ],
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "gdC7i",
+                      "name": "navCTAText",
+                      "fill": "#FFFFFF",
+                      "content": "Get Started",
+                      "fontFamily": "Inter",
+                      "fontSize": 14,
+                      "fontWeight": "medium"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "frame",
+          "id": "NORhN",
+          "name": "Hero",
+          "width": "fill_container",
+          "layout": "vertical",
+          "gap": 48,
+          "padding": [
+            140,
+            120
+          ],
+          "alignItems": "center",
+          "children": [
+            {
+              "type": "frame",
+              "id": "UUNu5",
+              "name": "heroBadge",
+              "fill": "#F5F5F5",
+              "cornerRadius": 100,
+              "gap": 8,
+              "padding": [
+                8,
+                16
+              ],
+              "children": [
+                {
+                  "type": "ellipse",
+                  "id": "q5Eyr",
+                  "name": "heroBadgeDot",
+                  "fill": "#22C55E",
+                  "width": 6,
+                  "height": 6
+                },
+                {
+                  "type": "text",
+                  "id": "FtLbP",
+                  "name": "heroBadgeText",
+                  "fill": "#666666",
+                  "content": "Powered by Bun",
+                  "fontFamily": "Inter",
+                  "fontSize": 14,
+                  "fontWeight": "medium"
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "EBUBD",
+              "name": "heroTitle",
+              "layout": "vertical",
+              "gap": 16,
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "text",
+                  "id": "gEKSQ",
+                  "name": "heroH1",
+                  "fill": "#0A0A0A",
+                  "content": "Build Backends",
+                  "textAlign": "center",
+                  "fontFamily": "Inter",
+                  "fontSize": 80,
+                  "fontWeight": "bold",
+                  "letterSpacing": -3
+                },
+                {
+                  "type": "text",
+                  "id": "qv5iw",
+                  "name": "heroH2",
+                  "fill": "#0A0A0A",
+                  "content": "The Right Way",
+                  "textAlign": "center",
+                  "fontFamily": "Inter",
+                  "fontSize": 80,
+                  "fontWeight": "bold",
+                  "letterSpacing": -3
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "zyCI6",
+              "name": "heroGradient",
+              "opacity": 0.15,
+              "width": 500,
+              "height": 140,
+              "fill": "#FF6B35",
+              "cornerRadius": 70
+            },
+            {
+              "type": "text",
+              "id": "9qfW3",
+              "name": "heroSubtitle",
+              "fill": "#666666",
+              "content": "Type-safe, blazing fast backend framework for Bun.\nActions, Modules, and Triggers—everything you need.",
+              "lineHeight": 1.6,
+              "textAlign": "center",
+              "fontFamily": "Inter",
+              "fontSize": 20,
+              "fontWeight": "normal"
+            },
+            {
+              "type": "frame",
+              "id": "Pjwt4",
+              "name": "heroCTAGroup",
+              "gap": 12,
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "OGFiK",
+                  "name": "heroCTAPrimary",
+                  "fill": "#0A0A0A",
+                  "cornerRadius": 10,
+                  "padding": [
+                    16,
+                    28
+                  ],
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "lz0p3",
+                      "name": "heroCTAPrimaryText",
+                      "fill": "#FFFFFF",
+                      "content": "Get Started",
+                      "fontFamily": "Inter",
+                      "fontSize": 16,
+                      "fontWeight": "medium"
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "P1DQV",
+                  "name": "heroCTASecondary",
+                  "fill": "#F5F5F5",
+                  "cornerRadius": 10,
+                  "padding": [
+                    16,
+                    28
+                  ],
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "axPRW",
+                      "name": "heroCTASecondaryText",
+                      "fill": "#0A0A0A",
+                      "content": "View on GitHub →",
+                      "fontFamily": "Inter",
+                      "fontSize": 16,
+                      "fontWeight": "medium"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "1fstq",
+              "name": "codePreview",
+              "width": 1000,
+              "fill": "#FAFAFA",
+              "cornerRadius": 16,
+              "layout": "vertical",
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "4ZrxT",
+                  "name": "codeHeader",
+                  "width": "fill_container",
+                  "fill": "#FFFFFF",
+                  "gap": 8,
+                  "padding": [
+                    16,
+                    20
+                  ],
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "ellipse",
+                      "id": "TKEWN",
+                      "name": "codeDot1",
+                      "fill": "#FF5F57",
+                      "width": 10,
+                      "height": 10
+                    },
+                    {
+                      "type": "ellipse",
+                      "id": "bg7JI",
+                      "name": "codeDot2",
+                      "fill": "#FEBC2E",
+                      "width": 10,
+                      "height": 10
+                    },
+                    {
+                      "type": "ellipse",
+                      "id": "wUwJ3",
+                      "name": "codeDot3",
+                      "fill": "#28C840",
+                      "width": 10,
+                      "height": 10
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "aD7Yu",
+                  "name": "codeBody",
+                  "width": "fill_container",
+                  "layout": "vertical",
+                  "gap": 2,
+                  "padding": 32,
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "tyALe",
+                      "name": "line1",
+                      "fill": "#0A0A0A",
+                      "content": "export const createTask = action({",
+                      "fontFamily": "JetBrains Mono",
+                      "fontSize": 15,
+                      "fontWeight": "normal"
+                    },
+                    {
+                      "type": "text",
+                      "id": "Vhft4",
+                      "name": "line2",
+                      "fill": "#666666",
+                      "content": "  name: 'create-task',",
+                      "fontFamily": "JetBrains Mono",
+                      "fontSize": 15,
+                      "fontWeight": "normal"
+                    },
+                    {
+                      "type": "text",
+                      "id": "6hvcW",
+                      "name": "line3",
+                      "fill": "#666666",
+                      "content": "  input: t.Object({",
+                      "fontFamily": "JetBrains Mono",
+                      "fontSize": 15,
+                      "fontWeight": "normal"
+                    },
+                    {
+                      "type": "text",
+                      "id": "DaiQb",
+                      "name": "line4",
+                      "fill": "#666666",
+                      "content": "    title: t.String(),",
+                      "fontFamily": "JetBrains Mono",
+                      "fontSize": 15,
+                      "fontWeight": "normal"
+                    },
+                    {
+                      "type": "text",
+                      "id": "zjsME",
+                      "name": "line5",
+                      "fill": "#666666",
+                      "content": "  }),",
+                      "fontFamily": "JetBrains Mono",
+                      "fontSize": 15,
+                      "fontWeight": "normal"
+                    },
+                    {
+                      "type": "text",
+                      "id": "0mWhJ",
+                      "name": "line6",
+                      "fill": "#FF6B35",
+                      "content": "  triggers: [triggers.api('POST', '/tasks')],",
+                      "fontFamily": "JetBrains Mono",
+                      "fontSize": 15,
+                      "fontWeight": "normal"
+                    },
+                    {
+                      "type": "text",
+                      "id": "rVTbh",
+                      "name": "line7",
+                      "fill": "#0A0A0A",
+                      "content": "}, async ({ input, ctx }) => {",
+                      "fontFamily": "JetBrains Mono",
+                      "fontSize": 15,
+                      "fontWeight": "normal"
+                    },
+                    {
+                      "type": "text",
+                      "id": "qiVSy",
+                      "name": "line8",
+                      "fill": "#666666",
+                      "content": "  return await ctx.db.from('tasks')",
+                      "fontFamily": "JetBrains Mono",
+                      "fontSize": 15,
+                      "fontWeight": "normal"
+                    },
+                    {
+                      "type": "text",
+                      "id": "XAwMa",
+                      "name": "line9",
+                      "fill": "#666666",
+                      "content": "    .insert(input).single()",
+                      "fontFamily": "JetBrains Mono",
+                      "fontSize": 15,
+                      "fontWeight": "normal"
+                    },
+                    {
+                      "type": "text",
+                      "id": "Pq2Lc",
+                      "name": "line10",
+                      "fill": "#0A0A0A",
+                      "content": "})",
+                      "fontFamily": "JetBrains Mono",
+                      "fontSize": 15,
+                      "fontWeight": "normal"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "frame",
+          "id": "oTFB8",
+          "name": "Features",
+          "width": "fill_container",
+          "layout": "vertical",
+          "gap": 64,
+          "padding": 120,
+          "alignItems": "center",
+          "children": [
+            {
+              "type": "frame",
+              "id": "IGiN7",
+              "name": "featuresHeader",
+              "layout": "vertical",
+              "gap": 16,
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "text",
+                  "id": "pjBm2",
+                  "name": "featuresTitle",
+                  "fill": "#0A0A0A",
+                  "content": "Three Core Primitives",
+                  "fontFamily": "Inter",
+                  "fontSize": 52,
+                  "fontWeight": "bold",
+                  "letterSpacing": -2
+                },
+                {
+                  "type": "text",
+                  "id": "OZsWX",
+                  "name": "featuresSubtitle",
+                  "fill": "#666666",
+                  "content": "Simple building blocks that compose into powerful backends",
+                  "fontFamily": "Inter",
+                  "fontSize": 18,
+                  "fontWeight": "normal"
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "sGIzf",
+              "name": "featuresGrid",
+              "width": "fill_container",
+              "gap": 24,
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "DaucH",
+                  "name": "card1",
+                  "width": "fill_container",
+                  "fill": "#FAFAFA",
+                  "cornerRadius": 16,
+                  "layout": "vertical",
+                  "gap": 20,
+                  "padding": 40,
+                  "children": [
+                    {
+                      "type": "frame",
+                      "id": "AxK1M",
+                      "name": "card1Icon",
+                      "opacity": 0.1,
+                      "width": 52,
+                      "height": 52,
+                      "fill": "#FF6B35",
+                      "cornerRadius": 12,
+                      "justifyContent": "center",
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "W7f0z",
+                          "name": "card1IconText",
+                          "content": "⚡",
+                          "fontFamily": "Inter",
+                          "fontSize": 24,
+                          "fontWeight": "normal"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "text",
+                      "id": "f8D5B",
+                      "name": "card1Title",
+                      "fill": "#0A0A0A",
+                      "content": "Actions",
+                      "fontFamily": "Inter",
+                      "fontSize": 24,
+                      "fontWeight": "bold"
+                    },
+                    {
+                      "type": "text",
+                      "id": "rO208",
+                      "name": "card1Desc",
+                      "fill": "#666666",
+                      "content": "Reusable, validated functions with input/output schemas, guards, and automatic OpenAPI docs.",
+                      "lineHeight": 1.6,
+                      "fontFamily": "Inter",
+                      "fontSize": 16,
+                      "fontWeight": "normal"
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "MQDD8",
+                  "name": "card2",
+                  "width": "fill_container",
+                  "fill": "#FAFAFA",
+                  "cornerRadius": 16,
+                  "layout": "vertical",
+                  "gap": 20,
+                  "padding": 40,
+                  "children": [
+                    {
+                      "type": "frame",
+                      "id": "vwzSx",
+                      "name": "card2Icon",
+                      "opacity": 0.1,
+                      "width": 52,
+                      "height": 52,
+                      "fill": "#22C55E",
+                      "cornerRadius": 12,
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "eXDvx",
+                          "name": "card2IconText",
+                          "content": "📦",
+                          "fontFamily": "Inter",
+                          "fontSize": 24,
+                          "fontWeight": "normal"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "text",
+                      "id": "aVtMc",
+                      "name": "card2Title",
+                      "fill": "#0A0A0A",
+                      "content": "Modules",
+                      "fontFamily": "Inter",
+                      "fontSize": 24,
+                      "fontWeight": "bold"
+                    },
+                    {
+                      "type": "text",
+                      "id": "G4WBd",
+                      "name": "card2Desc",
+                      "fill": "#666666",
+                      "content": "Group related actions with shared configuration, guards, and API prefixes for organized code.",
+                      "lineHeight": 1.6,
+                      "fontFamily": "Inter",
+                      "fontSize": 16,
+                      "fontWeight": "normal"
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "xw6X6",
+                  "name": "card3",
+                  "width": "fill_container",
+                  "fill": "#FAFAFA",
+                  "cornerRadius": 16,
+                  "layout": "vertical",
+                  "gap": 20,
+                  "padding": 40,
+                  "children": [
+                    {
+                      "type": "frame",
+                      "id": "pIC0o",
+                      "name": "card3Icon",
+                      "opacity": 0.1,
+                      "width": 52,
+                      "height": 52,
+                      "fill": "#3B82F6",
+                      "cornerRadius": 12,
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "jPaLK",
+                          "name": "card3IconText",
+                          "content": "🔗",
+                          "fontFamily": "Inter",
+                          "fontSize": 24,
+                          "fontWeight": "normal"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "text",
+                      "id": "kCQll",
+                      "name": "card3Title",
+                      "fill": "#0A0A0A",
+                      "content": "Triggers",
+                      "fontFamily": "Inter",
+                      "fontSize": 24,
+                      "fontWeight": "bold"
+                    },
+                    {
+                      "type": "text",
+                      "id": "FgRbw",
+                      "name": "card3Desc",
+                      "fill": "#666666",
+                      "content": "Connect actions to APIs, cron jobs, events, webhooks, or MCP tools. One action, multiple entry points.",
+                      "lineHeight": 1.6,
+                      "fontFamily": "Inter",
+                      "fontSize": 16,
+                      "fontWeight": "normal"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "frame",
+          "id": "RZfGZ",
+          "name": "Benefits",
+          "width": "fill_container",
+          "fill": "#FAFAFA",
+          "layout": "vertical",
+          "gap": 64,
+          "padding": 120,
+          "children": [
+            {
+              "type": "frame",
+              "id": "itQUR",
+              "name": "benefitsHeader",
+              "layout": "vertical",
+              "gap": 16,
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "text",
+                  "id": "WzPDZ",
+                  "name": "benefitsTitle",
+                  "fill": "#0A0A0A",
+                  "content": "Built for Modern Development",
+                  "fontFamily": "Inter",
+                  "fontSize": 52,
+                  "fontWeight": "bold",
+                  "letterSpacing": -2
+                },
+                {
+                  "type": "text",
+                  "id": "IhRa2",
+                  "name": "benefitsSubtitle",
+                  "fill": "#666666",
+                  "content": "Everything you need to ship production-ready backends",
+                  "fontFamily": "Inter",
+                  "fontSize": 18,
+                  "fontWeight": "normal"
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "PJxp3",
+              "name": "benefitsGrid",
+              "width": "fill_container",
+              "gap": 48,
+              "justifyContent": "center",
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "KVnVt",
+                  "name": "benefit1",
+                  "layout": "vertical",
+                  "gap": 12,
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "X32i3",
+                      "name": "benefit1Icon",
+                      "content": "⚡",
+                      "fontFamily": "Inter",
+                      "fontSize": 40,
+                      "fontWeight": "normal"
+                    },
+                    {
+                      "type": "text",
+                      "id": "FDC4g",
+                      "name": "benefit1Title",
+                      "fill": "#0A0A0A",
+                      "content": "Blazing Fast",
+                      "fontFamily": "Inter",
+                      "fontSize": 20,
+                      "fontWeight": "semibold"
+                    },
+                    {
+                      "type": "text",
+                      "id": "jlOgM",
+                      "name": "benefit1Desc",
+                      "fill": "#666666",
+                      "content": "Built on Bun runtime",
+                      "fontFamily": "Inter",
+                      "fontSize": 15,
+                      "fontWeight": "normal"
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "nFIgu",
+                  "name": "benefit2",
+                  "layout": "vertical",
+                  "gap": 12,
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "PH6ny",
+                      "name": "benefit2Icon",
+                      "content": "🛡️",
+                      "fontFamily": "Inter",
+                      "fontSize": 40,
+                      "fontWeight": "normal"
+                    },
+                    {
+                      "type": "text",
+                      "id": "YqXbW",
+                      "name": "benefit2Title",
+                      "fill": "#0A0A0A",
+                      "content": "Type-Safe",
+                      "fontFamily": "Inter",
+                      "fontSize": 20,
+                      "fontWeight": "semibold"
+                    },
+                    {
+                      "type": "text",
+                      "id": "ubrLX",
+                      "name": "benefit2Desc",
+                      "fill": "#666666",
+                      "content": "End-to-end type safety",
+                      "fontFamily": "Inter",
+                      "fontSize": 15,
+                      "fontWeight": "normal"
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "ShDSJ",
+                  "name": "benefit3",
+                  "layout": "vertical",
+                  "gap": 12,
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "6zmPp",
+                      "name": "benefit3Icon",
+                      "content": "🔧",
+                      "fontFamily": "Inter",
+                      "fontSize": 40,
+                      "fontWeight": "normal"
+                    },
+                    {
+                      "type": "text",
+                      "id": "FQqJV",
+                      "name": "benefit3Title",
+                      "fill": "#0A0A0A",
+                      "content": "Batteries Included",
+                      "fontFamily": "Inter",
+                      "fontSize": 20,
+                      "fontWeight": "semibold"
+                    },
+                    {
+                      "type": "text",
+                      "id": "zAdol",
+                      "name": "benefit3Desc",
+                      "fill": "#666666",
+                      "content": "Queue, scheduler, auth & more",
+                      "fontFamily": "Inter",
+                      "fontSize": 15,
+                      "fontWeight": "normal"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "frame",
+          "id": "3BmaK",
+          "name": "CTA",
+          "width": "fill_container",
+          "layout": "vertical",
+          "gap": 32,
+          "padding": [
+            100,
+            120
+          ],
+          "justifyContent": "center",
+          "alignItems": "center",
+          "children": [
+            {
+              "type": "text",
+              "id": "P6C6o",
+              "name": "ctaTitle",
+              "fill": "#0A0A0A",
+              "content": "Ready to get started?",
+              "fontFamily": "Inter",
+              "fontSize": 48,
+              "fontWeight": "bold",
+              "letterSpacing": -2
+            },
+            {
+              "type": "text",
+              "id": "5Rbqh",
+              "name": "ctaSubtitle",
+              "fill": "#666666",
+              "content": "Start building type-safe backends in under 60 seconds",
+              "fontFamily": "Inter",
+              "fontSize": 20,
+              "fontWeight": "normal"
+            },
+            {
+              "type": "frame",
+              "id": "JloRe",
+              "name": "ctaButtons",
+              "gap": 12,
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "7D99W",
+                  "name": "ctaBtn1",
+                  "fill": "#0A0A0A",
+                  "cornerRadius": 10,
+                  "padding": [
+                    16,
+                    28
+                  ],
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "co8lK",
+                      "name": "ctaBtn1Text",
+                      "fill": "#FFFFFF",
+                      "content": "Get Started",
+                      "fontFamily": "Inter",
+                      "fontSize": 16,
+                      "fontWeight": "medium"
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "Yrw1G",
+                  "name": "ctaBtn2",
+                  "fill": "#F5F5F5",
+                  "cornerRadius": 10,
+                  "padding": [
+                    16,
+                    28
+                  ],
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "qL7DE",
+                      "name": "ctaBtn2Text",
+                      "fill": "#0A0A0A",
+                      "content": "Read Docs",
+                      "fontFamily": "Inter",
+                      "fontSize": 16,
+                      "fontWeight": "medium"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "frame",
+          "id": "6I3F8",
+          "name": "Footer",
+          "width": "fill_container",
+          "fill": "#FAFAFA",
+          "layout": "vertical",
+          "gap": 48,
+          "padding": [
+            60,
+            120
+          ],
+          "children": [
+            {
+              "type": "frame",
+              "id": "FlNtJ",
+              "name": "footerTop",
+              "width": "fill_container",
+              "gap": 80,
+              "justifyContent": "space_between",
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "fOtuP",
+                  "name": "footerBrand",
+                  "width": 300,
+                  "layout": "vertical",
+                  "gap": 16,
+                  "children": [
+                    {
+                      "type": "frame",
+                      "id": "jbb4R",
+                      "name": "footerLogo",
+                      "gap": 10,
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "yj5QA",
+                          "name": "footerLogoIcon",
+                          "content": "⚡",
+                          "fontFamily": "Inter",
+                          "fontSize": 24,
+                          "fontWeight": "normal"
+                        },
+                        {
+                          "type": "text",
+                          "id": "SpTOl",
+                          "name": "footerLogoText",
+                          "fill": "#0A0A0A",
+                          "content": "bunbase",
+                          "fontFamily": "Inter",
+                          "fontSize": 18,
+                          "fontWeight": "semibold"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "text",
+                      "id": "yPyZT",
+                      "name": "footerTagline",
+                      "fill": "#666666",
+                      "content": "Type-safe backend framework for Bun. Build production-ready APIs with Actions, Modules, and Triggers.",
+                      "lineHeight": 1.6,
+                      "fontFamily": "Inter",
+                      "fontSize": 14,
+                      "fontWeight": "normal"
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "n2iQ5",
+                  "name": "footerLinks",
+                  "gap": 60,
+                  "children": [
+                    {
+                      "type": "frame",
+                      "id": "da2xq",
+                      "name": "footerCol1",
+                      "layout": "vertical",
+                      "gap": 12,
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "YX3BV",
+                          "name": "footerCol1Title",
+                          "fill": "#0A0A0A",
+                          "content": "Product",
+                          "fontFamily": "Inter",
+                          "fontSize": 14,
+                          "fontWeight": "semibold"
+                        },
+                        {
+                          "type": "text",
+                          "id": "8gdY6",
+                          "name": "footerCol1Link1",
+                          "fill": "#666666",
+                          "content": "Features",
+                          "fontFamily": "Inter",
+                          "fontSize": 14,
+                          "fontWeight": "normal"
+                        },
+                        {
+                          "type": "text",
+                          "id": "TuxYS",
+                          "name": "footerCol1Link2",
+                          "fill": "#666666",
+                          "content": "Pricing",
+                          "fontFamily": "Inter",
+                          "fontSize": 14,
+                          "fontWeight": "normal"
+                        },
+                        {
+                          "type": "text",
+                          "id": "4wrrA",
+                          "name": "footerCol1Link3",
+                          "fill": "#666666",
+                          "content": "Changelog",
+                          "fontFamily": "Inter",
+                          "fontSize": 14,
+                          "fontWeight": "normal"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "frame",
+                      "id": "Ja4sb",
+                      "name": "footerCol2",
+                      "layout": "vertical",
+                      "gap": 12,
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "lKWSp",
+                          "name": "footerCol2Title",
+                          "fill": "#0A0A0A",
+                          "content": "Resources",
+                          "fontFamily": "Inter",
+                          "fontSize": 14,
+                          "fontWeight": "semibold"
+                        },
+                        {
+                          "type": "text",
+                          "id": "LYaJC",
+                          "name": "footerCol2Link1",
+                          "fill": "#666666",
+                          "content": "Documentation",
+                          "fontFamily": "Inter",
+                          "fontSize": 14,
+                          "fontWeight": "normal"
+                        },
+                        {
+                          "type": "text",
+                          "id": "8VSau",
+                          "name": "footerCol2Link2",
+                          "fill": "#666666",
+                          "content": "Examples",
+                          "fontFamily": "Inter",
+                          "fontSize": 14,
+                          "fontWeight": "normal"
+                        },
+                        {
+                          "type": "text",
+                          "id": "h243I",
+                          "name": "footerCol2Link3",
+                          "fill": "#666666",
+                          "content": "API Reference",
+                          "fontFamily": "Inter",
+                          "fontSize": 14,
+                          "fontWeight": "normal"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "frame",
+                      "id": "QotOv",
+                      "name": "footerCol3",
+                      "layout": "vertical",
+                      "gap": 12,
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "oRWHe",
+                          "name": "footerCol3Title",
+                          "fill": "#0A0A0A",
+                          "content": "Company",
+                          "fontFamily": "Inter",
+                          "fontSize": 14,
+                          "fontWeight": "semibold"
+                        },
+                        {
+                          "type": "text",
+                          "id": "jOn8g",
+                          "name": "footerCol3Link1",
+                          "fill": "#666666",
+                          "content": "About",
+                          "fontFamily": "Inter",
+                          "fontSize": 14,
+                          "fontWeight": "normal"
+                        },
+                        {
+                          "type": "text",
+                          "id": "1vZAo",
+                          "name": "footerCol3Link2",
+                          "fill": "#666666",
+                          "content": "Blog",
+                          "fontFamily": "Inter",
+                          "fontSize": 14,
+                          "fontWeight": "normal"
+                        },
+                        {
+                          "type": "text",
+                          "id": "HWjN4",
+                          "name": "footerCol3Link3",
+                          "fill": "#666666",
+                          "content": "GitHub",
+                          "fontFamily": "Inter",
+                          "fontSize": 14,
+                          "fontWeight": "normal"
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "rectangle",
+              "id": "S6kuH",
+              "name": "footerDivider",
+              "fill": "#E5E5E5",
+              "width": "fill_container",
+              "height": 1
+            },
+            {
+              "type": "frame",
+              "id": "chfs6",
+              "name": "footerBottom",
+              "width": "fill_container",
+              "justifyContent": "space_between",
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "text",
+                  "id": "WIkE5",
+                  "name": "footerCopy",
+                  "fill": "#999999",
+                  "content": "© 2026 Bunbase. All rights reserved.",
+                  "fontFamily": "Inter",
+                  "fontSize": 14,
+                  "fontWeight": "normal"
+                },
+                {
+                  "type": "frame",
+                  "id": "GUU8f",
+                  "name": "footerLegal",
+                  "gap": 24,
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "huABG",
+                      "name": "footerLegal1",
+                      "fill": "#999999",
+                      "content": "Privacy",
+                      "fontFamily": "Inter",
+                      "fontSize": 14,
+                      "fontWeight": "normal"
+                    },
+                    {
+                      "type": "text",
+                      "id": "T8CNb",
+                      "name": "footerLegal2",
+                      "fill": "#999999",
+                      "content": "Terms",
+                      "fontFamily": "Inter",
+                      "fontSize": 14,
+                      "fontWeight": "normal"
+                    },
+                    {
+                      "type": "text",
+                      "id": "ti7H9",
+                      "name": "footerLegal3",
+                      "fill": "#999999",
+                      "content": "License",
+                      "fontFamily": "Inter",
+                      "fontSize": 14,
+                      "fontWeight": "normal"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,52 @@
+---
+title: Quickstart
+description: Define an action, configure Bunbase, and run the server.
+---
+
+## 1. Define an action
+
+```ts
+// src/actions/greet.ts
+import { action, t, triggers } from 'bunbase'
+
+export const greet = action(
+  {
+    name: 'greet',
+    description: 'Greet a user by name',
+    input: t.Object({ name: t.String({ minLength: 1 }) }),
+    output: t.Object({ message: t.String() }),
+    triggers: [triggers.api('GET', '/greet/:name')],
+  },
+  async (input) => {
+    return { message: `Hello, ${input.name}!` }
+  },
+)
+```
+
+## 2. Configure Bunbase
+
+```ts
+// bunbase.config.ts
+import { defineConfig } from 'bunbase'
+
+export default defineConfig({
+  port: 3000,
+  database: {
+    url: process.env.DATABASE_URL,
+  },
+  openapi: {
+    enabled: true,
+    path: '/api/openapi.json',
+    title: 'My API',
+    version: '0.1.0',
+  },
+})
+```
+
+## 3. Start the dev server
+
+```bash
+bunbase dev
+```
+
+Your endpoint is now available at `GET /greet/:name`.

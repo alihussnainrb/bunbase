@@ -1,0 +1,26 @@
+---
+title: Modules
+description: Group related actions with shared guards and API prefix.
+---
+
+Modules are optional, but they become useful once your app grows.
+
+```ts
+import { guards, module } from 'bunbase'
+import { createInvoice } from './create-invoice'
+import { listInvoices } from './list-invoices'
+
+export default module({
+  name: 'billing',
+  description: 'Invoice and billing operations',
+  apiPrefix: '/billing',
+  guards: [guards.authenticated(), guards.hasFeature('billing')],
+  actions: [createInvoice, listInvoices],
+})
+```
+
+## Why modules
+
+- Shared guard pipelines.
+- Shared API namespace via `apiPrefix`.
+- Cleaner package boundaries for large projects.

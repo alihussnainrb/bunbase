@@ -1,0 +1,30 @@
+---
+title: Realtime
+description: Enable Bunbase WebSocket support for push updates.
+---
+
+Enable realtime transport in `bunbase.config.ts`:
+
+```ts
+import { defineConfig } from 'bunbase'
+
+export default defineConfig({
+  realtime: {
+    enabled: true,
+    path: '/ws',
+    maxConnections: 5000,
+  },
+})
+```
+
+During development, Bunbase logs the realtime endpoint:
+
+```txt
+WebSocket: ws://0.0.0.0:3000/ws
+```
+
+## Recommendations
+
+- Keep connection limits explicit.
+- Use events to decouple producers and subscribers.
+- Authenticate sockets when exposing private streams.

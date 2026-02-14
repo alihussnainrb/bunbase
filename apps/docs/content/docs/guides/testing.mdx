@@ -1,0 +1,29 @@
+---
+title: Testing
+description: Validate actions and runtime behavior with Bun test.
+---
+
+Run the monorepo test suite:
+
+```bash
+bun run test
+```
+
+Run package-local tests while iterating:
+
+```bash
+bun test packages/bunbase/test
+```
+
+Coverage mode:
+
+```bash
+bun run test:coverage
+```
+
+## What to test
+
+- Action input/output validation failures.
+- Guard behavior and authorization edges.
+- Trigger transport specifics (HTTP params, query, headers).
+- Realtime/event behavior where applicable.

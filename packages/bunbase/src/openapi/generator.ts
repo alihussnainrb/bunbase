@@ -11,6 +11,41 @@ import { getHttpMetadata } from '../utils/typebox.ts'
 export type { OpenApiBuilder }
 
 /**
+ * Extract path parameters from URL path
+ */
+function extractPathParameters(path: string): Array<{
+	name: string
+	in: 'path'
+	required: true
+	schema: { type: 'string' }
+}> {
+	const pathParams: Array<any> = []
+	// Match :param or {param} style parameters
+	const paramPattern = /[:{](\w+)[}]?/g
+	let match: RegExpExecArray | null
+
+	while ((match = paramPattern.exec(path)) !== null) {
+		const paramName = match[1]
+		pathParams.push({
+			name: paramName,
+			in: 'path' as const,
+			required: true,
+			schema: { type: 'string' },
+		})
+	}
+
+	return pathParams
+}
+
+/**
+ * Convert Express-style path to OpenAPI format
+ * :userId -> {userId}
+ */
+function convertPathToOpenAPI(path: string): string {
+	return path.replace(/:(\w+)/g, '{$1}')
+}
+
+/**
  * Extract parameters from input schema based on HTTP metadata
  */
 function extractParameters(schema: TObject): Array<{
@@ -108,7 +143,8 @@ export function generateOpenAPISpec(
 	for (const action of registry.getAll()) {
 		for (const trigger of action.triggers) {
 			if (trigger.type === 'api') {
-				const path = trigger.path
+				const expressPath = trigger.path
+				const openapiPath = convertPathToOpenAPI(expressPath)
 				const method = trigger.method.toLowerCase() as
 					| 'get'
 					| 'post'
@@ -126,14 +162,19 @@ export function generateOpenAPISpec(
 					'properties' in config.output &&
 					typeof config.output.properties === 'object'
 
+				// Extract all parameters
+				const schemaParameters = inputHasProperties
+					? extractParameters(config.input as TObject)
+					: []
+				const pathParameters = extractPathParameters(expressPath)
+				const allParameters = [...pathParameters, ...schemaParameters]
+
 				const operation: OperationObject = {
 					operationId: config.name,
 					summary: config.description,
 					description: config.description,
-					// Extract parameters from input schema
-					parameters: inputHasProperties
-						? extractParameters(config.input as TObject)
-						: [],
+					// Combine path parameters and schema parameters
+					parameters: allParameters,
 					// Extract body schema (only non-HTTP-mapped fields)
 					requestBody: ['post', 'put', 'patch'].includes(method)
 						? (() => {
@@ -188,7 +229,7 @@ export function generateOpenAPISpec(
 					},
 				}
 
-				builder.addPath(path, { [method]: operation } as PathItemObject)
+				builder.addPath(openapiPath, { [method]: operation } as PathItemObject)
 			}
 		}
 	}

@@ -69,22 +69,36 @@ describe('OpenAPI Contract Validation', () => {
 		env.registry.registerAction(listTasksAction)
 
 		// Start server with OpenAPI enabled
-		server = new BunbaseServer(env.registry, env.logger, env.writeBuffer, {
-			port: 0,
-			database: {},
-			openapi: {
-				enabled: true,
-				path: '/openapi.json',
-				title: 'Bunbase Test API',
-				version: '1.0.0',
+		server = new BunbaseServer(
+			env.registry,
+			env.logger,
+			env.writeBuffer,
+			{
+				port: 0,
+				database: {},
+				openapi: {
+					enabled: true,
+					path: '/openapi.json',
+					title: 'Bunbase Test API',
+					version: '1.0.0',
+				},
 			},
-		})
+			{
+				sql: env.sqlPool,
+				db: env.db,
+			},
+		)
 
 		server.setQueue(env.queue)
 
 		const bunServer = server.start({ port: 0 })
 		const port = bunServer.port
 		baseUrl = `http://localhost:${port}`
+
+		// Debug: Check routes
+		console.log('Registered routes:', env.registry.getAll().flatMap(a =>
+			a.triggers.map(t => `${t.type === 'api' ? t.method : 'POST'} ${t.path}`)
+		))
 	})
 
 	afterEach(async () => {
@@ -113,8 +127,8 @@ describe('OpenAPI Contract Validation', () => {
 		// Debug: log available paths
 		console.log('Available paths:', Object.keys(spec.paths))
 
-		// Check that our test actions are in the spec
-		expect(spec.paths['/test/users/:userId']).toBeDefined()
+		// Check that our test actions are in the spec (OpenAPI format uses {param})
+		expect(spec.paths['/test/users/{userId}']).toBeDefined()
 		expect(spec.paths['/test/tasks']).toBeDefined()
 	})
 
@@ -136,8 +150,8 @@ describe('OpenAPI Contract Validation', () => {
 		const specResponse = await fetch(`${baseUrl}/openapi.json`)
 		const spec = await specResponse.json()
 
-		// Get the schema for the response
-		const path = spec.paths['/test/users/:userId']
+		// Get the schema for the response (OpenAPI format uses {param})
+		const path = spec.paths['/test/users/{userId}']
 		const responseSchema = path.post.responses['200'].content['application/json'].schema
 
 		// Call the actual API
@@ -224,7 +238,7 @@ describe('OpenAPI Contract Validation', () => {
 		const response = await fetch(`${baseUrl}/openapi.json`)
 		const spec = await response.json()
 
-		const path = spec.paths['/test/users/:userId']
+		const path = spec.paths['/test/users/{userId}']
 		expect(path).toBeDefined()
 
 		// Check that userId parameter is documented
@@ -242,7 +256,7 @@ describe('OpenAPI Contract Validation', () => {
 
 		// OpenAPI spec should include components/schemas if using refs
 		// For inline schemas, just check the structure
-		const getUserPath = spec.paths['/test/users/:userId']
+		const getUserPath = spec.paths['/test/users/{userId}']
 		const responseSchema =
 			getUserPath.post.responses['200'].content['application/json'].schema
 

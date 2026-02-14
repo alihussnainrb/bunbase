@@ -1,4 +1,4 @@
-import { existsSync } from 'node:fs'
+import { existsSync, watch } from 'node:fs'
 import { join } from 'node:path'
 import { RedisClient } from 'bun'
 import { loadConfig } from '../../config/loader.ts'
@@ -167,9 +167,59 @@ export async function devCommand(): Promise<void> {
 			logger.info(`WebSocket: ws://${hostname}:${port}${wsPath}`)
 		}
 
+		// Setup file watcher for hot reload in dev mode
+		let watcher: ReturnType<typeof watch> | null = null
+		if (config.watch !== false) {
+			// Default: enabled
+			let reloadTimeout: Timer | null = null
+			const reloadActions = () => {
+				if (reloadTimeout) clearTimeout(reloadTimeout)
+				reloadTimeout = setTimeout(async () => {
+					logger.info('File change detected, reloading actions...')
+					const start = performance.now()
+
+					try {
+						// Clear registry
+						registry.clear()
+
+						// Reload actions
+						await loadActions(actionsDir, registry, logger)
+
+						// Re-register with server
+						server.refreshRoutes()
+
+						const duration = (performance.now() - start).toFixed(2)
+						logger.info(`Reloaded ${registry.size} actions in ${duration}ms`)
+					} catch (err) {
+						logger.error('Failed to reload actions:', err)
+					}
+				}, 300) // 300ms debounce
+			}
+
+			watcher = watch(
+				actionsDir,
+				{ recursive: true },
+				(_event, filename) => {
+					if (!filename) return
+					// Only reload on action/module file changes
+					if (
+						filename.endsWith('.action.ts') ||
+						filename.endsWith('_module.ts')
+					) {
+						reloadActions()
+					}
+				},
+			)
+
+			logger.info('Hot reload enabled (watching for file changes)')
+		}
+
 		// Graceful shutdown handler (shared for SIGINT and SIGTERM)
 		const shutdown = async () => {
 			logger.info('Shutting down...')
+			if (watcher) {
+				watcher.close()
+			}
 			server.stop()
 			await eventBus.detach()
 			await writeBuffer.shutdown()

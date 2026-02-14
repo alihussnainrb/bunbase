@@ -237,6 +237,23 @@ export class BunbaseServer {
 	}
 
 	/**
+	 * Refresh routes after registry changes (used for hot reload).
+	 * Clears existing routes and rebuilds from updated registry.
+	 */
+	refreshRoutes(): void {
+		// Clear existing routes
+		this.routes.clear()
+		this.routePatterns = []
+		this.routeHandlers.clear()
+
+		// Rebuild routes from updated registry
+		this.buildRoutes()
+		this.routeHandlers = this.buildOptimizedRoutes()
+
+		this.logger.debug('Routes refreshed')
+	}
+
+	/**
 	 * Build optimized route map with pre-compiled handlers.
 	 * Instead of using Bun's routes API, we use a pre-compiled Map for O(1) lookups.
 	 */

@@ -7,6 +7,9 @@ export interface BunbaseConfig {
 	/** Directory to scan for actions and modules (default: src/actions) */
 	actionsDir?: string
 
+	/** Enable file watching and hot reload in dev mode (default: true) */
+	watch?: boolean
+
 	/** Maximum HTTP request body size in bytes (default: 10485760 = 10MB) */
 	maxRequestBodySize?: number
 

@@ -24,10 +24,11 @@ import { executeAction } from './executor.ts'
 import { McpService } from './mcp-server.ts'
 import type { Queue } from './queue.ts'
 import { mapRequestToInput } from './request-mapper.ts'
-import type { Scheduler } from './scheduler.ts'
+import { Scheduler } from './scheduler.ts'
 
 export interface ServerServices {
 	db?: DatabaseClient
+	sql?: import('bun').SQL
 	storage?: StorageAdapter
 	mailer?: import('../mailer/types.ts').MailerAdapter
 	kv?: KVStore
@@ -96,6 +97,18 @@ export class BunbaseServer {
 		// Register studio actions if studio is enabled
 		if (this.studioConfig?.enabled) {
 			this.registry.registerModule(studioModule)
+		}
+
+		// Create scheduler for cron-triggered actions
+		if (services?.sql) {
+			this.scheduler = new Scheduler(
+				registry,
+				logger,
+				writeBuffer,
+				services.sql,
+				config,
+				services.redis,
+			)
 		}
 	}
 

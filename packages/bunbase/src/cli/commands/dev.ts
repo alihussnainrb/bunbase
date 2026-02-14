@@ -148,6 +148,7 @@ export async function devCommand(): Promise<void> {
 	// 7. Start server
 	const server = new BunbaseServer(registry, logger, writeBuffer, config, {
 		db,
+		sql: sqlPool,
 		storage,
 		mailer,
 		kv,

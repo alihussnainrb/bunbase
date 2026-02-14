@@ -1,9 +1,10 @@
-import type { SQL } from 'bun'
+import type { RedisClient, SQL } from 'bun'
 import { Cron } from 'croner'
 import type { BunbaseConfig } from '../config/types.ts'
 import type { ActionRegistry } from '../core/registry.ts'
 import type { Logger } from '../logger/index.ts'
 import type { WriteBuffer } from '../persistence/write-buffer.ts'
+import { withLock } from './distributed-lock.ts'
 import { executeAction } from './executor.ts'
 
 export interface ScheduledTask {
@@ -36,6 +37,7 @@ export class Scheduler {
 		private readonly writeBuffer: WriteBuffer,
 		readonly _sql: SQL,
 		private readonly config: BunbaseConfig | undefined = undefined,
+		private readonly redis: RedisClient | undefined = undefined,
 	) {}
 
 	/**
@@ -138,37 +140,84 @@ export class Scheduler {
 						const job = new Cron(trigger.schedule, async () => {
 							try {
 								const input = trigger.input ? trigger.input() : {}
-								const result = await executeAction(action, input, {
-									triggerType: 'cron',
-									logger: this.logger,
-									writeBuffer: this.writeBuffer,
-									config: this.config,
-								})
+								const actionName = action.definition.config.name
 
-								// Handle cron transport metadata
-								if (result.success && result.transportMeta?.cron) {
-									const cronMeta = result.transportMeta.cron
+								// Use distributed lock when Redis is available
+								if (this.redis) {
+									const lockKey = `bunbase:cron:${actionName}`
+									const lockTTL = 300 // 5 minutes - adjust based on expected job duration
 
-									// Dynamic rescheduling
-									if (cronMeta.reschedule) {
-										this.rescheduleAction(
-											action.definition.config.name,
-											cronMeta.reschedule,
-											trigger,
+									const result = await withLock(
+										this.redis,
+										lockKey,
+										lockTTL,
+										async () => {
+											return executeAction(action, input, {
+												triggerType: 'cron',
+												logger: this.logger,
+												writeBuffer: this.writeBuffer,
+												config: this.config,
+											})
+										},
+									)
+
+									if (result === null) {
+										this.logger.debug(
+											`Skipped cron job ${actionName} (held by another instance)`,
 										)
+										return
 									}
 
-									// One-time execution
-									if (cronMeta.runOnce) {
-										this.stopAction(action.definition.config.name)
-									}
+									// Handle cron transport metadata
+									if (result.success && result.transportMeta?.cron) {
+										const cronMeta = result.transportMeta.cron
 
-									// Skip next run
-									if (cronMeta.skipNext) {
-										// Croner doesn't support skipping, log it
-										this.logger.info(
-											`[Scheduler] skipNext requested for ${action.definition.config.name} (not supported by croner)`,
-										)
+										// Dynamic rescheduling
+										if (cronMeta.reschedule) {
+											this.rescheduleAction(actionName, cronMeta.reschedule, trigger)
+										}
+
+										// One-time execution
+										if (cronMeta.runOnce) {
+											this.stopAction(actionName)
+										}
+
+										// Skip next run
+										if (cronMeta.skipNext) {
+											this.logger.info(
+												`[Scheduler] skipNext requested for ${actionName} (not supported by croner)`,
+											)
+										}
+									}
+								} else {
+									// Single-instance mode (no Redis)
+									const result = await executeAction(action, input, {
+										triggerType: 'cron',
+										logger: this.logger,
+										writeBuffer: this.writeBuffer,
+										config: this.config,
+									})
+
+									// Handle cron transport metadata
+									if (result.success && result.transportMeta?.cron) {
+										const cronMeta = result.transportMeta.cron
+
+										// Dynamic rescheduling
+										if (cronMeta.reschedule) {
+											this.rescheduleAction(actionName, cronMeta.reschedule, trigger)
+										}
+
+										// One-time execution
+										if (cronMeta.runOnce) {
+											this.stopAction(actionName)
+										}
+
+										// Skip next run
+										if (cronMeta.skipNext) {
+											this.logger.info(
+												`[Scheduler] skipNext requested for ${actionName} (not supported by croner)`,
+											)
+										}
 									}
 								}
 							} catch (err) {

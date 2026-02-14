@@ -1,5 +1,6 @@
 #!/usr/bin/env bun
 import { Command } from 'commander'
+import packageJson from '../../package.json'
 import { devCommand } from './commands/dev.ts'
 import { generateCommand } from './commands/generate.ts'
 import { initCommand } from './commands/init.ts'
@@ -7,7 +8,7 @@ import { migrateCommand } from './commands/migrate.ts'
 import { seedCommand } from './commands/seed.ts'
 import { typegenCommand } from './commands/typegen.ts'
 
-const version = '0.0.9'
+const version = packageJson.version
 
 export const program: Command = new Command()
 

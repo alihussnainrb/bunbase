@@ -24,7 +24,7 @@ export async function generateCommand(
 }
 
 function generateAction(name: string): void {
-	const fileName = `${toKebabCase(name)}.ts`
+	const fileName = `${toKebabCase(name)}.action.ts`
 	const dir = join(process.cwd(), 'src', 'actions')
 
 	if (!existsSync(dir)) {

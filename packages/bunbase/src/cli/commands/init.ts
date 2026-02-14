@@ -123,7 +123,7 @@ dist/
 
 	// Example standalone action
 	writeFileSync(
-		join(projectDir, 'src', 'actions', 'hello.ts'),
+		join(projectDir, 'src', 'actions', 'hello.action.ts'),
 		`import { action, t, triggers } from 'bunbase'
 
 export const hello = action({

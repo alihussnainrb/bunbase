@@ -14,6 +14,12 @@ export * from './auth/index.ts'
 // Email system
 export * from './email/index.ts'
 
+// Organizations
+export * from './orgs/index.ts'
+
+// RBAC (Role-Based Access Control)
+export * from './rbac/index.ts'
+
 // Database migrations
 export * from './migrations.ts'
 

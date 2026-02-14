@@ -1,6 +1,6 @@
 import { existsSync, mkdirSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
-import { INIT_SQL } from '../../db/init-sql.ts'
+import { getCombinedMigrationSQL } from '../../platform/migrations.ts'
 
 export async function initCommand(name: string): Promise<void> {
 	const projectName = name
@@ -118,8 +118,11 @@ dist/
 `,
 	)
 
-	// Initial migration
-	writeFileSync(join(projectDir, 'migrations', '001_init.sql'), INIT_SQL)
+	// Initial migration (Phase 1: Auth Foundation)
+	writeFileSync(
+		join(projectDir, 'migrations', '001_phase1_auth_foundation.sql'),
+		getCombinedMigrationSQL(1),
+	)
 
 	// Example standalone action
 	writeFileSync(

@@ -100,7 +100,7 @@ async function runLoadTest(
 				'Content-Type': 'application/json',
 				...req.headers,
 			},
-		})),
+		} as any)),
 	})
 
 	return {

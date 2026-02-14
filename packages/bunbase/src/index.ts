@@ -37,6 +37,7 @@ export type {
 	ToolTriggerConfig,
 	TransportMetadata,
 	TriggerConfig,
+	UploadedFile,
 	WebhookTriggerConfig,
 } from './core/types.ts'
 export type {
@@ -47,6 +48,11 @@ export type {
 } from './db/client.ts'
 // Database client and types
 export { createDB } from './db/client.ts'
+// Database seeder
+export { seed } from './db/seed.ts'
+export type { SeedConfig, SeedContext, SeedDefinition } from './db/seed.ts'
+export { Seeder } from './db/seeder.ts'
+export type { SeedEntry, SeedFunction } from './db/seeder.ts'
 // IAM (Identity & Access Management)
 export type {
 	AuthContext,
@@ -85,9 +91,20 @@ export type {
 export type { ChannelAPI } from './realtime/types.ts'
 // Storage adapter types (for custom adapter implementations)
 export type { StorageAdapter, UploadOptions } from './storage/types.ts'
-export type { TestActionOptions, TestActionResult } from './test/index.ts'
+export type {
+	TestActionOptions,
+	TestActionResult,
+	TestResponse,
+	TestServer,
+	TestServerOptions,
+} from './test/index.ts'
 // Test utilities (for testing actions)
-export { testAction } from './test/index.ts'
+export {
+	testAction,
+	createTestServer,
+	createTestClient,
+	withTestTransaction,
+} from './test/index.ts'
 // Error classes
 export * from './utils/errors.ts'
 export type { CookieOptions } from './utils/typebox.ts'

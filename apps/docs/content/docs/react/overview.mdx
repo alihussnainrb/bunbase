@@ -1,0 +1,37 @@
+---
+title: Overview
+description: Configure @bunbase/react with generated API types.
+---
+
+## 1. Generate API types from a running Bunbase backend
+
+```bash
+bunbase typegen:react --url http://localhost:3000
+```
+
+This creates:
+
+- `.bunbase/api.d.ts` (types)
+- `bunbaseAPISchema` runtime object
+
+## 2. Create the client
+
+```tsx
+import { createBunbaseClient } from '@bunbase/react'
+import type { BunbaseAPI } from '../.bunbase/api'
+import { bunbaseAPISchema } from '../.bunbase/api'
+
+export const bunbase = createBunbaseClient<BunbaseAPI>({
+  baseUrl: 'http://localhost:3000',
+  schema: bunbaseAPISchema,
+})
+```
+
+## 3. Use hooks
+
+```tsx
+const { data } = bunbase.useQuery('list-tasks', { status: 'open' })
+const createTask = bunbase.useMutation('create-task')
+```
+
+The runtime schema enables automatic body/query/header/cookie/path field routing.

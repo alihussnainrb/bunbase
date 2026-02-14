@@ -1,0 +1,38 @@
+---
+title: Triggers
+description: Triggers define how actions are invoked.
+---
+
+A single action can be exposed through different trigger types.
+
+## API trigger
+
+```ts
+triggers.api('POST', '/tasks')
+```
+
+## Cron trigger
+
+```ts
+triggers.cron('0 * * * *')
+```
+
+## Event trigger
+
+```ts
+triggers.event('task.created')
+```
+
+## Webhook trigger
+
+```ts
+triggers.webhook('/webhooks/stripe')
+```
+
+## MCP trigger
+
+```ts
+triggers.mcp('create-task')
+```
+
+Use trigger combinations carefully and keep action handlers idempotent when possible.

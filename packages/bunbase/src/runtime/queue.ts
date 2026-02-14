@@ -87,14 +87,15 @@ export class Queue {
 	): Promise<string> {
 		const maxAttempts = (opts?.maxRetries ?? 3) + 1
 		const priority = opts?.priority ?? 0
+		const runAt = opts?.runAt ?? new Date()
 		const id = crypto.randomUUID()
 
 		await this.sql`
-            INSERT INTO job_queue (id, name, data, priority, max_attempts, status)
-            VALUES (${id}, ${name}, ${JSON.stringify(data)}, ${priority}, ${maxAttempts}, 'pending')
+            INSERT INTO job_queue (id, name, data, priority, max_attempts, run_at, status)
+            VALUES (${id}, ${name}, ${JSON.stringify(data)}, ${priority}, ${maxAttempts}, ${runAt}, 'pending')
         `
 
-		this.logger.info(`[Queue] Added job ${name}`, { jobId: id })
+		this.logger.info(`[Queue] Added job ${name}`, { jobId: id, runAt })
 		return id
 	}
 
@@ -210,23 +211,38 @@ export class Queue {
 		if (!this.running) return
 
 		try {
-			// Fetch next pending job
-			const jobs = await this.sql`
-                SELECT id, name, data, status, priority, attempts, max_attempts, run_at, last_error, trace_id, created_at, updated_at
-                FROM job_queue
-                WHERE status IN ('pending', 'retrying')
-                    AND run_at <= NOW()
-                ORDER BY priority DESC, run_at ASC
-                LIMIT 1
-                FOR UPDATE SKIP LOCKED
-            `
+			// Atomically fetch and claim next pending job in a transaction
+			// This ensures FOR UPDATE lock is held while transitioning to running
+			const job = await this.sql.begin(async (tx: any) => {
+				// Fetch next pending job with row lock
+				const jobs = await tx`
+                    SELECT id, name, data, status, priority, attempts, max_attempts, run_at, last_error, trace_id, created_at, updated_at
+                    FROM job_queue
+                    WHERE status IN ('pending', 'retrying')
+                        AND run_at <= NOW()
+                    ORDER BY priority DESC, run_at ASC
+                    LIMIT 1
+                    FOR UPDATE SKIP LOCKED
+                `
 
-			if (jobs.length === 0) return
+				if (jobs.length === 0) return null
 
-			const job = this.rowToJob(jobs[0])
+				const job = this.rowToJob(jobs[0])
 
-			// Skip if already processing this job (in another worker)
-			if (this.processingJobs.has(job.id)) return
+				// Skip if already processing this job (in-memory check)
+				if (this.processingJobs.has(job.id)) return null
+
+				// Atomically mark as running within same transaction (lock still held)
+				await tx`
+                    UPDATE job_queue
+                    SET status = 'running', attempts = attempts + 1
+                    WHERE id = ${job.id}
+                `
+
+				return job
+			})
+
+			if (!job) return
 
 			// Check if handler exists
 			const handler = this.handlers.get(job.name)
@@ -238,8 +254,8 @@ export class Queue {
 				return
 			}
 
-			// Execute the job
-			await this.executeJob(job, handler)
+			// Execute the job (now safely claimed)
+			await this.executeJobHandler(job, handler)
 		} catch (err) {
 			this.logger.error('[Queue] Poll error:', err)
 		}
@@ -247,18 +263,12 @@ export class Queue {
 
 	/**
 	 * Execute a single job with error handling and retries.
+	 * Job is already marked as 'running' by poll() transaction.
 	 */
-	private async executeJob(job: Job, handler: JobHandler): Promise<void> {
+	private async executeJobHandler(job: Job, handler: JobHandler): Promise<void> {
 		this.processingJobs.add(job.id)
 
 		try {
-			// Mark as running
-			await this.sql`
-                UPDATE job_queue
-                SET status = 'running', attempts = attempts + 1
-                WHERE id = ${job.id}
-            `
-
 			this.logger.info(`[Queue] Executing job ${job.name}`, {
 				jobId: job.id,
 				attempt: job.attempts + 1,

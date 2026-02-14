@@ -1,0 +1,13 @@
+{
+  "title": "Documentation",
+  "root": true,
+  "pages": [
+    "index",
+    "getting-started",
+    "core",
+    "guides",
+    "react",
+    "reference",
+    "api-reference"
+  ]
+}

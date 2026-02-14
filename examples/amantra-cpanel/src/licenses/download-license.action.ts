@@ -14,7 +14,7 @@ export const downloadLicense = action(
 		}),
 		triggers: [triggers.api('GET', '/:id/download')],
 	},
-	async ({ input, ctx }) => {
+	async (input, ctx) => {
 		const license = await ctx.db.from('licenses').eq('id', input.id).single()
 
 		if (!license) {

@@ -23,7 +23,7 @@ export const generateLicense = action(
 		}),
 		triggers: [triggers.api('POST', '/')],
 	},
-	async ({ input, ctx }) => {
+	async (input, ctx) => {
 		// Verify organization exists
 		const organization = await ctx.db
 			.from('organizations')

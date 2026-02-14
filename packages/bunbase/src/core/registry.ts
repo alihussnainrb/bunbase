@@ -1,3 +1,7 @@
+import {
+	isWrappedGuards,
+	type WrappedGuards,
+} from './guards/execution.ts'
 import type {
 	ActionDefinition,
 	GuardFn,
@@ -14,6 +18,8 @@ export interface RegisteredAction {
 	guards: GuardFn[]
 	/** All triggers with module apiPrefix applied */
 	triggers: TriggerConfig[]
+	/** Registry key (namespaced for module actions: "module.action", bare for standalone) */
+	registryKey: string
 }
 
 /**
@@ -32,11 +38,20 @@ export class ActionRegistry {
 			throw new Error(`Action "${name}" is already registered`)
 		}
 
+		// Unwrap guards if needed
+		const unwrapGuards = (
+			g: GuardFn[] | WrappedGuards | undefined,
+		): GuardFn[] => {
+			if (!g) return []
+			return isWrappedGuards(g) ? g.guards : g
+		}
+
 		this.actions.set(name, {
 			definition,
 			moduleName: null,
-			guards: [...(definition.config.guards ?? [])],
+			guards: unwrapGuards(definition.config.guards),
 			triggers: [...(definition.config.triggers ?? [])],
+			registryKey: name, // Same as name for standalone actions
 		})
 	}
 
@@ -52,7 +67,8 @@ export class ActionRegistry {
 		} = mod.config
 
 		for (const definition of actions) {
-			const actionName = definition.config.name
+			// Auto-namespace module actions: moduleName.actionName
+			const actionName = `${moduleName}.${definition.config.name}`
 			if (this.actions.has(actionName)) {
 				throw new Error(
 					`Action "${actionName}" is already registered (module: ${moduleName})`,
@@ -78,10 +94,18 @@ export class ActionRegistry {
 				},
 			)
 
+			// Unwrap guards if needed before merging
+			const unwrapGuards = (
+				g: GuardFn[] | WrappedGuards | undefined,
+			): GuardFn[] => {
+				if (!g) return []
+				return isWrappedGuards(g) ? g.guards : g
+			}
+
 			// Module guards run first, then action guards
 			const guards: GuardFn[] = [
-				...(moduleGuards ?? []),
-				...(definition.config.guards ?? []),
+				...unwrapGuards(moduleGuards),
+				...unwrapGuards(definition.config.guards),
 			]
 
 			this.actions.set(actionName, {
@@ -89,6 +113,7 @@ export class ActionRegistry {
 				moduleName,
 				guards,
 				triggers,
+				registryKey: actionName, // Store the namespaced key
 			})
 		}
 	}
@@ -106,5 +131,10 @@ export class ActionRegistry {
 	/** Get count of registered actions */
 	get size(): number {
 		return this.actions.size
+	}
+
+	/** Clear all registered actions (used for hot reload) */
+	clear(): void {
+		this.actions.clear()
 	}
 }

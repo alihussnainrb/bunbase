@@ -168,11 +168,23 @@ export function createLazyContext(
 			if (!queue) {
 				throw new Error('Queue not configured. Call server.setQueue() first.')
 			}
-			// Schedule via queue with delay
-			const _delay = typeof time === 'number' ? time : 0
+			// Convert time parameter to runAt Date
+			let runAt: Date
+			if (typeof time === 'number') {
+				// Delay in seconds
+				runAt = new Date(Date.now() + time * 1000)
+			} else if (time instanceof Date) {
+				runAt = time
+			} else {
+				// string (cron) not supported via queue - use Scheduler instead
+				throw new Error(
+					'Cron patterns not supported via ctx.schedule(). Use triggers.cron() instead.',
+				)
+			}
+
 			return queue.push(name, data, {
 				...scheduleOpts,
-				priority: scheduleOpts?.priority,
+				runAt,
 			})
 		},
 

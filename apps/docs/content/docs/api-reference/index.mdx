@@ -1,0 +1,25 @@
+---
+title: API Reference
+description: OpenAPI-powered endpoint reference generated from a committed schema snapshot.
+---
+
+Bunbase exposes OpenAPI from your runtime at `GET /api/openapi.json` when enabled.
+
+This docs site renders endpoint pages from a committed snapshot file:
+
+`apps/docs/content/openapi/basic-example.openapi.json`
+
+## Refresh the snapshot
+
+1. Start a Bunbase app that serves OpenAPI.
+2. Run:
+
+```bash
+bun run docs:openapi:pull
+```
+
+3. Commit the updated JSON file.
+
+## Endpoint pages
+
+Browse generated endpoint pages under [Endpoints](/docs/api-reference/endpoints).

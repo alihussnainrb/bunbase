@@ -1,4 +1,4 @@
-import { existsSync } from 'node:fs'
+import { existsSync, watch } from 'node:fs'
 import { join } from 'node:path'
 import { RedisClient } from 'bun'
 import { loadConfig } from '../../config/loader.ts'
@@ -7,7 +7,9 @@ import { createDB } from '../../db/client.ts'
 import { createSQLPool } from '../../db/pool.ts'
 import { Logger } from '../../logger/index.ts'
 import { WriteBuffer } from '../../persistence/write-buffer.ts'
+import { eventBus } from '../../runtime/event-bus.ts'
 import { loadActions } from '../../runtime/loader.ts'
+import { Queue } from '../../runtime/queue.ts'
 import { BunbaseServer } from '../../runtime/server.ts'
 
 export async function devCommand(): Promise<void> {
@@ -81,6 +83,10 @@ export async function devCommand(): Promise<void> {
 			// Test connection
 			await redis.connect()
 			logger.info(`Connected to Redis at ${redisUrl}`)
+
+			// Attach Redis to EventBus for distributed event propagation
+			await eventBus.attachRedis(redis)
+			logger.info('EventBus using Redis Pub/Sub for cross-instance events')
 		} catch (err: unknown) {
 			const message = err instanceof Error ? err.message : String(err)
 			logger.warn(`Failed to connect to Redis: ${message}`)
@@ -140,14 +146,21 @@ export async function devCommand(): Promise<void> {
 	const loadDuration = (performance.now() - startLoad).toFixed(2)
 	logger.info(`Loaded ${registry.size} actions in ${loadDuration}ms`)
 
-	// 7. Start server
+	// 7. Create Queue instance for background jobs
+	const queue = new Queue(sqlPool, logger, writeBuffer)
+
+	// 8. Start server
 	const server = new BunbaseServer(registry, logger, writeBuffer, config, {
 		db,
+		sql: sqlPool,
 		storage,
 		mailer,
 		kv,
 		redis,
 	})
+
+	// Set queue on server for ctx.queue support
+	server.setQueue(queue)
 
 	try {
 		server.start({
@@ -156,22 +169,84 @@ export async function devCommand(): Promise<void> {
 			mcp: config.mcp,
 		})
 
+		// Start queue worker for background jobs
+		await queue.start()
+		logger.info('Queue worker started')
+
 		if (config.realtime?.enabled) {
 			const wsPath = config.realtime.path ?? '/ws'
 			logger.info(`WebSocket: ws://${hostname}:${port}${wsPath}`)
 		}
 
-		// Handle shutdown
-		process.on('SIGINT', async () => {
+		// Setup file watcher for hot reload in dev mode
+		let watcher: ReturnType<typeof watch> | null = null
+		if (config.watch !== false) {
+			// Default: enabled
+			let reloadTimeout: Timer | null = null
+			const reloadActions = () => {
+				if (reloadTimeout) clearTimeout(reloadTimeout)
+				reloadTimeout = setTimeout(async () => {
+					logger.info('File change detected, reloading actions...')
+					const start = performance.now()
+
+					try {
+						// Clear registry
+						registry.clear()
+
+						// Reload actions
+						await loadActions(actionsDir, registry, logger)
+
+						// Re-register with server
+						server.refreshRoutes()
+
+						const duration = (performance.now() - start).toFixed(2)
+						logger.info(`Reloaded ${registry.size} actions in ${duration}ms`)
+					} catch (err) {
+						logger.error('Failed to reload actions:', err)
+					}
+				}, 300) // 300ms debounce
+			}
+
+			watcher = watch(
+				actionsDir,
+				{ recursive: true },
+				(_event, filename) => {
+					if (!filename) return
+					// Only reload on action/module file changes
+					if (
+						filename.endsWith('.action.ts') ||
+						filename.endsWith('_module.ts')
+					) {
+						reloadActions()
+					}
+				},
+			)
+
+			logger.info('Hot reload enabled (watching for file changes)')
+		}
+
+		// Graceful shutdown handler (shared for SIGINT and SIGTERM)
+		const shutdown = async () => {
 			logger.info('Shutting down...')
+			if (watcher) {
+				watcher.close()
+			}
 			server.stop()
+			await queue.stop()
+			await eventBus.detach()
 			await writeBuffer.shutdown()
 			sqlPool.close()
 			if (redis) {
 				redis.close()
 			}
 			process.exit(0)
-		})
+		}
+
+		// Handle SIGINT (Ctrl+C)
+		process.on('SIGINT', shutdown)
+
+		// Handle SIGTERM (Docker/K8s graceful shutdown)
+		process.on('SIGTERM', shutdown)
 	} catch (err) {
 		logger.error('Failed to start server:', err)
 		process.exit(1)

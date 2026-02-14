@@ -6,6 +6,18 @@ import type { RunEntry } from '../persistence/types.ts'
 import type { WriteBuffer } from '../persistence/write-buffer.ts'
 import { executeAction } from '../runtime/executor.ts'
 
+// ── Integration Test Utilities ──────────────────────────
+export {
+	createTestServer,
+	createTestClient,
+	type TestServer,
+	type TestServerOptions,
+	type TestResponse,
+} from './integration.ts'
+
+export { withTestTransaction } from './database.ts'
+
+// ── Unit Test Utilities ──────────────────────────────────
 export interface TestActionOptions {
 	/** Partial auth context for testing */
 	auth?: Partial<ActionContext['auth']>

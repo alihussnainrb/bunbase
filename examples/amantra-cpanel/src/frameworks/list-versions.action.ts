@@ -20,7 +20,7 @@ export const listVersions = action(
 		}),
 		triggers: [triggers.api('GET', '/:frameworkId/versions')],
 	},
-	async ({ input, ctx }) => {
+	async (input, ctx) => {
 		const versions = await ctx.db
 			.from('framework_versions')
 			.eq('framework_id', input.frameworkId)

@@ -1,0 +1,40 @@
+---
+title: Configuration
+description: bunbase.config.ts runtime options.
+---
+
+```ts
+import { defineConfig } from 'bunbase'
+
+export default defineConfig({
+  port: 3000,
+  hostname: '0.0.0.0',
+  actionsDir: 'src',
+  database: {
+    url: process.env.DATABASE_URL,
+    migrations: {
+      directory: 'migrations',
+    },
+  },
+  openapi: {
+    enabled: true,
+    path: '/api/openapi.json',
+    title: 'My API',
+    version: '1.0.0',
+  },
+  realtime: {
+    enabled: true,
+    path: '/ws',
+  },
+  studio: {
+    enabled: true,
+    path: '/_studio',
+  },
+})
+```
+
+## Notes
+
+- Keep secrets in environment variables.
+- Enable only the subsystems you actually use.
+- Configure OpenAPI early to keep client generation stable.

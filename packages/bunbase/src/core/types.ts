@@ -7,10 +7,26 @@ import type { Logger } from '../logger/index.ts'
 import type { MailerAdapter } from '../mailer/types.ts'
 import type { StorageAdapter } from '../storage/types.ts'
 import type { ActionRegistry } from './registry.ts'
+import type { WrappedGuards } from './guards/execution.ts'
 
 // ── Trigger Types ────────────────────────────────────────
 
 export type HttpMethod = 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE'
+
+/**
+ * Uploaded file from multipart/form-data request.
+ * Available in action input when Content-Type is multipart/form-data.
+ */
+export interface UploadedFile {
+	/** Original filename from the upload */
+	filename: string
+	/** MIME type of the file (e.g., 'image/png', 'application/pdf') */
+	contentType: string
+	/** File size in bytes */
+	size: number
+	/** File data as Buffer */
+	data: Buffer
+}
 
 export interface ApiTriggerConfig {
 	readonly type: 'api'
@@ -380,7 +396,7 @@ export interface ActionConfig<
 	readonly input: TInput
 	readonly output: TOutput
 	readonly triggers?: TriggerConfig[]
-	readonly guards?: GuardFn[]
+	readonly guards?: GuardFn[] | WrappedGuards
 	readonly retry?: RetryConfig
 }
 
@@ -406,7 +422,7 @@ export interface ModuleConfig {
 	readonly name: string
 	readonly description?: string
 	readonly apiPrefix?: string
-	readonly guards?: GuardFn[]
+	readonly guards?: GuardFn[] | WrappedGuards
 	readonly actions: ActionDefinition[]
 }
 

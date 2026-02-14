@@ -38,3 +38,30 @@ jobs:
 
       - name: Run tests
         run: bun run test
+
+  docs:
+    name: Docs checks
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+
+      - name: Docs type check
+        run: bun run docs:type-check
+
+      - name: Docs build
+        run: bun run docs:build

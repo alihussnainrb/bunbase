@@ -83,6 +83,31 @@ export class Migrator {
 		return { applied, skipped }
 	}
 
+	/**
+	 * Reset database by dropping all tables and re-running migrations.
+	 * WARNING: This will delete ALL data in the database!
+	 */
+	async reset(): Promise<void> {
+		// Drop all tables except _migrations
+		const tables = await this.sql`
+			SELECT tablename FROM pg_tables
+			WHERE schemaname = 'public'
+			AND tablename != '_migrations'
+		`
+
+		await this.sql.begin(async (tx: any) => {
+			// Drop all tables
+			for (const { tablename } of tables) {
+				await tx.unsafe(`DROP TABLE IF EXISTS "${tablename}" CASCADE`)
+			}
+			// Clear migrations tracking
+			await tx`DELETE FROM _migrations`
+		})
+
+		// Re-run all migrations from scratch
+		await this.run()
+	}
+
 	/** Create a new migration file */
 	async createNew(name: string): Promise<string> {
 		if (!existsSync(this.migrationsDir)) {

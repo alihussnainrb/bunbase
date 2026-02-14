@@ -14,7 +14,7 @@ export const deleteFramework = action(
 		}),
 		triggers: [triggers.api('DELETE', '/:id')],
 	},
-	async ({ input, ctx }) => {
+	async (input, ctx) => {
 		// TODO: Implement password verification against super admin user
 		// For now, we'll just check if password is provided
 		if (!input.password || input.password.length < 8) {

@@ -80,7 +80,10 @@ describe('WebSocketHandler', () => {
 			const ws = createMockWS('conn-1')
 
 			handlers.open(ws)
-			handlers.message(ws, JSON.stringify({ type: 'subscribe', channel: 'chat:general' }))
+			handlers.message(
+				ws,
+				JSON.stringify({ type: 'subscribe', channel: 'chat:general' }),
+			)
 
 			expect(ws._sent.length).toBe(1)
 			const response = JSON.parse(ws._sent[0])
@@ -94,8 +97,14 @@ describe('WebSocketHandler', () => {
 			const ws = createMockWS('conn-1')
 
 			handlers.open(ws)
-			handlers.message(ws, JSON.stringify({ type: 'subscribe', channel: 'chat:general' }))
-			handlers.message(ws, JSON.stringify({ type: 'unsubscribe', channel: 'chat:general' }))
+			handlers.message(
+				ws,
+				JSON.stringify({ type: 'subscribe', channel: 'chat:general' }),
+			)
+			handlers.message(
+				ws,
+				JSON.stringify({ type: 'unsubscribe', channel: 'chat:general' }),
+			)
 
 			expect(ws._sent.length).toBe(2)
 			const response = JSON.parse(ws._sent[1])
@@ -113,8 +122,14 @@ describe('WebSocketHandler', () => {
 			handlers.open(ws2)
 
 			// Both subscribe to same channel
-			handlers.message(ws1, JSON.stringify({ type: 'subscribe', channel: 'chat:general' }))
-			handlers.message(ws2, JSON.stringify({ type: 'subscribe', channel: 'chat:general' }))
+			handlers.message(
+				ws1,
+				JSON.stringify({ type: 'subscribe', channel: 'chat:general' }),
+			)
+			handlers.message(
+				ws2,
+				JSON.stringify({ type: 'subscribe', channel: 'chat:general' }),
+			)
 
 			// ws1 publishes
 			handlers.message(
@@ -128,8 +143,12 @@ describe('WebSocketHandler', () => {
 			)
 
 			// Both should receive the event (publish broadcasts to all subscribers including sender)
-			const ws1Events = ws1._sent.filter((m: string) => JSON.parse(m).type === 'event')
-			const ws2Events = ws2._sent.filter((m: string) => JSON.parse(m).type === 'event')
+			const ws1Events = ws1._sent.filter(
+				(m: string) => JSON.parse(m).type === 'event',
+			)
+			const ws2Events = ws2._sent.filter(
+				(m: string) => JSON.parse(m).type === 'event',
+			)
 
 			expect(ws1Events.length).toBe(1)
 			expect(ws2Events.length).toBe(1)
@@ -204,7 +223,10 @@ describe('WebSocketHandler', () => {
 			const ws = createMockWS('conn-1')
 
 			handlers.open(ws)
-			handlers.message(ws, JSON.stringify({ type: 'subscribe', channel: 'chat:general' }))
+			handlers.message(
+				ws,
+				JSON.stringify({ type: 'subscribe', channel: 'chat:general' }),
+			)
 
 			handlers.close(ws)
 			expect(handler.channelManager.getConnectionCount()).toBe(0)
@@ -236,13 +258,17 @@ describe('WebSocketHandler', () => {
 			}
 
 			// 3 pong responses
-			const pongs = ws._sent.filter((m: string) => JSON.parse(m).type === 'pong')
+			const pongs = ws._sent.filter(
+				(m: string) => JSON.parse(m).type === 'pong',
+			)
 			expect(pongs.length).toBe(3)
 
 			// 4th message should be rate limited
 			handlers.message(ws, JSON.stringify({ type: 'ping' }))
 
-			const errors = ws._sent.filter((m: string) => JSON.parse(m).type === 'error')
+			const errors = ws._sent.filter(
+				(m: string) => JSON.parse(m).type === 'error',
+			)
 			expect(errors.length).toBe(1)
 			expect(JSON.parse(errors[0]).code).toBe('RATE_LIMITED')
 		})
@@ -257,7 +283,9 @@ describe('WebSocketHandler', () => {
 				handlers.message(ws, JSON.stringify({ type: 'ping' }))
 			}
 
-			const pongs = ws._sent.filter((m: string) => JSON.parse(m).type === 'pong')
+			const pongs = ws._sent.filter(
+				(m: string) => JSON.parse(m).type === 'pong',
+			)
 			expect(pongs.length).toBe(50)
 		})
 	})
@@ -304,7 +332,10 @@ describe('WebSocketHandler', () => {
 
 			handlers.open(ws1)
 			handlers.open(ws2)
-			handlers.message(ws1, JSON.stringify({ type: 'subscribe', channel: 'room:1' }))
+			handlers.message(
+				ws1,
+				JSON.stringify({ type: 'subscribe', channel: 'room:1' }),
+			)
 
 			handler.close()
 

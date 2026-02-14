@@ -39,7 +39,7 @@ export const getOrganization = action(
 		}),
 		triggers: [triggers.api('GET', '/:id')],
 	},
-	async ({ input, ctx }) => {
+	async (input, ctx) => {
 		const organization = await ctx.db
 			.from('organizations')
 			.eq('id', input.id)

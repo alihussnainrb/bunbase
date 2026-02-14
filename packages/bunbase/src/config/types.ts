@@ -7,6 +7,12 @@ export interface BunbaseConfig {
 	/** Directory to scan for actions and modules (default: src/actions) */
 	actionsDir?: string
 
+	/** Enable file watching and hot reload in dev mode (default: true) */
+	watch?: boolean
+
+	/** Maximum HTTP request body size in bytes (default: 10485760 = 10MB) */
+	maxRequestBodySize?: number
+
 	/** CORS configuration */
 	cors?: {
 		/** Allowed origins (default: *) */
@@ -33,7 +39,12 @@ export interface BunbaseConfig {
 		idleTimeout?: number
 		/** Migrations configuration */
 		migrations?: {
-			/** Directory containing migration SQL files (default: migrations) */
+			/** Directory containing migration SQL files (default: bunbase/migrations) */
+			directory?: string
+		}
+		/** Seeds configuration */
+		seeds?: {
+			/** Directory containing seed files (default: bunbase/seeds) */
 			directory?: string
 		}
 	}
@@ -57,8 +68,24 @@ export interface BunbaseConfig {
 	/** Auth configuration */
 	auth?: {
 		sessionSecret: string
-		cookieName?: string
 		expiresIn?: number
+		/** Session cookie configuration */
+		cookie?: {
+			/** Cookie name (default: bunbase_session) */
+			name?: string
+			/**
+			 * Set Secure flag on session cookies.
+			 * - true: cookies only sent over HTTPS (production)
+			 * - false: cookies sent over HTTP and HTTPS (default for localhost dev)
+			 */
+			secure?: boolean
+		}
+	}
+
+	/** Guards configuration */
+	guards?: {
+		/** Default guard execution mode (default: sequential) */
+		defaultMode?: 'sequential' | 'parallel'
 	}
 
 	/** Persistence configuration */

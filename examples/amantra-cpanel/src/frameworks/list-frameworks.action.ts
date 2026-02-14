@@ -22,7 +22,7 @@ export const listFrameworks = action(
 		}),
 		triggers: [triggers.api('GET', '/')],
 	},
-	async ({ input, ctx }) => {
+	async (input, ctx) => {
 		let query = ctx.db.from('frameworks')
 
 		if (input.status) {

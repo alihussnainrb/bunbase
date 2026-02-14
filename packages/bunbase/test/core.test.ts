@@ -224,9 +224,9 @@ describe('ActionRegistry', () => {
 
 		registry.registerModule(testModule)
 
-		const registered = registry.get('moduleAction')
+		const registered = registry.get('testModule.moduleAction')
 		expect(registered).toBeDefined()
-		expect(registered?.triggers[0].path).toBe('/api/v1/items')
+		expect((registered?.triggers[0] as any).path).toBe('/api/v1/items')
 	})
 
 	it('should merge module guards before action guards', () => {
@@ -254,7 +254,7 @@ describe('ActionRegistry', () => {
 
 		registry.registerModule(testModule)
 
-		const registered = registry.get('guardedAction')
+		const registered = registry.get('guardedModule.guardedAction')
 		expect(registered?.guards).toHaveLength(2)
 		expect(registered?.guards[0]).toBe(moduleGuard)
 		expect(registered?.guards[1]).toBe(actionGuard)

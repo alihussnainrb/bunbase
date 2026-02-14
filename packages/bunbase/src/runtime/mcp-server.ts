@@ -4,6 +4,7 @@ import {
 	CallToolRequestSchema,
 	ListToolsRequestSchema,
 } from '@modelcontextprotocol/sdk/types.js'
+import packageJson from '../../package.json'
 import type { ActionRegistry } from '../core/registry.ts'
 import type { Logger } from '../logger/index.ts'
 import type { WriteBuffer } from '../persistence/write-buffer.ts'
@@ -21,7 +22,7 @@ export class McpService {
 		this.server = new Server(
 			{
 				name: 'bunbase',
-				version: '0.0.1',
+				version: packageJson.version,
 			},
 			{
 				capabilities: {

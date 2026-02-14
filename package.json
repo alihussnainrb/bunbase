@@ -12,6 +12,11 @@
 	"scripts": {
 		"build": "bunup",
 		"dev": "bunup --watch",
+		"docs:dev": "bun run --cwd apps/docs dev",
+		"docs:build": "bun run --cwd apps/docs build",
+		"docs:start": "bun run --cwd apps/docs start",
+		"docs:type-check": "bun run --cwd apps/docs type-check",
+		"docs:openapi:pull": "bun run --cwd apps/docs openapi:pull",
 		"lint": "biome check .",
 		"lint:fix": "biome check --write .",
 		"release": "bumpp -r --commit --push --tag",
@@ -29,6 +34,7 @@
 	},
 	"private": true,
 	"workspaces": [
+		"apps/*",
 		"packages/*",
 		"examples/*"
 	],

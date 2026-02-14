@@ -52,6 +52,18 @@ export type DatabaseClient<DB extends Database = Database> = {
 	) => TypedQueryBuilder<InferTable<DB, T>>
 
 	raw: (strings: TemplateStringsArray, ...values: any[]) => Promise<any[]>
+
+	/**
+	 * Execute a function within a database transaction.
+	 * Automatically commits on success, rolls back on error.
+	 *
+	 * @example
+	 * await ctx.db.transaction(async (tx) => {
+	 *   await tx.from('accounts').eq('id', fromId).update({ balance: fromBalance - amount })
+	 *   await tx.from('accounts').eq('id', toId).update({ balance: toBalance + amount })
+	 * })
+	 */
+	transaction: <T>(fn: (tx: DatabaseClient<DB>) => Promise<T>) => Promise<T>
 }
 
 export function createDB<DB extends Database = Database>(
@@ -59,15 +71,28 @@ export function createDB<DB extends Database = Database>(
 ): DatabaseClient<DB> {
 	const pool = sql ?? getSQLPool()
 
-	return {
-		from: <T extends keyof InferTables<DB>>(table: T) => {
-			return new TypedQueryBuilder<InferTable<DB, T>>(table as string, pool)
-		},
+	function buildClient(conn: SQL): DatabaseClient<DB> {
+		return {
+			from: <T extends keyof InferTables<DB>>(table: T) => {
+				return new TypedQueryBuilder<InferTable<DB, T>>(table as string, conn)
+			},
 
-		raw: (strings: TemplateStringsArray, ...values: any[]) => {
-			return pool(strings, ...values)
-		},
+			raw: (strings: TemplateStringsArray, ...values: any[]) => {
+				return conn(strings, ...values)
+			},
+
+			transaction: <T>(
+				fn: (tx: DatabaseClient<DB>) => Promise<T>,
+			): Promise<T> => {
+				return conn.begin(async (txConn: SQL) => {
+					const txClient = buildClient(txConn)
+					return fn(txClient)
+				})
+			},
+		}
 	}
+
+	return buildClient(pool)
 }
 
 class TypedQueryBuilder<Table extends TableDef> {
@@ -75,11 +100,19 @@ class TypedQueryBuilder<Table extends TableDef> {
 	private sql: SQL
 	private selects: (keyof Table['Row'])[] | ['*'] = ['*']
 	private wheres: Array<{ col: keyof Table['Row']; op: string; val: any }> = []
+	private joins: Array<{
+		type: 'INNER' | 'LEFT'
+		table: string
+		thisCol: string
+		otherCol: string
+	}> = []
 	private limitNum: number | null = null
 	private offsetNum: number | null = null
 	private orderByCol: keyof Table['Row'] | null = null
 	private orderByDir: 'ASC' | 'DESC' = 'ASC'
 	private returningFields: (keyof Table['Row'])[] | null = null
+	private groupByColumns: (keyof Table['Row'] | string)[] = []
+	private havings: Array<{ col: keyof Table['Row'] | string; op: string; val: any }> = []
 
 	constructor(table: string, sql: SQL) {
 		this.table = table
@@ -177,6 +210,80 @@ class TypedQueryBuilder<Table extends TableDef> {
 		return this
 	}
 
+	/**
+	 * Add an INNER JOIN clause.
+	 *
+	 * @example
+	 * db.from('orders')
+	 *   .innerJoin('users', 'user_id', 'id')
+	 *   .select('*')
+	 *   .exec()
+	 */
+	innerJoin(table: string, thisCol: string, otherCol: string): this {
+		this.joins.push({ type: 'INNER', table, thisCol, otherCol })
+		return this
+	}
+
+	/**
+	 * Add a LEFT JOIN clause.
+	 *
+	 * @example
+	 * db.from('users')
+	 *   .leftJoin('profiles', 'id', 'user_id')
+	 *   .select('*')
+	 *   .exec()
+	 */
+	leftJoin(table: string, thisCol: string, otherCol: string): this {
+		this.joins.push({ type: 'LEFT', table, thisCol, otherCol })
+		return this
+	}
+
+	/**
+	 * Add GROUP BY clause for aggregation queries.
+	 *
+	 * @example
+	 * db.from('orders')
+	 *   .select('status', 'COUNT(*) as count')
+	 *   .groupBy('status')
+	 *   .exec()
+	 */
+	groupBy(...columns: (keyof Table['Row'] | string)[]): this {
+		this.groupByColumns.push(...columns)
+		return this
+	}
+
+	/**
+	 * Add HAVING clause for filtering aggregated results.
+	 * Use with GROUP BY to filter groups based on aggregate conditions.
+	 *
+	 * @example
+	 * db.from('orders')
+	 *   .select('user_id', 'COUNT(*) as order_count')
+	 *   .groupBy('user_id')
+	 *   .having('COUNT(*)', '>', 5)
+	 *   .exec()
+	 */
+	having(column: keyof Table['Row'] | string, op: string, value: any): this {
+		this.havings.push({ col: column, op, val: value })
+		return this
+	}
+
+	/**
+	 * Select with raw aggregate expressions.
+	 * Useful for COUNT, SUM, AVG, MIN, MAX, etc.
+	 *
+	 * @example
+	 * db.from('orders')
+	 *   .aggregate('COUNT(*) as total', 'SUM(amount) as revenue')
+	 *   .groupBy('status')
+	 *   .exec()
+	 */
+	aggregate(...expressions: string[]): this {
+		// Store raw SQL expressions for SELECT clause
+		this.selects = expressions as any
+		return this
+	}
+
 	async single(ctx?: { session?: any }): Promise<Table['Row'] | null> {
 		const rows = await this.limit(1).exec(ctx)
 		return rows[0] ?? null
@@ -193,13 +300,36 @@ class TypedQueryBuilder<Table extends TableDef> {
 
 		let query = this.sql`SELECT COUNT(*) as count FROM ${this.sql(this.table)}`
 
+		if (this.joins.length > 0) {
+			query = this.buildJoinClauses(query)
+		}
+
 		if (this.wheres.length > 0) {
 			const whereClause = this.buildWhereClause()
 			query = this.sql`${query} WHERE ${whereClause}`
 		}
 
+		if (this.groupByColumns.length > 0) {
+			query = this.sql`${query} GROUP BY ${this.sql(this.groupByColumns)}`
+		}
+
+		if (this.havings.length > 0) {
+			const havingClause = this.buildHavingClause()
+			query = this.sql`${query} HAVING ${havingClause}`
+		}
+
 		const result = await query
 		return Number(result[0]?.count ?? 0)
+	}
+
+	private buildJoinClauses(query: any): any {
+		let q = query
+		for (const j of this.joins) {
+			const joinType = this.sql.unsafe(`${j.type} JOIN`)
+			q = this
+				.sql`${q} ${joinType} ${this.sql(j.table)} ON ${this.sql(this.table)}.${this.sql(j.thisCol)} = ${this.sql(j.table)}.${this.sql(j.otherCol)}`
+		}
+		return q
 	}
 
 	private buildWhereClause() {
@@ -223,15 +353,44 @@ class TypedQueryBuilder<Table extends TableDef> {
 		}, this.sql``)
 	}
 
+	private buildHavingClause() {
+		const conditions = this.havings.map((h) => {
+			const op = this.sql.unsafe(h.op)
+			// For aggregate functions or raw expressions, use unsafe
+			if (typeof h.col === 'string' && (h.col.includes('(') || h.col.includes(')'))) {
+				return this.sql`${this.sql.unsafe(h.col)} ${op} ${h.val}`
+			}
+			return this.sql`${this.sql(h.col as string)} ${op} ${h.val}`
+		})
+
+		return conditions.reduce((acc, curr, i) => {
+			if (i === 0) return curr
+			return this.sql`${acc} AND ${curr}`
+		}, this.sql``)
+	}
+
 	async exec(ctx?: { session?: any }): Promise<Table['Row'][]> {
 		if (ctx) await setRLSContext(this.sql, ctx)
 
 		let query = this
 			.sql`SELECT ${this.sql(this.selects)} FROM ${this.sql(this.table)}`
 
+		if (this.joins.length > 0) {
+			query = this.buildJoinClauses(query)
+		}
+
 		if (this.wheres.length > 0) {
 			const whereClause = this.buildWhereClause()
 			query = this.sql`${query} WHERE ${whereClause}`
+		}
+
+		if (this.groupByColumns.length > 0) {
+			query = this.sql`${query} GROUP BY ${this.sql(this.groupByColumns)}`
+		}
+
+		if (this.havings.length > 0) {
+			const havingClause = this.buildHavingClause()
+			query = this.sql`${query} HAVING ${havingClause}`
 		}
 
 		if (this.orderByCol !== null) {

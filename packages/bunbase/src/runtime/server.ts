@@ -24,10 +24,15 @@ import { executeAction } from './executor.ts'
 import { McpService } from './mcp-server.ts'
 import type { Queue } from './queue.ts'
 import { mapRequestToInput } from './request-mapper.ts'
-import type { Scheduler } from './scheduler.ts'
+import { Scheduler } from './scheduler.ts'
+import {
+	mapOutputToResponse,
+	serializeCookie,
+} from '../utils/request-mapper.ts'
 
 export interface ServerServices {
 	db?: DatabaseClient
+	sql?: import('bun').SQL
 	storage?: StorageAdapter
 	mailer?: import('../mailer/types.ts').MailerAdapter
 	kv?: KVStore
@@ -57,6 +62,7 @@ export class BunbaseServer {
 	private mcp: McpService
 	private sessionManager?: SessionManager
 	private wsHandler?: WebSocketHandler
+	private config?: BunbaseConfig
 	private openapiConfig?: BunbaseConfig['openapi']
 	private studioConfig?: BunbaseConfig['studio']
 	private corsConfig?: BunbaseConfig['cors']
@@ -70,6 +76,7 @@ export class BunbaseServer {
 		private readonly services: ServerServices | undefined,
 	) {
 		this.mcp = new McpService(registry, logger, writeBuffer)
+		this.config = config
 		this.openapiConfig = config?.openapi
 		this.studioConfig = config?.studio
 		this.corsConfig = config?.cors
@@ -77,7 +84,7 @@ export class BunbaseServer {
 		if (config?.auth) {
 			this.sessionManager = new SessionManager({
 				secret: config.auth.sessionSecret,
-				cookieName: config.auth.cookieName,
+				cookieName: config.auth.cookie?.name,
 				expiresIn: config.auth.expiresIn,
 			})
 		}
@@ -94,6 +101,18 @@ export class BunbaseServer {
 		// Register studio actions if studio is enabled
 		if (this.studioConfig?.enabled) {
 			this.registry.registerModule(studioModule)
+		}
+
+		// Create scheduler for cron-triggered actions
+		if (services?.sql) {
+			this.scheduler = new Scheduler(
+				registry,
+				logger,
+				writeBuffer,
+				services.sql,
+				config,
+				services.redis,
+			)
 		}
 	}
 
@@ -148,6 +167,7 @@ export class BunbaseServer {
 								kv: this.services?.kv,
 								redis: this.services?.redis,
 								channelManager: this.getChannelManager(),
+								config: this.config,
 								registry: this.registry,
 							})
 
@@ -218,6 +238,23 @@ export class BunbaseServer {
 				}
 			}
 		}
+	}
+
+	/**
+	 * Refresh routes after registry changes (used for hot reload).
+	 * Clears existing routes and rebuilds from updated registry.
+	 */
+	refreshRoutes(): void {
+		// Clear existing routes
+		this.routes.clear()
+		this.routePatterns = []
+		this.routeHandlers.clear()
+
+		// Rebuild routes from updated registry
+		this.buildRoutes()
+		this.routeHandlers = this.buildOptimizedRoutes()
+
+		this.logger.debug('Routes refreshed')
 	}
 
 	/**
@@ -310,7 +347,34 @@ export class BunbaseServer {
 						} else {
 							// Fallback: Default mapping: POST/PUT/PATCH → body, GET/DELETE → query params
 							if (['POST', 'PUT', 'PATCH'].includes(method)) {
-								input = await req.json().catch(() => ({}))
+								const contentType = req.headers.get('content-type') || ''
+
+								if (contentType.includes('multipart/form-data')) {
+									// Parse multipart form data (file uploads)
+									const formData = await req.formData()
+									input = {}
+
+									for (const [key, value] of formData.entries()) {
+										// FormDataEntryValue is string | File
+										if (typeof value === 'string') {
+											// Regular form field
+											;(input as Record<string, unknown>)[key] = value
+										} else {
+											// value is File - convert to UploadedFile
+											const file = value as File
+											const arrayBuffer = await file.arrayBuffer()
+											;(input as Record<string, unknown>)[key] = {
+												filename: file.name,
+												contentType: file.type,
+												size: file.size,
+												data: Buffer.from(arrayBuffer),
+											}
+										}
+									}
+								} else {
+									// Parse JSON (default)
+									input = await req.json().catch(() => ({}))
+								}
 							} else {
 								input = Object.fromEntries(url.searchParams)
 							}
@@ -366,6 +430,7 @@ export class BunbaseServer {
 					queue: this.queue,
 					scheduler: this.scheduler,
 					sessionManager: this.sessionManager,
+					config: this.config,
 					auth: authContext,
 					response: { headers, setCookie },
 					registry: this.registry,
@@ -373,19 +438,22 @@ export class BunbaseServer {
 
 				// Apply session actions (set/clear cookies from ctx.auth)
 				if (result.sessionActions && this.sessionManager) {
+					// Use config value if provided, otherwise default to false for localhost dev
+					const isSecure = this.config?.auth?.cookie?.secure ?? false
+
 					for (const sa of result.sessionActions) {
 						if (sa.type === 'create' && sa.token) {
 							setCookie(this.sessionManager.getCookieName(), sa.token, {
 								path: '/',
 								httpOnly: true,
-								secure: true,
+								secure: isSecure,
 								sameSite: 'Lax',
 							})
 						} else if (sa.type === 'destroy') {
 							setCookie(this.sessionManager.getCookieName(), '', {
 								path: '/',
 								httpOnly: true,
-								secure: true,
+								secure: isSecure,
 								sameSite: 'Lax',
 								maxAge: 0,
 							})
@@ -431,7 +499,41 @@ export class BunbaseServer {
 						}
 					}
 
-					return Response.json({ data: result.data }, { status, headers })
+					// Apply HTTP output field mapping from schema
+					const outputSchema = action.definition.config.output
+					let responseBody: Record<string, unknown> = (result.data ||
+						{}) as Record<string, unknown>
+
+					if (
+						outputSchema &&
+						typeof outputSchema === 'object' &&
+						'properties' in outputSchema
+					) {
+						const mapped = mapOutputToResponse(
+							result.data as Record<string, any>,
+							outputSchema as any,
+						)
+
+						// Apply mapped headers
+						for (const [key, value] of Object.entries(mapped.headers)) {
+							headers.set(key, value)
+						}
+
+						// Apply mapped cookies
+						for (const cookie of mapped.cookies) {
+							const cookieStr = serializeCookie(
+								cookie.name,
+								cookie.value,
+								cookie.options,
+							)
+							headers.append('Set-Cookie', cookieStr)
+						}
+
+						// Use mapped body (excludes fields routed to headers/cookies)
+						responseBody = mapped.body
+					}
+
+					return Response.json({ data: responseBody }, { status, headers })
 				}
 
 				// Error response
@@ -645,6 +747,7 @@ export class BunbaseServer {
 			hostname,
 			fetch: (req: Request, server: Server<any>) =>
 				this.handleRequest(req, server),
+			maxRequestBodySize: this.config?.maxRequestBodySize ?? 10485760, // 10MB default
 		}
 
 		// Add WebSocket handlers if realtime is enabled

@@ -18,7 +18,7 @@ export const login = action(
 		}),
 		triggers: [triggers.api('POST', '/login')],
 	},
-	async ({ input, ctx }) => {
+	async (input, ctx) => {
 		// Get user by email
 		const user = await ctx.db
 			.from('users')

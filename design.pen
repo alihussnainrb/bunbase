@@ -1,0 +1,1893 @@
+{
+  "version": "2.8",
+  "children": [
+    {
+      "type": "frame",
+      "id": "Xmhv1",
+      "x": 0,
+      "y": 0,
+      "name": "Bunbase Landing Page",
+      "width": 1440,
+      "fill": "#FFFFFF",
+      "layout": "vertical",
+      "children": [
+        {
+          "type": "frame",
+          "id": "Rxtye",
+          "name": "Header",
+          "width": "fill_container",
+          "height": 92,
+          "fill": "#FFFFFF",
+          "padding": [
+            24,
+            72
+          ],
+          "justifyContent": "space_between",
+          "alignItems": "center",
+          "children": [
+            {
+              "type": "frame",
+              "id": "lV8Fl",
+              "name": "Brand",
+              "gap": 12,
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "ZeJcW",
+                  "name": "Mark",
+                  "width": 32,
+                  "height": 32,
+                  "fill": "#000000",
+                  "cornerRadius": 10
+                },
+                {
+                  "type": "text",
+                  "id": "u9jdw",
+                  "name": "brandText",
+                  "fill": "#000000",
+                  "content": "bunbase",
+                  "fontFamily": "Outfit",
+                  "fontSize": 24,
+                  "fontWeight": "900"
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "SPy4R",
+              "name": "Nav",
+              "gap": 28,
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "text",
+                  "id": "2dFUH",
+                  "name": "nav1",
+                  "fill": "#3F3F46",
+                  "content": "Product",
+                  "fontFamily": "Inter",
+                  "fontSize": 14,
+                  "fontWeight": "500"
+                },
+                {
+                  "type": "text",
+                  "id": "VlvHz",
+                  "name": "nav2",
+                  "fill": "#3F3F46",
+                  "content": "Docs",
+                  "fontFamily": "Inter",
+                  "fontSize": 14,
+                  "fontWeight": "500"
+                },
+                {
+                  "type": "text",
+                  "id": "pmUpy",
+                  "name": "nav3",
+                  "fill": "#3F3F46",
+                  "content": "Pricing",
+                  "fontFamily": "Inter",
+                  "fontSize": 14,
+                  "fontWeight": "500"
+                },
+                {
+                  "type": "text",
+                  "id": "POdvT",
+                  "name": "nav4",
+                  "fill": "#3F3F46",
+                  "content": "GitHub",
+                  "fontFamily": "Inter",
+                  "fontSize": 14,
+                  "fontWeight": "500"
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "Y7vaO",
+              "name": "Header CTA",
+              "fill": "#000000",
+              "cornerRadius": 999,
+              "padding": [
+                12,
+                20
+              ],
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "text",
+                  "id": "nZUHg",
+                  "name": "headerBtnText",
+                  "fill": "#FFFFFF",
+                  "content": "Start Building",
+                  "fontFamily": "Outfit",
+                  "fontSize": 13,
+                  "fontWeight": "700"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "frame",
+          "id": "0ZYx6",
+          "name": "Hero",
+          "width": "fill_container",
+          "fill": "#FFFFFF",
+          "gap": 56,
+          "padding": [
+            88,
+            96
+          ],
+          "children": [
+            {
+              "type": "frame",
+              "id": "eVXkb",
+              "name": "Hero Left",
+              "width": "fill_container",
+              "layout": "vertical",
+              "gap": 24,
+              "children": [
+                {
+                  "type": "text",
+                  "id": "C4wgp",
+                  "name": "badge",
+                  "fill": "#52525B",
+                  "content": "TYPE-SAFE BACKENDS FOR BUN",
+                  "fontFamily": "Outfit",
+                  "fontSize": 13,
+                  "fontWeight": "700",
+                  "letterSpacing": 1.4
+                },
+                {
+                  "type": "text",
+                  "id": "dyI4A",
+                  "name": "headline",
+                  "fill": "#000000",
+                  "content": "Ship backend products\nwithout backend drag.",
+                  "lineHeight": 0.92,
+                  "fontFamily": "Outfit",
+                  "fontSize": 56,
+                  "fontWeight": "900",
+                  "letterSpacing": -2
+                },
+                {
+                  "type": "text",
+                  "id": "TKiuo",
+                  "name": "sub",
+                  "fill": "#52525B",
+                  "content": "Bunbase turns Actions, Modules, and Triggers\ninto one typed runtime so your team can build\nAPIs, jobs, and realtime features from one model.",
+                  "lineHeight": 1.45,
+                  "fontFamily": "Inter",
+                  "fontSize": 19,
+                  "fontWeight": "normal"
+                },
+                {
+                  "type": "frame",
+                  "id": "HDpqd",
+                  "name": "Hero CTAs",
+                  "gap": 14,
+                  "children": [
+                    {
+                      "type": "frame",
+                      "id": "MxmLY",
+                      "name": "ctaPrimary",
+                      "fill": "#000000",
+                      "cornerRadius": 999,
+                      "padding": [
+                        14,
+                        24
+                      ],
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "G7y3d",
+                          "name": "ctaPrimaryText",
+                          "fill": "#FFFFFF",
+                          "content": "Start with Bunbase",
+                          "fontFamily": "Outfit",
+                          "fontSize": 14,
+                          "fontWeight": "700"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "frame",
+                      "id": "HA0El",
+                      "name": "ctaSecondary",
+                      "fill": "#FFFFFF",
+                      "cornerRadius": 999,
+                      "padding": [
+                        14,
+                        24
+                      ],
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "8AJro",
+                          "name": "ctaSecondaryText",
+                          "fill": "#111111",
+                          "content": "Read the docs",
+                          "fontFamily": "Outfit",
+                          "fontSize": 14,
+                          "fontWeight": "700"
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "W02di",
+                  "name": "Trust Row",
+                  "gap": 18,
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "QnpRF",
+                      "name": "trust1",
+                      "fill": "#71717A",
+                      "content": "OPENAPI NATIVE",
+                      "fontFamily": "Outfit",
+                      "fontSize": 12,
+                      "fontWeight": "600",
+                      "letterSpacing": 1.1
+                    },
+                    {
+                      "type": "text",
+                      "id": "0BIfP",
+                      "name": "trust2",
+                      "fill": "#71717A",
+                      "content": "REACT CLIENT",
+                      "fontFamily": "Outfit",
+                      "fontSize": 12,
+                      "fontWeight": "600",
+                      "letterSpacing": 1.1
+                    },
+                    {
+                      "type": "text",
+                      "id": "ACG1r",
+                      "name": "trust3",
+                      "fill": "#71717A",
+                      "content": "REALTIME READY",
+                      "fontFamily": "Outfit",
+                      "fontSize": 12,
+                      "fontWeight": "600",
+                      "letterSpacing": 1.1
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "6W73y",
+              "name": "Hero Right",
+              "width": 620,
+              "height": 420,
+              "fill": "#111111",
+              "cornerRadius": 24,
+              "layout": "vertical",
+              "gap": 16,
+              "padding": 18,
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "m1ChK",
+                  "name": "Screenshot Placeholder",
+                  "width": "fill_container",
+                  "height": 290,
+                  "fill": "#18181B",
+                  "cornerRadius": 16,
+                  "justifyContent": "center",
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "AiMZu",
+                      "name": "shotText",
+                      "fill": "#A1A1AA",
+                      "content": "Screenshot placeholder",
+                      "fontFamily": "Inter",
+                      "fontSize": 15,
+                      "fontWeight": "500"
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "scJdf",
+                  "name": "metricRow",
+                  "width": "fill_container",
+                  "height": "fill_container",
+                  "gap": 14,
+                  "children": [
+                    {
+                      "type": "frame",
+                      "id": "SSEpD",
+                      "name": "metric1",
+                      "width": "fill_container",
+                      "height": "fill_container",
+                      "fill": "#27272A",
+                      "cornerRadius": 14,
+                      "layout": "vertical",
+                      "gap": 6,
+                      "padding": 14,
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "5c9t4",
+                          "name": "metric1Text",
+                          "fill": "#FFFFFF",
+                          "content": "21ms\navg action runtime",
+                          "lineHeight": 1.05,
+                          "fontFamily": "Outfit",
+                          "fontSize": 20,
+                          "fontWeight": "800"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "frame",
+                      "id": "CqLW8",
+                      "name": "metric2",
+                      "width": "fill_container",
+                      "height": "fill_container",
+                      "fill": "#27272A",
+                      "cornerRadius": 14,
+                      "layout": "vertical",
+                      "gap": 6,
+                      "padding": 14,
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "A91LM",
+                          "name": "metric2Text",
+                          "fill": "#FFFFFF",
+                          "content": "4 transports\n1 action contract",
+                          "lineHeight": 1.05,
+                          "fontFamily": "Outfit",
+                          "fontSize": 20,
+                          "fontWeight": "800"
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "frame",
+          "id": "jpHWC",
+          "name": "Problem & Solution",
+          "width": "fill_container",
+          "fill": "#F4F4F5",
+          "layout": "vertical",
+          "gap": 36,
+          "padding": [
+            88,
+            96
+          ],
+          "children": [
+            {
+              "type": "text",
+              "id": "Ipjnx",
+              "name": "problemEyebrow",
+              "fill": "#52525B",
+              "content": "FROM FRAGMENTED TO FLOWING",
+              "fontFamily": "Outfit",
+              "fontSize": 13,
+              "fontWeight": "700",
+              "letterSpacing": 1.3
+            },
+            {
+              "type": "text",
+              "id": "CLhLc",
+              "name": "problemTitle",
+              "fill": "#000000",
+              "content": "Backend teams lose momentum\nwhen each transport needs new plumbing.",
+              "lineHeight": 0.96,
+              "fontFamily": "Outfit",
+              "fontSize": 54,
+              "fontWeight": "900",
+              "letterSpacing": -1.8
+            },
+            {
+              "type": "text",
+              "id": "k9FaE",
+              "name": "problemBody",
+              "fill": "#52525B",
+              "content": "Bunbase gives you one action model for APIs, cron, events, and realtime so product velocity does not depend on integration glue code.",
+              "lineHeight": 1.45,
+              "fontFamily": "Inter",
+              "fontSize": 20,
+              "fontWeight": "normal"
+            },
+            {
+              "type": "frame",
+              "id": "mla5W",
+              "name": "How It Works",
+              "width": "fill_container",
+              "gap": 18,
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "D45Mg",
+                  "name": "step1",
+                  "width": "fill_container",
+                  "fill": "#FFFFFF",
+                  "cornerRadius": 18,
+                  "layout": "vertical",
+                  "gap": 10,
+                  "padding": 20,
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "ZXN3m",
+                      "name": "step1Num",
+                      "fill": "#111111",
+                      "content": "01",
+                      "fontFamily": "Outfit",
+                      "fontSize": 32,
+                      "fontWeight": "900"
+                    },
+                    {
+                      "type": "text",
+                      "id": "RbGAR",
+                      "name": "step1Title",
+                      "fill": "#000000",
+                      "content": "Define Actions",
+                      "fontFamily": "Outfit",
+                      "fontSize": 24,
+                      "fontWeight": "800"
+                    },
+                    {
+                      "type": "text",
+                      "id": "l9d8p",
+                      "name": "step1Body",
+                      "fill": "#71717A",
+                      "content": "Write one typed handler with input and output schemas.",
+                      "lineHeight": 1.45,
+                      "fontFamily": "Inter",
+                      "fontSize": 15,
+                      "fontWeight": "normal"
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "oOSU7",
+                  "name": "step2",
+                  "width": "fill_container",
+                  "fill": "#FFFFFF",
+                  "cornerRadius": 18,
+                  "layout": "vertical",
+                  "gap": 10,
+                  "padding": 20,
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "Tggmg",
+                      "name": "step2Num",
+                      "fill": "#111111",
+                      "content": "02",
+                      "fontFamily": "Outfit",
+                      "fontSize": 32,
+                      "fontWeight": "900"
+                    },
+                    {
+                      "type": "text",
+                      "id": "vvRaJ",
+                      "name": "step2Title",
+                      "fill": "#000000",
+                      "content": "Attach Triggers",
+                      "fontFamily": "Outfit",
+                      "fontSize": 24,
+                      "fontWeight": "800"
+                    },
+                    {
+                      "type": "text",
+                      "id": "N539g",
+                      "name": "step2Body",
+                      "fill": "#71717A",
+                      "content": "Expose the same action via API, schedules, events, or MCP.",
+                      "lineHeight": 1.45,
+                      "fontFamily": "Inter",
+                      "fontSize": 15,
+                      "fontWeight": "normal"
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "Occyt",
+                  "name": "step3",
+                  "width": "fill_container",
+                  "fill": "#FFFFFF",
+                  "cornerRadius": 18,
+                  "layout": "vertical",
+                  "gap": 10,
+                  "padding": 20,
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "maqIX",
+                      "name": "step3Num",
+                      "fill": "#111111",
+                      "content": "03",
+                      "fontFamily": "Outfit",
+                      "fontSize": 32,
+                      "fontWeight": "900"
+                    },
+                    {
+                      "type": "text",
+                      "id": "TL1ft",
+                      "name": "step3Title",
+                      "fill": "#000000",
+                      "content": "Ship Everywhere",
+                      "fontFamily": "Outfit",
+                      "fontSize": 24,
+                      "fontWeight": "800"
+                    },
+                    {
+                      "type": "text",
+                      "id": "TcbKJ",
+                      "name": "step3Body",
+                      "fill": "#71717A",
+                      "content": "Deliver typed runtime behavior across your product surface.",
+                      "lineHeight": 1.45,
+                      "fontFamily": "Inter",
+                      "fontSize": 15,
+                      "fontWeight": "normal"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "1aBtu",
+              "name": "bridge",
+              "width": "fill_container",
+              "fill": "#111111",
+              "cornerRadius": 16,
+              "padding": [
+                18,
+                22
+              ],
+              "justifyContent": "space_between",
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "text",
+                  "id": "f0piF",
+                  "name": "bridgeTitle",
+                  "fill": "#FFFFFF",
+                  "content": "Before: transport-specific code silos",
+                  "fontFamily": "Outfit",
+                  "fontSize": 18,
+                  "fontWeight": "700"
+                },
+                {
+                  "type": "text",
+                  "id": "yl1yg",
+                  "name": "bridgeBody",
+                  "fill": "#A1A1AA",
+                  "content": "After: one typed runtime model",
+                  "fontFamily": "Outfit",
+                  "fontSize": 18,
+                  "fontWeight": "700"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "frame",
+          "id": "R9nx7",
+          "name": "Core Features",
+          "width": "fill_container",
+          "fill": "#FFFFFF",
+          "layout": "vertical",
+          "gap": 56,
+          "padding": 96,
+          "children": [
+            {
+              "type": "text",
+              "id": "kuvsv",
+              "name": "coreEyebrow",
+              "fill": "#52525B",
+              "content": "CORE FEATURES",
+              "fontFamily": "Outfit",
+              "fontSize": 13,
+              "fontWeight": "700",
+              "letterSpacing": 1.3
+            },
+            {
+              "type": "text",
+              "id": "55h7p",
+              "name": "coreTitle",
+              "fill": "#000000",
+              "content": "Everything you need to run\na modern Bun backend.",
+              "lineHeight": 0.95,
+              "fontFamily": "Outfit",
+              "fontSize": 56,
+              "fontWeight": "900",
+              "letterSpacing": -2
+            },
+            {
+              "type": "text",
+              "id": "6Xa4K",
+              "name": "coreBody",
+              "fill": "#52525B",
+              "content": "Each block maps directly to the Bunbase runtime: action execution, transport orchestration, and production observability.",
+              "lineHeight": 1.45,
+              "fontFamily": "Inter",
+              "fontSize": 19,
+              "fontWeight": "normal"
+            },
+            {
+              "type": "frame",
+              "id": "6atdb",
+              "name": "Feature Block 1",
+              "width": "fill_container",
+              "gap": 28,
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "oZivJ",
+                  "name": "feat1Copy",
+                  "width": "fill_container",
+                  "layout": "vertical",
+                  "gap": 12,
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "MLLBz",
+                      "name": "feat1Kicker",
+                      "fill": "#71717A",
+                      "content": "ACTION RUNTIME",
+                      "fontFamily": "Outfit",
+                      "fontSize": 12,
+                      "fontWeight": "700",
+                      "letterSpacing": 1.1
+                    },
+                    {
+                      "type": "text",
+                      "id": "w2Ac8",
+                      "name": "feat1Title",
+                      "fill": "#000000",
+                      "content": "Typed handlers with\nzero endpoint boilerplate",
+                      "lineHeight": 0.98,
+                      "fontFamily": "Outfit",
+                      "fontSize": 40,
+                      "fontWeight": "900"
+                    },
+                    {
+                      "type": "text",
+                      "id": "iqMCZ",
+                      "name": "feat1Body",
+                      "fill": "#52525B",
+                      "content": "Define input and output once. Bunbase validates, routes, and executes consistently across every trigger.",
+                      "lineHeight": 1.45,
+                      "fontFamily": "Inter",
+                      "fontSize": 17,
+                      "fontWeight": "normal"
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "13cJ8",
+                  "name": "feat1Shot",
+                  "width": 560,
+                  "height": 315,
+                  "fill": "#111111",
+                  "cornerRadius": 20,
+                  "justifyContent": "center",
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "LwDhk",
+                      "name": "feat1ShotText",
+                      "fill": "#A1A1AA",
+                      "content": "Screenshot placeholder",
+                      "fontFamily": "Inter",
+                      "fontSize": 15,
+                      "fontWeight": "500"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "PMu4y",
+              "name": "Feature Block 2",
+              "width": "fill_container",
+              "gap": 28,
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "AZ0jN",
+                  "name": "feat2Shot",
+                  "width": 560,
+                  "height": 315,
+                  "fill": "#111111",
+                  "cornerRadius": 20,
+                  "justifyContent": "center",
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "nEZIj",
+                      "name": "feat2ShotText",
+                      "fill": "#A1A1AA",
+                      "content": "Screenshot placeholder",
+                      "fontFamily": "Inter",
+                      "fontSize": 15,
+                      "fontWeight": "500"
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "B8sSm",
+                  "name": "feat2Copy",
+                  "width": "fill_container",
+                  "layout": "vertical",
+                  "gap": 12,
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "0qiMT",
+                      "name": "feat2Kicker",
+                      "fill": "#71717A",
+                      "content": "TRIGGERS",
+                      "fontFamily": "Outfit",
+                      "fontSize": 12,
+                      "fontWeight": "700",
+                      "letterSpacing": 1.1
+                    },
+                    {
+                      "type": "text",
+                      "id": "TirJQ",
+                      "name": "feat2Title",
+                      "fill": "#000000",
+                      "content": "One action, many transports",
+                      "lineHeight": 0.98,
+                      "fontFamily": "Outfit",
+                      "fontSize": 40,
+                      "fontWeight": "900"
+                    },
+                    {
+                      "type": "text",
+                      "id": "mT7fv",
+                      "name": "feat2Body",
+                      "fill": "#52525B",
+                      "content": "Map APIs, cron jobs, events, and MCP tools to the same contract without duplicate logic.",
+                      "lineHeight": 1.45,
+                      "fontFamily": "Inter",
+                      "fontSize": 17,
+                      "fontWeight": "normal"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "pfNEt",
+              "name": "Feature Block 3",
+              "width": "fill_container",
+              "gap": 28,
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "PxQ7L",
+                  "name": "feat3Copy",
+                  "width": "fill_container",
+                  "layout": "vertical",
+                  "gap": 12,
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "b2Eqn",
+                      "name": "feat3Kicker",
+                      "fill": "#71717A",
+                      "content": "PRODUCTION OPS",
+                      "fontFamily": "Outfit",
+                      "fontSize": 12,
+                      "fontWeight": "700",
+                      "letterSpacing": 1.1
+                    },
+                    {
+                      "type": "text",
+                      "id": "0stjo",
+                      "name": "feat3Title",
+                      "fill": "#000000",
+                      "content": "Queue, scheduler, guards,\nand OpenAPI built in",
+                      "lineHeight": 0.98,
+                      "fontFamily": "Outfit",
+                      "fontSize": 40,
+                      "fontWeight": "900"
+                    },
+                    {
+                      "type": "text",
+                      "id": "xjuTj",
+                      "name": "feat3Body",
+                      "fill": "#52525B",
+                      "content": "Ship with first-party capabilities instead of assembling fragile runtime bundles.",
+                      "lineHeight": 1.45,
+                      "fontFamily": "Inter",
+                      "fontSize": 17,
+                      "fontWeight": "normal"
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "hE9h4",
+                  "name": "feat3Shot",
+                  "width": 560,
+                  "height": 315,
+                  "fill": "#111111",
+                  "cornerRadius": 20,
+                  "justifyContent": "center",
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "2C9Wo",
+                      "name": "feat3ShotText",
+                      "fill": "#A1A1AA",
+                      "content": "Screenshot placeholder",
+                      "fontFamily": "Inter",
+                      "fontSize": 15,
+                      "fontWeight": "500"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "frame",
+          "id": "dCRsT",
+          "name": "Secondary Features",
+          "width": "fill_container",
+          "fill": "#111111",
+          "layout": "vertical",
+          "gap": 32,
+          "padding": [
+            88,
+            96
+          ],
+          "children": [
+            {
+              "type": "text",
+              "id": "4h9FC",
+              "name": "secEyebrow",
+              "fill": "#A1A1AA",
+              "content": "WHY TEAMS CHOOSE BUNBASE",
+              "fontFamily": "Outfit",
+              "fontSize": 13,
+              "fontWeight": "700",
+              "letterSpacing": 1.3
+            },
+            {
+              "type": "text",
+              "id": "d6J4F",
+              "name": "secTitle",
+              "fill": "#FFFFFF",
+              "content": "Fast to start. Hard to outgrow.",
+              "lineHeight": 0.96,
+              "fontFamily": "Outfit",
+              "fontSize": 50,
+              "fontWeight": "900",
+              "letterSpacing": -1.6
+            },
+            {
+              "type": "frame",
+              "id": "hZGLh",
+              "name": "secGrid",
+              "width": "fill_container",
+              "gap": 18,
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "qRMmA",
+                  "name": "secCol1",
+                  "width": "fill_container",
+                  "layout": "vertical",
+                  "gap": 18,
+                  "children": [
+                    {
+                      "type": "frame",
+                      "id": "Vqrpq",
+                      "name": "secCard1",
+                      "width": "fill_container",
+                      "height": 152,
+                      "fill": "#18181B",
+                      "cornerRadius": 16,
+                      "layout": "vertical",
+                      "padding": 20,
+                      "justifyContent": "center",
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "K763Y",
+                          "name": "secCard1Text",
+                          "fill": "#FFFFFF",
+                          "content": "Schema-first\ncontracts",
+                          "lineHeight": 0.98,
+                          "fontFamily": "Outfit",
+                          "fontSize": 30,
+                          "fontWeight": "900"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "frame",
+                      "id": "IGCVj",
+                      "name": "secCard2",
+                      "width": "fill_container",
+                      "height": 152,
+                      "fill": "#18181B",
+                      "cornerRadius": 16,
+                      "layout": "vertical",
+                      "padding": 20,
+                      "justifyContent": "center",
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "kKAPY",
+                          "name": "secCard2Text",
+                          "fill": "#FFFFFF",
+                          "content": "Built-in\nOpenAPI",
+                          "lineHeight": 0.98,
+                          "fontFamily": "Outfit",
+                          "fontSize": 30,
+                          "fontWeight": "900"
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "KNNxG",
+                  "name": "secCol2",
+                  "width": "fill_container",
+                  "layout": "vertical",
+                  "gap": 18,
+                  "children": [
+                    {
+                      "type": "frame",
+                      "id": "yeQrC",
+                      "name": "secCard3",
+                      "width": "fill_container",
+                      "height": 152,
+                      "fill": "#18181B",
+                      "cornerRadius": 16,
+                      "layout": "vertical",
+                      "padding": 20,
+                      "justifyContent": "center",
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "FYZeu",
+                          "name": "secCard3Text",
+                          "fill": "#FFFFFF",
+                          "content": "Realtime\ntransport",
+                          "lineHeight": 0.98,
+                          "fontFamily": "Outfit",
+                          "fontSize": 30,
+                          "fontWeight": "900"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "frame",
+                      "id": "M4ycV",
+                      "name": "secCard4",
+                      "width": "fill_container",
+                      "height": 152,
+                      "fill": "#18181B",
+                      "cornerRadius": 16,
+                      "layout": "vertical",
+                      "padding": 20,
+                      "justifyContent": "center",
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "nKRrG",
+                          "name": "secCard4Text",
+                          "fill": "#FFFFFF",
+                          "content": "Queue +\nScheduler",
+                          "lineHeight": 0.98,
+                          "fontFamily": "Outfit",
+                          "fontSize": 30,
+                          "fontWeight": "900"
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "frame",
+          "id": "BIvSn",
+          "name": "Social Proof",
+          "width": "fill_container",
+          "fill": "#F4F4F5",
+          "layout": "vertical",
+          "gap": 32,
+          "padding": [
+            88,
+            96
+          ],
+          "children": [
+            {
+              "type": "text",
+              "id": "CXGVS",
+              "name": "socialEyebrow",
+              "fill": "#52525B",
+              "content": "SOCIAL PROOF",
+              "fontFamily": "Outfit",
+              "fontSize": 13,
+              "fontWeight": "700",
+              "letterSpacing": 1.3
+            },
+            {
+              "type": "text",
+              "id": "mYGxU",
+              "name": "socialTitle",
+              "fill": "#000000",
+              "content": "Trusted by teams building\nBun-native products.",
+              "lineHeight": 0.95,
+              "fontFamily": "Outfit",
+              "fontSize": 52,
+              "fontWeight": "900",
+              "letterSpacing": -1.8
+            },
+            {
+              "type": "frame",
+              "id": "IRHi1",
+              "name": "statsRow",
+              "width": "fill_container",
+              "gap": 18,
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "YtclR",
+                  "name": "stat1",
+                  "width": "fill_container",
+                  "height": 140,
+                  "fill": "#FFFFFF",
+                  "cornerRadius": 16,
+                  "layout": "vertical",
+                  "padding": 18,
+                  "justifyContent": "center",
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "DJQ7e",
+                      "name": "stat1Text",
+                      "fill": "#111111",
+                      "content": "120+\nprojects launched",
+                      "lineHeight": 0.96,
+                      "fontFamily": "Outfit",
+                      "fontSize": 34,
+                      "fontWeight": "900"
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "p46Ht",
+                  "name": "stat2",
+                  "width": "fill_container",
+                  "height": 140,
+                  "fill": "#FFFFFF",
+                  "cornerRadius": 16,
+                  "layout": "vertical",
+                  "padding": 18,
+                  "justifyContent": "center",
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "hsHiX",
+                      "name": "stat2Text",
+                      "fill": "#111111",
+                      "content": "99.9%\nruntime uptime",
+                      "lineHeight": 0.96,
+                      "fontFamily": "Outfit",
+                      "fontSize": 34,
+                      "fontWeight": "900"
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "pGaUe",
+                  "name": "stat3",
+                  "width": "fill_container",
+                  "height": 140,
+                  "fill": "#FFFFFF",
+                  "cornerRadius": 16,
+                  "layout": "vertical",
+                  "padding": 18,
+                  "justifyContent": "center",
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "po3Br",
+                      "name": "stat3Text",
+                      "fill": "#111111",
+                      "content": "3.6x\nfaster shipping",
+                      "lineHeight": 0.96,
+                      "fontFamily": "Outfit",
+                      "fontSize": 34,
+                      "fontWeight": "900"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "vpaBB",
+              "name": "quoteCard",
+              "width": "fill_container",
+              "height": 188,
+              "fill": "#111111",
+              "cornerRadius": 16,
+              "layout": "vertical",
+              "padding": 24,
+              "justifyContent": "center",
+              "children": [
+                {
+                  "type": "text",
+                  "id": "Gqnix",
+                  "name": "quoteText",
+                  "fill": "#FFFFFF",
+                  "content": "\"Bunbase gave us a single backend language across API,\njobs, and realtime. We moved from prototype to\nproduction in days, not weeks.\"\n\n— Engineering Lead, Velocity Labs",
+                  "lineHeight": 1.4,
+                  "fontFamily": "Inter",
+                  "fontSize": 18,
+                  "fontWeight": "normal"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "frame",
+          "id": "pYeho",
+          "name": "Pricing",
+          "width": "fill_container",
+          "fill": "#FFFFFF",
+          "layout": "vertical",
+          "gap": 32,
+          "padding": 96,
+          "children": [
+            {
+              "type": "text",
+              "id": "TsEqg",
+              "name": "priceEyebrow",
+              "fill": "#52525B",
+              "content": "PRICING",
+              "fontFamily": "Outfit",
+              "fontSize": 13,
+              "fontWeight": "700",
+              "letterSpacing": 1.3
+            },
+            {
+              "type": "text",
+              "id": "J3DKt",
+              "name": "priceTitle",
+              "fill": "#000000",
+              "content": "Simple pricing for\nserious product teams.",
+              "lineHeight": 0.95,
+              "fontFamily": "Outfit",
+              "fontSize": 54,
+              "fontWeight": "900",
+              "letterSpacing": -1.8
+            },
+            {
+              "type": "frame",
+              "id": "qEr4b",
+              "name": "priceRow",
+              "width": "fill_container",
+              "gap": 18,
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "BjaBh",
+                  "name": "card1",
+                  "width": "fill_container",
+                  "height": 430,
+                  "fill": "#F4F4F5",
+                  "cornerRadius": 18,
+                  "layout": "vertical",
+                  "gap": 16,
+                  "padding": 24,
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "2kRpr",
+                      "name": "card1Name",
+                      "fill": "#000000",
+                      "content": "Starter",
+                      "fontFamily": "Outfit",
+                      "fontSize": 24,
+                      "fontWeight": "800"
+                    },
+                    {
+                      "type": "text",
+                      "id": "4xJ47",
+                      "name": "card1Price",
+                      "fill": "#000000",
+                      "content": "$0/mo",
+                      "lineHeight": 0.9,
+                      "fontFamily": "Outfit",
+                      "fontSize": 52,
+                      "fontWeight": "900"
+                    },
+                    {
+                      "type": "text",
+                      "id": "LRWeJ",
+                      "name": "card1Features",
+                      "fill": "#3F3F46",
+                      "content": "• 3 services\n• API + cron triggers\n• OpenAPI generation\n• Community support",
+                      "lineHeight": 1.5,
+                      "fontFamily": "Inter",
+                      "fontSize": 16,
+                      "fontWeight": "normal"
+                    },
+                    {
+                      "type": "frame",
+                      "id": "Eg5w7",
+                      "name": "card1Btn",
+                      "width": "fill_container",
+                      "fill": "#FFFFFF",
+                      "cornerRadius": 999,
+                      "padding": [
+                        12,
+                        16
+                      ],
+                      "justifyContent": "center",
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "3uwfs",
+                          "name": "card1BtnText",
+                          "fill": "#111111",
+                          "content": "Get started",
+                          "fontFamily": "Outfit",
+                          "fontSize": 14,
+                          "fontWeight": "700"
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "9jKaD",
+                  "name": "card2",
+                  "width": "fill_container",
+                  "height": 430,
+                  "fill": "#111111",
+                  "cornerRadius": 18,
+                  "layout": "vertical",
+                  "gap": 16,
+                  "padding": 24,
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "WtpY0",
+                      "name": "card2Name",
+                      "fill": "#FFFFFF",
+                      "content": "Scale",
+                      "fontFamily": "Outfit",
+                      "fontSize": 24,
+                      "fontWeight": "800"
+                    },
+                    {
+                      "type": "text",
+                      "id": "9V2AJ",
+                      "name": "card2Price",
+                      "fill": "#FFFFFF",
+                      "content": "$79/mo",
+                      "lineHeight": 0.9,
+                      "fontFamily": "Outfit",
+                      "fontSize": 52,
+                      "fontWeight": "900"
+                    },
+                    {
+                      "type": "text",
+                      "id": "XIFBa",
+                      "name": "card2Features",
+                      "fill": "#D4D4D8",
+                      "content": "• Unlimited services\n• API + cron + event + realtime\n• Queue + scheduler\n• Email support",
+                      "lineHeight": 1.5,
+                      "fontFamily": "Inter",
+                      "fontSize": 16,
+                      "fontWeight": "normal"
+                    },
+                    {
+                      "type": "frame",
+                      "id": "nwu16",
+                      "name": "card2Btn",
+                      "width": "fill_container",
+                      "fill": "#FFFFFF",
+                      "cornerRadius": 999,
+                      "padding": [
+                        12,
+                        16
+                      ],
+                      "justifyContent": "center",
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "nXsaX",
+                          "name": "card2BtnText",
+                          "fill": "#111111",
+                          "content": "Start 14-day trial",
+                          "fontFamily": "Outfit",
+                          "fontSize": 14,
+                          "fontWeight": "700"
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "6Ru54",
+                  "name": "card3",
+                  "width": "fill_container",
+                  "height": 430,
+                  "fill": "#F4F4F5",
+                  "cornerRadius": 18,
+                  "layout": "vertical",
+                  "gap": 16,
+                  "padding": 24,
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "LImnE",
+                      "name": "card3Name",
+                      "fill": "#000000",
+                      "content": "Enterprise",
+                      "fontFamily": "Outfit",
+                      "fontSize": 24,
+                      "fontWeight": "800"
+                    },
+                    {
+                      "type": "text",
+                      "id": "GrsRV",
+                      "name": "card3Price",
+                      "fill": "#000000",
+                      "content": "Custom",
+                      "lineHeight": 0.9,
+                      "fontFamily": "Outfit",
+                      "fontSize": 52,
+                      "fontWeight": "900"
+                    },
+                    {
+                      "type": "text",
+                      "id": "yMI1Q",
+                      "name": "card3Features",
+                      "fill": "#3F3F46",
+                      "content": "• SSO + IAM hardening\n• Dedicated Slack channel\n• Migration support\n• SLA + onboarding",
+                      "lineHeight": 1.5,
+                      "fontFamily": "Inter",
+                      "fontSize": 16,
+                      "fontWeight": "normal"
+                    },
+                    {
+                      "type": "frame",
+                      "id": "pv2K0",
+                      "name": "card3Btn",
+                      "width": "fill_container",
+                      "fill": "#FFFFFF",
+                      "cornerRadius": 999,
+                      "padding": [
+                        12,
+                        16
+                      ],
+                      "justifyContent": "center",
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "DTyqA",
+                          "name": "card3BtnText",
+                          "fill": "#111111",
+                          "content": "Talk to sales",
+                          "fontFamily": "Outfit",
+                          "fontSize": 14,
+                          "fontWeight": "700"
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "text",
+              "id": "X6KRk",
+              "name": "priceNote",
+              "fill": "#71717A",
+              "content": "All plans include typed action runtime and OpenAPI export.",
+              "fontFamily": "Inter",
+              "fontSize": 15,
+              "fontWeight": "500"
+            }
+          ]
+        },
+        {
+          "type": "frame",
+          "id": "jYrq8",
+          "name": "FAQ",
+          "width": "fill_container",
+          "fill": "#F4F4F5",
+          "layout": "vertical",
+          "gap": 24,
+          "padding": [
+            88,
+            96
+          ],
+          "children": [
+            {
+              "type": "text",
+              "id": "sF3zM",
+              "name": "faqEyebrow",
+              "fill": "#52525B",
+              "content": "FAQ",
+              "fontFamily": "Outfit",
+              "fontSize": 13,
+              "fontWeight": "700",
+              "letterSpacing": 1.3
+            },
+            {
+              "type": "text",
+              "id": "uzz5u",
+              "name": "faqTitle",
+              "fill": "#000000",
+              "content": "Questions teams ask\nbefore switching.",
+              "lineHeight": 0.96,
+              "fontFamily": "Outfit",
+              "fontSize": 50,
+              "fontWeight": "900",
+              "letterSpacing": -1.6
+            },
+            {
+              "type": "frame",
+              "id": "TmrNI",
+              "name": "faqList",
+              "width": "fill_container",
+              "layout": "vertical",
+              "gap": 12,
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "yOHk6",
+                  "name": "faq1",
+                  "width": "fill_container",
+                  "fill": "#FFFFFF",
+                  "cornerRadius": 14,
+                  "layout": "vertical",
+                  "gap": 10,
+                  "padding": 20,
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "8TKnu",
+                      "name": "faq1Q",
+                      "fill": "#000000",
+                      "content": "Can I migrate an existing Bun server incrementally?",
+                      "fontFamily": "Outfit",
+                      "fontSize": 24,
+                      "fontWeight": "800"
+                    },
+                    {
+                      "type": "text",
+                      "id": "2mG1d",
+                      "name": "faq1A",
+                      "fill": "#52525B",
+                      "content": "Yes. Teams usually start by moving one action domain at a time while keeping existing routes in place.",
+                      "lineHeight": 1.5,
+                      "fontFamily": "Inter",
+                      "fontSize": 16,
+                      "fontWeight": "normal"
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "oQ999",
+                  "name": "faq2",
+                  "width": "fill_container",
+                  "fill": "#FFFFFF",
+                  "cornerRadius": 14,
+                  "layout": "vertical",
+                  "gap": 10,
+                  "padding": 20,
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "yjngk",
+                      "name": "faq2Q",
+                      "fill": "#000000",
+                      "content": "How does type safety work across backend and React?",
+                      "fontFamily": "Outfit",
+                      "fontSize": 24,
+                      "fontWeight": "800"
+                    },
+                    {
+                      "type": "text",
+                      "id": "aV3p3",
+                      "name": "faq2A",
+                      "fill": "#52525B",
+                      "content": "Bunbase generates contract metadata and the React package consumes typed schema outputs for query and mutation calls.",
+                      "lineHeight": 1.5,
+                      "fontFamily": "Inter",
+                      "fontSize": 16,
+                      "fontWeight": "normal"
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "IrXd0",
+                  "name": "faq3",
+                  "width": "fill_container",
+                  "fill": "#FFFFFF",
+                  "cornerRadius": 14,
+                  "layout": "vertical",
+                  "gap": 10,
+                  "padding": 20,
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "YyUbL",
+                      "name": "faq3Q",
+                      "fill": "#000000",
+                      "content": "Do I need extra services for queue and scheduler?",
+                      "fontFamily": "Outfit",
+                      "fontSize": 24,
+                      "fontWeight": "800"
+                    },
+                    {
+                      "type": "text",
+                      "id": "6o4ZP",
+                      "name": "faq3A",
+                      "fill": "#52525B",
+                      "content": "No. Core queue and scheduling capabilities are included, with optional Redis enhancements when needed.",
+                      "lineHeight": 1.5,
+                      "fontFamily": "Inter",
+                      "fontSize": 16,
+                      "fontWeight": "normal"
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "sFXoz",
+                  "name": "faq4",
+                  "width": "fill_container",
+                  "fill": "#FFFFFF",
+                  "cornerRadius": 14,
+                  "layout": "vertical",
+                  "gap": 10,
+                  "padding": 20,
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "vC7kW",
+                      "name": "faq4Q",
+                      "fill": "#000000",
+                      "content": "Can Bunbase serve OpenAPI and docs in local dev?",
+                      "fontFamily": "Outfit",
+                      "fontSize": 24,
+                      "fontWeight": "800"
+                    },
+                    {
+                      "type": "text",
+                      "id": "upH9Z",
+                      "name": "faq4A",
+                      "fill": "#52525B",
+                      "content": "Yes. Enable OpenAPI in config and Bunbase serves spec and docs routes from the runtime server.",
+                      "lineHeight": 1.5,
+                      "fontFamily": "Inter",
+                      "fontSize": 16,
+                      "fontWeight": "normal"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "frame",
+          "id": "16eyL",
+          "name": "Final CTA",
+          "width": "fill_container",
+          "fill": "#111111",
+          "layout": "vertical",
+          "gap": 24,
+          "padding": 96,
+          "children": [
+            {
+              "type": "text",
+              "id": "jeKi7",
+              "name": "finalEyebrow",
+              "fill": "#A1A1AA",
+              "content": "READY TO BUILD",
+              "fontFamily": "Outfit",
+              "fontSize": 13,
+              "fontWeight": "700",
+              "letterSpacing": 1.3
+            },
+            {
+              "type": "text",
+              "id": "KWDaJ",
+              "name": "finalTitle",
+              "fill": "#FFFFFF",
+              "content": "Design your backend once.\nShip it everywhere.",
+              "lineHeight": 0.92,
+              "fontFamily": "Outfit",
+              "fontSize": 64,
+              "fontWeight": "900",
+              "letterSpacing": -2.4
+            },
+            {
+              "type": "text",
+              "id": "OYvkb",
+              "name": "finalBody",
+              "fill": "#D4D4D8",
+              "content": "Install bunbase, define your first action, and watch APIs, jobs, and events come online in one runtime model.",
+              "lineHeight": 1.45,
+              "fontFamily": "Inter",
+              "fontSize": 20,
+              "fontWeight": "normal"
+            },
+            {
+              "type": "frame",
+              "id": "DHIhB",
+              "name": "finalRow",
+              "gap": 14,
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "FMVsq",
+                  "name": "finalBtnA",
+                  "fill": "#FFFFFF",
+                  "cornerRadius": 999,
+                  "padding": [
+                    14,
+                    24
+                  ],
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "681Ap",
+                      "name": "finalBtnAText",
+                      "fill": "#111111",
+                      "content": "Start with Bunbase",
+                      "fontFamily": "Outfit",
+                      "fontSize": 14,
+                      "fontWeight": "700"
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "cd1Me",
+                  "name": "finalBtnB",
+                  "fill": "#111111",
+                  "cornerRadius": 999,
+                  "padding": [
+                    14,
+                    24
+                  ],
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "text",
+                      "id": "KxG9T",
+                      "name": "finalBtnBText",
+                      "fill": "#FFFFFF",
+                      "content": "View GitHub",
+                      "fontFamily": "Outfit",
+                      "fontSize": 14,
+                      "fontWeight": "700"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "frame",
+          "id": "nRQ23",
+          "name": "Footer",
+          "width": "fill_container",
+          "fill": "#000000",
+          "layout": "vertical",
+          "gap": 32,
+          "padding": [
+            72,
+            96
+          ],
+          "children": [
+            {
+              "type": "frame",
+              "id": "S557b",
+              "name": "footerTop",
+              "width": "fill_container",
+              "justifyContent": "space_between",
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "text",
+                  "id": "gn8ax",
+                  "name": "footerBrand",
+                  "fill": "#FFFFFF",
+                  "content": "bunbase\nType-safe backend framework for Bun",
+                  "lineHeight": 1.15,
+                  "fontFamily": "Outfit",
+                  "fontSize": 28,
+                  "fontWeight": "900"
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "c9XNI",
+              "name": "footerCols",
+              "width": "fill_container",
+              "gap": 80,
+              "children": [
+                {
+                  "type": "text",
+                  "id": "tfEuM",
+                  "name": "footerLinks1",
+                  "fill": "#A1A1AA",
+                  "content": "Product\nFeatures\nPricing\nDocs",
+                  "lineHeight": 1.8,
+                  "fontFamily": "Inter",
+                  "fontSize": 15,
+                  "fontWeight": "normal"
+                },
+                {
+                  "type": "text",
+                  "id": "8iP7s",
+                  "name": "footerLinks2",
+                  "fill": "#A1A1AA",
+                  "content": "Resources\nExamples\nGitHub\nReleases",
+                  "lineHeight": 1.8,
+                  "fontFamily": "Inter",
+                  "fontSize": 15,
+                  "fontWeight": "normal"
+                },
+                {
+                  "type": "text",
+                  "id": "XiaAo",
+                  "name": "footerLinks3",
+                  "fill": "#A1A1AA",
+                  "content": "Company\nAbout\nRoadmap\nContact",
+                  "lineHeight": 1.8,
+                  "fontFamily": "Inter",
+                  "fontSize": 15,
+                  "fontWeight": "normal"
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "pZIjg",
+              "name": "footerArt",
+              "width": "fill_container",
+              "height": 112,
+              "fill": "#111111",
+              "cornerRadius": 16,
+              "justifyContent": "center",
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "text",
+                  "id": "w5cB3",
+                  "name": "footerArtText",
+                  "fill": "#FFFFFF",
+                  "content": "BUILD FAST  •  STAY TYPED",
+                  "fontFamily": "Outfit",
+                  "fontSize": 42,
+                  "fontWeight": "900",
+                  "letterSpacing": 1.2
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "y2beL",
+              "name": "footerBottom",
+              "width": "fill_container",
+              "padding": [
+                12,
+                0
+              ],
+              "justifyContent": "space_between",
+              "alignItems": "center",
+              "children": [
+                {
+                  "type": "text",
+                  "id": "IFult",
+                  "name": "footerCopy",
+                  "fill": "#71717A",
+                  "content": "© 2026 bunbase. All rights reserved.",
+                  "fontFamily": "Inter",
+                  "fontSize": 13,
+                  "fontWeight": "normal"
+                },
+                {
+                  "type": "text",
+                  "id": "0sa8s",
+                  "name": "footerLegal",
+                  "fill": "#71717A",
+                  "content": "Terms  •  Privacy  •  Security",
+                  "fontFamily": "Inter",
+                  "fontSize": 13,
+                  "fontWeight": "normal"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

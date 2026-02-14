@@ -1,4 +1,5 @@
-import type { Static, TSchema } from 'typebox'
+import { Value } from '@sinclair/typebox/value'
+import type { Static, TSchema } from '@sinclair/typebox'
 
 export interface ParsedUrl<
 	P extends TSchema = TSchema,
@@ -29,9 +30,16 @@ export function parsePathParams<P extends TSchema>(
 	}
 
 	if (paramsSchema) {
-		// Validate params against schema if provided
-		// For now, just return as-is since TypeBox validation would need runtime
-		return params as Static<P>
+		// Convert and validate params against schema
+		const schema = paramsSchema as TSchema
+		const converted = Value.Convert(schema, params)
+		if (!Value.Check(schema, converted)) {
+			const errors = [...Value.Errors(schema, converted)]
+			throw new Error(
+				`Invalid path parameters: ${errors.map((e) => `${e.path}: ${e.message}`).join(', ')}`,
+			)
+		}
+		return converted as Static<P>
 	}
 
 	return params
@@ -51,22 +59,14 @@ export function parseQueryParams<Q extends TSchema>(
 	}
 
 	if (querySchema) {
-		// Convert string values to appropriate types based on schema
-		// For now, simple conversion - could be enhanced
-		const converted: Record<string, any> = {}
-		for (const [key, value] of Object.entries(params)) {
-			if (value === '') continue
-			// Try to parse as number
-			const numValue = Number(value)
-			if (!Number.isNaN(numValue) && value !== '') {
-				converted[key] = numValue
-			} else if (value === 'true') {
-				converted[key] = true
-			} else if (value === 'false') {
-				converted[key] = false
-			} else {
-				converted[key] = value
-			}
+		// Convert and validate query params against schema
+		const schema = querySchema as TSchema
+		const converted = Value.Convert(schema, params)
+		if (!Value.Check(schema, converted)) {
+			const errors = [...Value.Errors(schema, converted)]
+			throw new Error(
+				`Invalid query parameters: ${errors.map((e) => `${e.path}: ${e.message}`).join(', ')}`,
+			)
 		}
 		return converted as Static<Q>
 	}

@@ -13,13 +13,18 @@ export const INIT_SQL = `-- Bunbase Initial Schema Migration
 CREATE TABLE IF NOT EXISTS users (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     email VARCHAR(255) UNIQUE NOT NULL,
+    username VARCHAR(255) UNIQUE,
+    phone VARCHAR(50) UNIQUE,
     name VARCHAR(255),
     password_hash TEXT NOT NULL,
+    role VARCHAR(100),
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     email_verified_at TIMESTAMPTZ
 );
 
 CREATE INDEX IF NOT EXISTS idx_users_email ON users(email);
+CREATE INDEX IF NOT EXISTS idx_users_username ON users(username);
+CREATE INDEX IF NOT EXISTS idx_users_phone ON users(phone);
 
 CREATE TABLE IF NOT EXISTS sessions (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),

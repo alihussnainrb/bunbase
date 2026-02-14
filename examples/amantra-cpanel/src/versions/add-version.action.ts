@@ -24,7 +24,7 @@ export const addVersion = action(
 		}),
 		triggers: [triggers.api('POST', '/')],
 	},
-	async ({ input, ctx }) => {
+	async (input, ctx) => {
 		const version = await ctx.db
 			.insert('product_versions', {
 				version_name: input.version_name,

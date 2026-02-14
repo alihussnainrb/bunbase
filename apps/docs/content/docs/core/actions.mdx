@@ -1,0 +1,45 @@
+---
+title: Actions
+description: Actions are the typed execution primitive in Bunbase.
+---
+
+An action describes:
+
+- Input schema
+- Output schema
+- Trigger bindings
+- Guards
+- Handler implementation
+
+```ts
+import { action, guards, t, triggers } from 'bunbase'
+
+export const createTask = action(
+  {
+    name: 'create-task',
+    description: 'Create a task',
+    input: t.Object({
+      title: t.String({ minLength: 1 }),
+    }),
+    output: t.Object({
+      id: t.String(),
+      title: t.String(),
+    }),
+    triggers: [triggers.api('POST', '/tasks')],
+    guards: [guards.authenticated()],
+  },
+  async (input, ctx) => {
+    const task = await ctx.db.from('tasks').insert({
+      title: input.title,
+    })
+
+    return { id: task.id, title: task.title }
+  },
+)
+```
+
+## Best practices
+
+- Always set a `description` so OpenAPI and MCP metadata stay useful.
+- Keep actions small and composable.
+- Validate external input with TypeBox schemas only.

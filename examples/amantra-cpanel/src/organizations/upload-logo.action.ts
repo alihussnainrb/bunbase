@@ -16,7 +16,7 @@ export const uploadLogo = action(
 		}),
 		triggers: [triggers.api('POST', '/:id/logo')],
 	},
-	async ({ input, ctx }) => {
+	async (input, ctx) => {
 		// Verify organization exists
 		const organization = await ctx.db
 			.from('organizations')

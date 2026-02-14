@@ -29,7 +29,7 @@ export const getLicense = action(
 		}),
 		triggers: [triggers.api('GET', '/:id')],
 	},
-	async ({ input, ctx }) => {
+	async (input, ctx) => {
 		const license = await ctx.db.from('licenses').eq('id', input.id).single()
 
 		if (!license) {

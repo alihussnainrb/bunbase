@@ -158,7 +158,7 @@ triggers.webhook('/webhooks/github', {
 triggers.event('user.created')
 
 // MCP Tool
-triggers.tool('search-users', 'Search for users by email or name')
+triggers.tool({ name: 'search-users', description: 'Search for users by email or name' })
 ```
 
 ### Guards
@@ -268,6 +268,7 @@ Check out the [`examples/basic`](./examples/basic) directory for a complete work
 
 ## Documentation
 
+- [Docs app](./apps/docs) - Fumadocs-based documentation site for guides and API reference
 - [Architecture Guide](./assets/agent-skills/bunbase-expert/references/architecture.md) - Deep dive into framework internals
 - [CLAUDE.md](./CLAUDE.md) - Comprehensive developer guide
 

@@ -20,6 +20,13 @@
 		"noUnusedParameters": false,
 		"noPropertyAccessFromIndexSignature": false
 	},
-	"include": ["packages/bunbase/src/**/*"],
-	"exclude": ["node_modules", "dist", "bunup.config.ts"]
+	"include": [
+		"packages/bunbase/src/**/*",
+		"benchmark/**/*",
+	],
+	"exclude": [
+		"node_modules",
+		"dist",
+		"bunup.config.ts"
+	]
 }

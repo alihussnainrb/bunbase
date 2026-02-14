@@ -758,6 +758,186 @@ DROP TABLE IF EXISTS organization_invitations;
 DROP TABLE IF EXISTS organization_memberships;
 DROP TABLE IF EXISTS organizations;`,
 	},
+
+	// ====================================================================
+	// Billing, Entitlements, Webhooks
+	// ====================================================================
+	{
+		id: '005',
+		name: 'billing_entitlements_webhooks',
+		up: `-- ====================================================================
+-- Billing, Entitlements, Webhooks
+-- ====================================================================
+
+-- Features
+CREATE TABLE IF NOT EXISTS features (
+	id TEXT PRIMARY KEY DEFAULT gen_random_uuid()::TEXT,
+	key VARCHAR(100) UNIQUE NOT NULL,
+	name VARCHAR(255) NOT NULL,
+	description TEXT,
+	created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_features_key ON features(key);
+
+-- Plans
+CREATE TABLE IF NOT EXISTS plans (
+	id TEXT PRIMARY KEY DEFAULT gen_random_uuid()::TEXT,
+	key VARCHAR(100) UNIQUE NOT NULL,
+	name VARCHAR(255) NOT NULL,
+	price_cents INT NOT NULL DEFAULT 0,
+	description TEXT,
+	created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_plans_key ON plans(key);
+
+-- Plan Features (many-to-many)
+CREATE TABLE IF NOT EXISTS plan_features (
+	plan_id TEXT NOT NULL REFERENCES plans(id) ON DELETE CASCADE,
+	feature_id TEXT NOT NULL REFERENCES features(id) ON DELETE CASCADE,
+	PRIMARY KEY (plan_id, feature_id)
+);
+
+-- Enhanced Subscriptions (user OR org)
+CREATE TABLE IF NOT EXISTS subscriptions (
+	id TEXT PRIMARY KEY DEFAULT gen_random_uuid()::TEXT,
+	user_id TEXT REFERENCES users(id) ON DELETE CASCADE,
+	org_id TEXT REFERENCES organizations(id) ON DELETE CASCADE,
+	plan_key VARCHAR(100) NOT NULL,
+	status VARCHAR(50) NOT NULL DEFAULT 'active',
+	current_period_end TIMESTAMPTZ NOT NULL,
+	trial_ends_at TIMESTAMPTZ,
+	cancel_at_period_end BOOLEAN DEFAULT false,
+	created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+	updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+	CHECK ((user_id IS NOT NULL AND org_id IS NULL) OR (user_id IS NULL AND org_id IS NOT NULL))
+);
+
+CREATE INDEX IF NOT EXISTS idx_subscriptions_user ON subscriptions(user_id);
+CREATE INDEX IF NOT EXISTS idx_subscriptions_org ON subscriptions(org_id);
+CREATE INDEX IF NOT EXISTS idx_subscriptions_status ON subscriptions(status);
+CREATE INDEX IF NOT EXISTS idx_subscriptions_plan ON subscriptions(plan_key);
+
+-- Subscription updated_at trigger
+DROP TRIGGER IF EXISTS update_subscriptions_updated_at ON subscriptions;
+CREATE TRIGGER update_subscriptions_updated_at
+	BEFORE UPDATE ON subscriptions
+	FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
+-- Entitlement Overrides
+CREATE TABLE IF NOT EXISTS entitlement_overrides (
+	id TEXT PRIMARY KEY DEFAULT gen_random_uuid()::TEXT,
+	subject_type VARCHAR(20) NOT NULL CHECK (subject_type IN ('user', 'org')),
+	subject_id TEXT NOT NULL,
+	feature_key VARCHAR(100) NOT NULL,
+	override_type VARCHAR(20) NOT NULL CHECK (override_type IN ('grant', 'deny', 'limit')),
+	limit_value INT,
+	reason TEXT,
+	org_id TEXT REFERENCES organizations(id) ON DELETE CASCADE,
+	created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+	UNIQUE(subject_type, subject_id, feature_key, org_id)
+);
+
+CREATE INDEX IF NOT EXISTS idx_entitlement_overrides_subject ON entitlement_overrides(subject_type, subject_id);
+CREATE INDEX IF NOT EXISTS idx_entitlement_overrides_feature ON entitlement_overrides(feature_key);
+CREATE INDEX IF NOT EXISTS idx_entitlement_overrides_org ON entitlement_overrides(org_id);
+
+-- Webhooks
+CREATE TABLE IF NOT EXISTS webhooks (
+	id TEXT PRIMARY KEY DEFAULT gen_random_uuid()::TEXT,
+	org_id TEXT REFERENCES organizations(id) ON DELETE CASCADE,
+	user_id TEXT REFERENCES users(id) ON DELETE CASCADE,
+	url TEXT NOT NULL,
+	events JSONB NOT NULL DEFAULT '[]',
+	secret TEXT NOT NULL,
+	enabled BOOLEAN NOT NULL DEFAULT true,
+	created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+	updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+	CHECK ((org_id IS NOT NULL AND user_id IS NULL) OR (org_id IS NULL AND user_id IS NOT NULL))
+);
+
+CREATE INDEX IF NOT EXISTS idx_webhooks_org ON webhooks(org_id);
+CREATE INDEX IF NOT EXISTS idx_webhooks_user ON webhooks(user_id);
+CREATE INDEX IF NOT EXISTS idx_webhooks_enabled ON webhooks(enabled);
+CREATE INDEX IF NOT EXISTS idx_webhooks_events ON webhooks USING GIN(events);
+
+-- Webhook updated_at trigger
+DROP TRIGGER IF EXISTS update_webhooks_updated_at ON webhooks;
+CREATE TRIGGER update_webhooks_updated_at
+	BEFORE UPDATE ON webhooks
+	FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
+-- Webhook Events
+CREATE TABLE IF NOT EXISTS webhook_events (
+	id TEXT PRIMARY KEY DEFAULT gen_random_uuid()::TEXT,
+	webhook_id TEXT NOT NULL REFERENCES webhooks(id) ON DELETE CASCADE,
+	event_name VARCHAR(100) NOT NULL,
+	payload JSONB NOT NULL,
+	org_id TEXT REFERENCES organizations(id) ON DELETE CASCADE,
+	user_id TEXT REFERENCES users(id) ON DELETE CASCADE,
+	status VARCHAR(50) NOT NULL DEFAULT 'pending',
+	attempts INT NOT NULL DEFAULT 0,
+	response_code INT,
+	response_body TEXT,
+	error TEXT,
+	created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+	last_attempt_at TIMESTAMPTZ,
+	delivered_at TIMESTAMPTZ
+);
+
+CREATE INDEX IF NOT EXISTS idx_webhook_events_webhook ON webhook_events(webhook_id);
+CREATE INDEX IF NOT EXISTS idx_webhook_events_status ON webhook_events(status);
+CREATE INDEX IF NOT EXISTS idx_webhook_events_created ON webhook_events(created_at DESC);
+
+-- Seed default features
+INSERT INTO features (key, name, description) VALUES
+	('api:basic', 'Basic API Access', 'Access to basic API endpoints'),
+	('api:advanced', 'Advanced API Access', 'Access to advanced API features'),
+	('storage:10gb', 'Storage 10GB', 'Up to 10GB storage'),
+	('storage:100gb', 'Storage 100GB', 'Up to 100GB storage'),
+	('storage:unlimited', 'Unlimited Storage', 'Unlimited storage'),
+	('team:5', 'Team up to 5', 'Up to 5 team members'),
+	('team:25', 'Team up to 25', 'Up to 25 team members'),
+	('team:unlimited', 'Unlimited Team', 'Unlimited team members'),
+	('support:email', 'Email Support', 'Email support'),
+	('support:priority', 'Priority Support', '24/7 priority support')
+ON CONFLICT (key) DO NOTHING;
+
+-- Seed default plans
+INSERT INTO plans (key, name, price_cents, description) VALUES
+	('free', 'Free', 0, 'Basic features for individuals'),
+	('starter', 'Starter', 2900, 'For small teams getting started'),
+	('pro', 'Pro', 9900, 'For growing teams'),
+	('enterprise', 'Enterprise', 29900, 'For large organizations')
+ON CONFLICT (key) DO NOTHING;
+
+-- Link features to plans
+INSERT INTO plan_features (plan_id, feature_id)
+SELECT
+	pl.id,
+	f.id
+FROM plans pl
+CROSS JOIN features f
+WHERE
+	-- Free plan: basic API + 10GB storage + 5 members + email support
+	(pl.key = 'free' AND f.key IN ('api:basic', 'storage:10gb', 'team:5', 'support:email')) OR
+	-- Starter plan: advanced API + 100GB storage + 25 members + email support
+	(pl.key = 'starter' AND f.key IN ('api:advanced', 'storage:100gb', 'team:25', 'support:email')) OR
+	-- Pro plan: advanced API + unlimited storage + unlimited members + priority support
+	(pl.key = 'pro' AND f.key IN ('api:advanced', 'storage:unlimited', 'team:unlimited', 'support:priority')) OR
+	-- Enterprise plan: all features
+	(pl.key = 'enterprise')
+ON CONFLICT DO NOTHING;`,
+		down: `-- Rollback Billing, Entitlements, Webhooks
+DROP TABLE IF EXISTS webhook_events;
+DROP TABLE IF EXISTS webhooks;
+DROP TABLE IF EXISTS entitlement_overrides;
+DROP TABLE IF EXISTS subscriptions;
+DROP TABLE IF EXISTS plan_features;
+DROP TABLE IF EXISTS plans;
+DROP TABLE IF EXISTS features;`,
+	},
 ]
 
 /**

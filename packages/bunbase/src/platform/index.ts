@@ -20,6 +20,15 @@ export * from './orgs/index.ts'
 // RBAC (Role-Based Access Control)
 export * from './rbac/index.ts'
 
+// Billing & Subscriptions
+export * from './billing/index.ts'
+
+// Entitlements & Feature Flags
+export * from './entitlements/index.ts'
+
+// Webhooks & Event Delivery
+export * from './webhooks/index.ts'
+
 // Database migrations
 export * from './migrations.ts'
 

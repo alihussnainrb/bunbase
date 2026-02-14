@@ -9,7 +9,10 @@ export async function seedCommand(
 ): Promise<void> {
 	const config = await loadConfig()
 	const sql = createSQLPool({ url: config.database?.url })
-	const seedsDir = join(process.cwd(), 'seeds')
+	const seedsDir = join(
+		process.cwd(),
+		config.database?.seeds?.directory ?? 'bunbase/seeds',
+	)
 	const seeder = new Seeder(sql, seedsDir)
 
 	try {

@@ -39,7 +39,12 @@ export interface BunbaseConfig {
 		idleTimeout?: number
 		/** Migrations configuration */
 		migrations?: {
-			/** Directory containing migration SQL files (default: migrations) */
+			/** Directory containing migration SQL files (default: bunbase/migrations) */
+			directory?: string
+		}
+		/** Seeds configuration */
+		seeds?: {
+			/** Directory containing seed files (default: bunbase/seeds) */
 			directory?: string
 		}
 	}

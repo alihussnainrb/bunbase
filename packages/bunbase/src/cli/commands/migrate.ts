@@ -11,7 +11,7 @@ export async function migrateCommand(
 	const sql = createSQLPool({ url: config.database?.url })
 	const migrationsDir = join(
 		process.cwd(),
-		config.database?.migrations?.directory ?? 'migrations',
+		config.database?.migrations?.directory ?? 'bunbase/migrations',
 	)
 	const migrator = new Migrator(sql, migrationsDir)
 

@@ -324,11 +324,11 @@ export class MetricsCollector {
 	private exportDefaultMetrics(): string {
 		let output = ''
 
-		// Process uptime
+		// Bunbase uptime
 		const uptimeSeconds = Math.floor((Date.now() - this.startTime) / 1000)
-		output += '# HELP process_uptime_seconds Process uptime in seconds\n'
-		output += '# TYPE process_uptime_seconds gauge\n'
-		output += `process_uptime_seconds ${uptimeSeconds}\n\n`
+		output += '# HELP bunbase_uptime_seconds Bunbase server uptime in seconds\n'
+		output += '# TYPE bunbase_uptime_seconds gauge\n'
+		output += `bunbase_uptime_seconds ${uptimeSeconds}\n\n`
 
 		// Memory usage
 		const memUsage = process.memoryUsage()

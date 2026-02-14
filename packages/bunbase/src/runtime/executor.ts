@@ -14,6 +14,7 @@ import type { RunEntry } from '../persistence/types.ts'
 import type { WriteBuffer } from '../persistence/write-buffer.ts'
 import type { ChannelManager } from '../realtime/channel-manager.ts'
 import type { StorageAdapter } from '../storage/types.ts'
+import type { MetricsCollector } from '../observability/metrics.ts'
 import { ActionValidationError } from '../core/action.ts'
 import { GuardError } from '../core/guards/types.ts'
 import {
@@ -67,6 +68,44 @@ function extractValidationError(error: unknown): string | null {
 }
 
 /**
+ * Record action execution metrics
+ */
+function recordActionMetrics(
+	metrics: MetricsCollector | undefined,
+	actionName: string,
+	status: 'success' | 'error',
+	durationMs: number,
+	error?: Error,
+): void {
+	if (!metrics) return
+
+	// Increment action execution counter
+	metrics.incrementCounter(
+		'bunbase_action_executions_total',
+		'Total action executions',
+		{
+			labels: { action: actionName, status },
+		},
+	)
+
+	// Record action duration
+	metrics.observeHistogram(
+		'bunbase_action_duration_ms',
+		'Action execution duration in milliseconds',
+		durationMs,
+		{ labels: { action: actionName } },
+	)
+
+	// Increment error counter if failed
+	if (status === 'error' && error) {
+		const errorType = error.constructor.name
+		metrics.incrementCounter('bunbase_errors_total', 'Total errors by type', {
+			labels: { type: errorType, action: actionName },
+		})
+	}
+}
+
+/**
  * Executes a registered action through the full pipeline:
  *   1. Build action context
  *   2. Run guards (module guards first, then action guards)
@@ -92,6 +131,7 @@ export async function executeAction(
 		registry?: ActionRegistry
 		sessionManager?: SessionManager
 		config?: BunbaseConfig
+		metrics?: MetricsCollector
 		auth?: {
 			userId?: string
 			role?: string
@@ -265,6 +305,15 @@ export async function executeAction(
 				}
 				opts.writeBuffer.pushRun(runEntry)
 
+				// Record action metrics
+				const durationMs = Date.now() - startedAt
+				recordActionMetrics(
+					opts.metrics,
+					action.definition.config.name,
+					'success',
+					durationMs,
+				)
+
 				// Extract session actions from auth context
 				const sessionActions = (ctx.auth as any)._sessionActions as
 					| SessionAction[]
@@ -352,6 +401,16 @@ export async function executeAction(
 					}
 					opts.writeBuffer.pushRun(runEntry)
 
+					// Record action metrics
+					const durationMs = Date.now() - startedAt
+					recordActionMetrics(
+						opts.metrics,
+						action.definition.config.name,
+						'error',
+						durationMs,
+						lastError,
+					)
+
 					return {
 						success: false,
 						error: errorMessage,
@@ -368,6 +427,16 @@ export async function executeAction(
 		const errorMessage = finalError instanceof Error ? finalError.message : 'All retry attempts exhausted'
 		actionLogger.error(
 			`Action failed after ${maxAttempts} attempts: ${errorMessage}`,
+		)
+
+		// Record action metrics
+		const durationMs = Date.now() - startedAt
+		recordActionMetrics(
+			opts.metrics,
+			action.definition.config.name,
+			'error',
+			durationMs,
+			finalError instanceof Error ? finalError : undefined,
 		)
 
 		return {
@@ -400,6 +469,16 @@ export async function executeAction(
 			max_attempts: null,
 		}
 		opts.writeBuffer.pushRun(runEntry)
+
+		// Record action metrics
+		const durationMs = Date.now() - startedAt
+		recordActionMetrics(
+			opts.metrics,
+			action.definition.config.name,
+			'error',
+			durationMs,
+			wrappedError instanceof Error ? wrappedError : undefined,
+		)
 
 		return {
 			success: false,

@@ -17,6 +17,7 @@
     "format": "biome format --write"
   },
   "dependencies": {
+    "clsx": "^2.1.1",
     "fumadocs-core": "16.6.0",
     "fumadocs-mdx": "14.2.7",
     "fumadocs-openapi": "10.3.5",

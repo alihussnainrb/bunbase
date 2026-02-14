@@ -1,4 +1,120 @@
+@import url('https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Source+Sans+3:wght@300;400;500;600;700&display=swap');
 @import 'tailwindcss';
 @import 'fumadocs-ui/css/neutral.css';
 @import 'fumadocs-ui/css/preset.css';
 @import 'fumadocs-openapi/css/preset.css';
+
+@theme inline {
+  --font-display: 'Manrope', ui-sans-serif, system-ui, sans-serif;
+  --font-body: 'Source Sans 3', ui-sans-serif, system-ui, sans-serif;
+  --font-mono: ui-monospace, 'JetBrains Mono', 'SF Mono', monospace;
+}
+
+@layer base {
+  body {
+    font-family: var(--font-body);
+  }
+}
+
+@utility animate-float-slow {
+  animation: float 8s ease-in-out infinite alternate;
+}
+
+@utility animate-float-slower {
+  animation: float 12s ease-in-out infinite alternate;
+}
+
+@utility animate-beam-1 {
+  animation: beam-move-1 8s ease-in-out infinite;
+}
+
+@utility animate-beam-2 {
+  animation: beam-move-2 10s ease-in-out infinite;
+}
+
+@utility animate-beam-3 {
+  animation: beam-move-3 12s ease-in-out infinite;
+}
+
+@utility animate-beam-4 {
+  animation: beam-move-4 14s ease-in-out infinite;
+}
+
+@utility font-display {
+  font-family: var(--font-display);
+}
+
+@utility font-body {
+  font-family: var(--font-body);
+}
+
+@utility no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+  
+  &::-webkit-scrollbar {
+    display: none;
+  }
+}
+
+@keyframes float {
+  from {
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+  to {
+    transform: translate3d(52px, -26px, 0) scale(1.1);
+  }
+}
+
+@keyframes beam-move-1 {
+  0%, 100% {
+    transform: translate(0, 0);
+    opacity: 0.3;
+  }
+  50% {
+    transform: translate(100px, 150px);
+    opacity: 0.6;
+  }
+}
+
+@keyframes beam-move-2 {
+  0%, 100% {
+    transform: translate(0, 0);
+    opacity: 0.2;
+  }
+  50% {
+    transform: translate(-80px, 120px);
+    opacity: 0.5;
+  }
+}
+
+@keyframes beam-move-3 {
+  0%, 100% {
+    transform: translate(0, 0);
+    opacity: 0.25;
+  }
+  50% {
+    transform: translate(90px, 140px);
+    opacity: 0.55;
+  }
+}
+
+@keyframes beam-move-4 {
+  0%, 100% {
+    transform: translate(0, 0);
+    opacity: 0.15;
+  }
+  50% {
+    transform: translate(-70px, 110px);
+    opacity: 0.45;
+  }
+}
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}

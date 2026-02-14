@@ -709,36 +709,41 @@ Tools and techniques for identifying performance bottlenecks.
 
 ### Prometheus Metrics
 
-**Key Metrics to Monitor:**
+Bunbase exposes Prometheus-compatible metrics at `GET /_metrics` endpoint.
+
+**Available Metrics:**
 
 ```promql
-# Request throughput
-rate(bunbase_http_requests_total[5m])
+# HTTP Request Metrics
+rate(bunbase_http_requests_total{method="POST",path="/api/action",status="200"}[5m])  # Request throughput
+histogram_quantile(0.99, rate(bunbase_http_request_duration_ms_bucket[5m]))          # HTTP latency (p99)
 
-# Action latency (p99)
-histogram_quantile(0.99, rate(bunbase_action_duration_ms_bucket[5m]))
+# Action Execution Metrics
+rate(bunbase_action_executions_total{action="create-user",status="success"}[5m])     # Action throughput
+histogram_quantile(0.99, rate(bunbase_action_duration_ms_bucket{action="create-user"}[5m]))  # Action latency (p99)
 
-# Error rate
-rate(bunbase_errors_total[5m])
+# Error Metrics
+rate(bunbase_errors_total{type="ActionValidationError",action="create-user"}[5m])    # Error rate by type
+rate(bunbase_action_executions_total{status="error"}[5m])                             # Failed action rate
 
-# Database query latency
-histogram_quantile(0.99, rate(bunbase_db_query_duration_ms_bucket[5m]))
-
-# Queue depth
-bunbase_queue_depth{priority="normal"}
-
-# Active connections
-bunbase_active_connections
+# System Metrics
+bunbase_uptime_seconds                                                                 # Server uptime
+process_memory_bytes{type="heap_used"}                                                 # Memory usage
+rate(process_cpu_seconds_total[5m])                                                    # CPU usage
 ```
 
-**Grafana Dashboard Panels:**
-1. Request Rate (req/s) - Time series
-2. Latency Percentiles (p50, p95, p99) - Time series
-3. Error Rate (%) - Time series
-4. Database Pool Utilization (%) - Gauge
-5. Memory Usage (MB) - Time series
-6. CPU Usage (%) - Time series
-7. Queue Depth - Gauge
+**Note:** Database query metrics (`bunbase_db_queries_total`, `bunbase_db_query_duration_ms`) are not currently implemented due to Bun's SQL template architecture. For database monitoring, use PostgreSQL's built-in `pg_stat_statements` extension (see Database Profiling section below).
+
+**Recommended Grafana Dashboard Panels:**
+
+1. **HTTP Request Rate** - `rate(bunbase_http_requests_total[5m])` (Time series)
+2. **HTTP Latency Percentiles** - `histogram_quantile(0.99, rate(bunbase_http_request_duration_ms_bucket[5m]))` (Time series)
+3. **Action Success Rate** - `rate(bunbase_action_executions_total{status="success"}[5m])` (Time series)
+4. **Action Latency by Action** - `histogram_quantile(0.99, rate(bunbase_action_duration_ms_bucket[5m]))` (Time series, grouped by action)
+5. **Error Rate by Type** - `rate(bunbase_errors_total[5m])` (Time series, grouped by type)
+6. **Server Uptime** - `bunbase_uptime_seconds` (Gauge)
+7. **Memory Usage** - `process_memory_bytes{type="heap_used"}` (Time series)
+8. **CPU Usage** - `rate(process_cpu_seconds_total[5m])` (Time series)
 
 ### Database Profiling
 

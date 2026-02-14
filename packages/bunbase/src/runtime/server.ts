@@ -346,6 +346,7 @@ export class BunbaseServer {
 								channelManager: this.getChannelManager(),
 								config: this.config,
 								registry: this.registry,
+								metrics: this.metrics,
 							})
 
 							// Log event metadata if present
@@ -611,6 +612,7 @@ export class BunbaseServer {
 					auth: authContext,
 					response: { headers, setCookie },
 					registry: this.registry,
+					metrics: this.metrics,
 				})
 
 				// Apply session actions (set/clear cookies from ctx.auth)
@@ -810,7 +812,8 @@ export class BunbaseServer {
 			const patternPart = patternParts[i]
 			const pathPart = pathParts[i]
 
-			if (!patternPart || !pathPart) {
+			// Allow empty strings (from leading slash) but not undefined
+			if (patternPart === undefined || pathPart === undefined) {
 				return null
 			}
 

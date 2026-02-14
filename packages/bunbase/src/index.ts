@@ -49,6 +49,8 @@ export type {
 // Database client and types
 export { createDB } from './db/client.ts'
 // Database seeder
+export { seed } from './db/seed.ts'
+export type { SeedConfig, SeedContext, SeedDefinition } from './db/seed.ts'
 export { Seeder } from './db/seeder.ts'
 export type { SeedEntry, SeedFunction } from './db/seeder.ts'
 // IAM (Identity & Access Management)

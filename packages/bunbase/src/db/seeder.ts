@@ -3,6 +3,9 @@ import { mkdir, readdir, readFile, writeFile } from 'node:fs/promises'
 import { join } from 'node:path'
 import type { SQL } from 'bun'
 import { createDB } from './client.ts'
+import type { SeedDefinition } from './seed.ts'
+import { executeSeed } from './seed.ts'
+import { Logger } from '../logger/index.ts'
 
 export interface SeedEntry {
 	id: number
@@ -19,10 +22,15 @@ export interface SeedFunction {
  * Supports both .sql and .ts seed files.
  */
 export class Seeder {
+	private logger: Logger
+
 	constructor(
 		private readonly sql: SQL,
 		private readonly seedsDir: string,
-	) {}
+		logger?: Logger,
+	) {
+		this.logger = logger ?? new Logger({ level: 'info' })
+	}
 
 	/** Ensure the _seeds tracking table exists (optional - for tracking seed history) */
 	async ensureTable(): Promise<void> {
@@ -101,17 +109,34 @@ export class Seeder {
 				} else if (file.endsWith('.seed.ts')) {
 					// TypeScript seed file
 					const seedModule = await import(filePath)
-					const seedFn: SeedFunction =
-						seedModule.default || seedModule.seed
+					const exported = seedModule.default || seedModule.seed
 
-					if (typeof seedFn !== 'function') {
+					if (!exported) {
 						throw new Error(
-							`Seed file ${file} must export a default function or named 'seed' function`,
+							`Seed file ${file} must export a default or named 'seed' export`,
 						)
 					}
 
 					await this.sql.begin(async (tx: any) => {
-						await seedFn(tx)
+						// Check if it's a SeedDefinition (with config + handler)
+						if (
+							typeof exported === 'object' &&
+							'config' in exported &&
+							'handler' in exported
+						) {
+							// New seed() format with context
+							const definition = exported as SeedDefinition
+							await executeSeed(definition, tx, this.logger)
+						} else if (typeof exported === 'function') {
+							// Legacy function format
+							const seedFn = exported as SeedFunction
+							await seedFn(tx)
+						} else {
+							throw new Error(
+								`Seed file ${file} must export a function or seed() definition`,
+							)
+						}
+
 						if (trackSeeds) {
 							await tx`INSERT INTO _seeds (name) VALUES (${file})`
 						}
@@ -179,24 +204,24 @@ export class Seeder {
 
 		await writeFile(
 			filePath,
-			`import type { SQL } from 'bun'
-import { createDB } from 'bunbase'
+			`import { seed } from 'bunbase'
 
 /**
  * Seed: ${name}
  * Created at: ${new Date().toISOString()}
  */
-export default async function seed(sql: SQL) {
-	const db = createDB(sql)
-
+export default seed({
+	name: '${kebabName}',
+	description: '${name}',
+}, async ({ db, logger }) => {
 	// Example: Insert seed data
 	// await db.from('users').insert({
 	//   email: 'admin@example.com',
 	//   name: 'Admin User',
 	// }).exec()
 
-	console.log('Seeded: ${name}')
-}
+	logger.info('Seeded: ${name}')
+})
 `,
 		)
 		return fileName

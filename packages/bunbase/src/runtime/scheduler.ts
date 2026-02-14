@@ -222,24 +222,24 @@ export class Scheduler {
 								}
 							} catch (err) {
 								this.logger.error(
-									`Error executing cron action ${action.definition.config.name}:`,
+									`Error executing cron action ${action.registryKey}:`,
 									err,
 								)
 							}
 						})
 
 						// Store job reference for dynamic management
-						this.cronJobsByAction.set(action.definition.config.name, {
+						this.cronJobsByAction.set(action.registryKey, {
 							job,
 							trigger,
 						})
 						this.cronJobs.push(job)
 						this.logger.info(
-							`[Scheduler] Cron action: ${action.definition.config.name} (${trigger.schedule})`,
+							`[Scheduler] Cron action: ${action.registryKey} (${trigger.schedule})`,
 						)
 					} catch (err) {
 						this.logger.error(
-							`Failed to schedule cron action ${action.definition.config.name}:`,
+							`Failed to schedule cron action ${action.registryKey}:`,
 							err,
 						)
 					}

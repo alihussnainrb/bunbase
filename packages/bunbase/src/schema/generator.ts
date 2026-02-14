@@ -95,8 +95,8 @@ export function generateBunbaseSchema(registry: ActionRegistry): BunbaseSchema {
 				}
 			: undefined
 
-		actions[config.name] = {
-			name: config.name,
+		actions[action.registryKey] = {
+			name: action.registryKey,
 			description: config.description,
 			moduleName: action.moduleName ?? null,
 			input: {

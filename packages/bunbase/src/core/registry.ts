@@ -18,6 +18,8 @@ export interface RegisteredAction {
 	guards: GuardFn[]
 	/** All triggers with module apiPrefix applied */
 	triggers: TriggerConfig[]
+	/** Registry key (namespaced for module actions: "module.action", bare for standalone) */
+	registryKey: string
 }
 
 /**
@@ -49,6 +51,7 @@ export class ActionRegistry {
 			moduleName: null,
 			guards: unwrapGuards(definition.config.guards),
 			triggers: [...(definition.config.triggers ?? [])],
+			registryKey: name, // Same as name for standalone actions
 		})
 	}
 
@@ -110,6 +113,7 @@ export class ActionRegistry {
 				moduleName,
 				guards,
 				triggers,
+				registryKey: actionName, // Store the namespaced key
 			})
 		}
 	}

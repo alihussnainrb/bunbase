@@ -1,30 +1,22 @@
 /**
  * Platform Migrations
  * All database migrations for the Bunbase Platform authentication system
- *
- * Phases:
- * - Phase 1: Password Auth + DB Sessions + Email System
- * - Phase 2: OAuth Integration
- * - Phase 3: OTP + TOTP MFA
- * - Phase 4: Organizations + RBAC
  */
 
 export interface PlatformMigration {
 	id: string
 	name: string
-	phase: number
 	up: string
 	down: string
 }
 
 export const PLATFORM_MIGRATIONS: PlatformMigration[] = [
 	// ====================================================================
-	// PHASE 1: Password Auth + DB Sessions + Email System
+	// Password Auth + DB Sessions + Email System
 	// ====================================================================
 	{
 		id: '001',
-		name: 'phase1_auth_foundation',
-		phase: 1,
+		name: 'auth_foundation',
 		up: `-- ====================================================================
 -- Phase 1: Password Auth + DB Sessions + Email System
 -- ====================================================================
@@ -316,10 +308,9 @@ DROP FUNCTION IF EXISTS update_updated_at_column();`,
 	// ====================================================================
 	{
 		id: '002',
-		name: 'phase2_oauth',
-		phase: 2,
+		name: 'oauth',
 		up: `-- ====================================================================
--- Phase 2: OAuth Integration
+-- OAuth Integration
 -- ====================================================================
 
 -- OAuth Provider Accounts
@@ -389,10 +380,9 @@ DROP TABLE IF EXISTS oauth_accounts;`,
 	// ====================================================================
 	{
 		id: '003',
-		name: 'phase3_mfa',
-		phase: 3,
+		name: 'mfa',
 		up: `-- ====================================================================
--- Phase 3: OTP + TOTP MFA
+-- OTP + TOTP MFA
 -- ====================================================================
 
 -- OTP Codes
@@ -519,10 +509,9 @@ DROP TABLE IF EXISTS otp_codes;`,
 	// ====================================================================
 	{
 		id: '004',
-		name: 'phase4_orgs_rbac',
-		phase: 4,
+		name: 'orgs_rbac',
 		up: `-- ====================================================================
--- Phase 4: Organizations + RBAC
+-- Organizations + RBAC
 -- ====================================================================
 
 -- Organizations
@@ -772,24 +761,8 @@ DROP TABLE IF EXISTS organizations;`,
 ]
 
 /**
- * Get all migrations up to a specific phase
+ * Get combined SQL for all migrations
  */
-export function getMigrationsUpToPhase(phase: number): PlatformMigration[] {
-	return PLATFORM_MIGRATIONS.filter((m) => m.phase <= phase)
-}
-
-/**
- * Get migrations for a specific phase
- */
-export function getMigrationsForPhase(phase: number): PlatformMigration[] {
-	return PLATFORM_MIGRATIONS.filter((m) => m.phase === phase)
-}
-
-/**
- * Get combined SQL for all migrations up to a phase
- */
-export function getCombinedMigrationSQL(phase: number): string {
-	return getMigrationsUpToPhase(phase)
-		.map((m) => `-- ${m.name}\n${m.up}`)
-		.join('\n\n')
+export function getCombinedMigrationSQL(): string {
+	return PLATFORM_MIGRATIONS.map((m) => `-- ${m.name}\n${m.up}`).join('\n\n')
 }

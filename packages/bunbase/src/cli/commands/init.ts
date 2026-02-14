@@ -118,10 +118,10 @@ dist/
 `,
 	)
 
-	// Initial migration (Phase 1: Auth Foundation)
+	// Initial migration (all platform migrations combined)
 	writeFileSync(
-		join(projectDir, 'migrations', '001_phase1_auth_foundation.sql'),
-		getCombinedMigrationSQL(1),
+		join(projectDir, 'migrations', '001_platform_init.sql'),
+		getCombinedMigrationSQL(),
 	)
 
 	// Example standalone action

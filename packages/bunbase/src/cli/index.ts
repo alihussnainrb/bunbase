@@ -4,6 +4,7 @@ import { devCommand } from './commands/dev.ts'
 import { generateCommand } from './commands/generate.ts'
 import { initCommand } from './commands/init.ts'
 import { migrateCommand } from './commands/migrate.ts'
+import { seedCommand } from './commands/seed.ts'
 import { typegenCommand } from './commands/typegen.ts'
 
 const version = '0.0.9'
@@ -56,6 +57,42 @@ migrate
 	.description('Show migration status')
 	.action(async () => {
 		await migrateCommand('status')
+	})
+
+const seed = program
+	.command('seed [subcommand] [name]')
+	.description('Run database seeds')
+	.action(async (subcommand?: string, name?: string) => {
+		await seedCommand(subcommand, name)
+	})
+
+seed
+	.command('new <name>')
+	.description('Create a new seed file')
+	.option('--sql', 'Create SQL seed file (default: TypeScript)')
+	.action(async (name: string) => {
+		await seedCommand('new', name)
+	})
+
+seed
+	.command('status')
+	.description('Show seed status')
+	.action(async () => {
+		await seedCommand('status')
+	})
+
+seed
+	.command('clear')
+	.description('Clear seed tracking (does not undo data changes)')
+	.action(async () => {
+		await seedCommand('clear')
+	})
+
+seed
+	.command('fresh')
+	.description('Run all seeds in fresh mode (clear tracking first)')
+	.action(async () => {
+		await seedCommand('fresh')
 	})
 
 const typegen = program

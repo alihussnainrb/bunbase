@@ -31,6 +31,14 @@ export type {
 	// Credential types
 	PasswordCredential,
 
+	// OAuth types
+	OAuthProvider,
+	OAuthAccount,
+	OAuthProfile,
+	OAuthTokens,
+	OAuthProviderConfig,
+	OAuthStartOptions,
+
 	// Email types
 	EmailMessageStatus,
 

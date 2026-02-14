@@ -41,5 +41,8 @@
 		"packages/*",
 		"examples/*"
 	],
-	"type": "module"
+	"type": "module",
+	"dependencies": {
+		"arctic": "^3.7.0"
+	}
 }

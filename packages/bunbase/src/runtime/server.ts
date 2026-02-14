@@ -25,6 +25,10 @@ import { McpService } from './mcp-server.ts'
 import type { Queue } from './queue.ts'
 import { mapRequestToInput } from './request-mapper.ts'
 import { Scheduler } from './scheduler.ts'
+import {
+	mapOutputToResponse,
+	serializeCookie,
+} from '../utils/request-mapper.ts'
 
 export interface ServerServices {
 	db?: DatabaseClient
@@ -492,7 +496,41 @@ export class BunbaseServer {
 						}
 					}
 
-					return Response.json({ data: result.data }, { status, headers })
+					// Apply HTTP output field mapping from schema
+					const outputSchema = action.definition.config.output
+					let responseBody: Record<string, unknown> = (result.data ||
+						{}) as Record<string, unknown>
+
+					if (
+						outputSchema &&
+						typeof outputSchema === 'object' &&
+						'properties' in outputSchema
+					) {
+						const mapped = mapOutputToResponse(
+							result.data as Record<string, any>,
+							outputSchema as any,
+						)
+
+						// Apply mapped headers
+						for (const [key, value] of Object.entries(mapped.headers)) {
+							headers.set(key, value)
+						}
+
+						// Apply mapped cookies
+						for (const cookie of mapped.cookies) {
+							const cookieStr = serializeCookie(
+								cookie.name,
+								cookie.value,
+								cookie.options,
+							)
+							headers.append('Set-Cookie', cookieStr)
+						}
+
+						// Use mapped body (excludes fields routed to headers/cookies)
+						responseBody = mapped.body
+					}
+
+					return Response.json({ data: responseBody }, { status, headers })
 				}
 
 				// Error response

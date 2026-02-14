@@ -70,6 +70,13 @@ export interface BunbaseConfig {
 		sessionSecret: string
 		cookieName?: string
 		expiresIn?: number
+		/**
+		 * Set Secure flag on session cookies.
+		 * - true: cookies only sent over HTTPS (production)
+		 * - false: cookies sent over HTTP and HTTPS (dev/testing)
+		 * - undefined: auto-detect from request protocol (default)
+		 */
+		secureCookie?: boolean
 	}
 
 	/** Guards configuration */

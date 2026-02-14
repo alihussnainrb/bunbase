@@ -87,14 +87,15 @@ export class Queue {
 	): Promise<string> {
 		const maxAttempts = (opts?.maxRetries ?? 3) + 1
 		const priority = opts?.priority ?? 0
+		const runAt = opts?.runAt ?? new Date()
 		const id = crypto.randomUUID()
 
 		await this.sql`
-            INSERT INTO job_queue (id, name, data, priority, max_attempts, status)
-            VALUES (${id}, ${name}, ${JSON.stringify(data)}, ${priority}, ${maxAttempts}, 'pending')
+            INSERT INTO job_queue (id, name, data, priority, max_attempts, run_at, status)
+            VALUES (${id}, ${name}, ${JSON.stringify(data)}, ${priority}, ${maxAttempts}, ${runAt}, 'pending')
         `
 
-		this.logger.info(`[Queue] Added job ${name}`, { jobId: id })
+		this.logger.info(`[Queue] Added job ${name}`, { jobId: id, runAt })
 		return id
 	}
 

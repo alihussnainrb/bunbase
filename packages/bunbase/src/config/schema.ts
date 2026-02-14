@@ -235,17 +235,60 @@ const realtimeSchema = z
 	})
 	.optional()
 
-// Observability schema
+// Observability schema (Metrics, Logs, Traces)
 const observabilitySchema = z
 	.object({
 		enabled: z.boolean().optional(),
-		metricsPath: z
-			.string()
-			.startsWith('/', 'Metrics path must start with /')
+		metrics: z
+			.object({
+				enabled: z.boolean().optional(),
+				path: z
+					.string()
+					.startsWith('/', 'Metrics path must start with /')
+					.optional(),
+				includeDefaultMetrics: z.boolean().optional(),
+				latencyBuckets: z
+					.array(z.number().positive('Latency bucket must be positive'))
+					.optional(),
+			})
 			.optional(),
-		includeDefaultMetrics: z.boolean().optional(),
-		latencyBuckets: z
-			.array(z.number().positive('Latency bucket must be positive'))
+		logging: z
+			.object({
+				level: z
+					.enum(['debug', 'info', 'warn', 'error', 'critical'])
+					.optional(),
+				format: z.enum(['json', 'pretty', 'text']).optional(),
+				structured: z.boolean().optional(),
+				includeTraceContext: z.boolean().optional(),
+				otlp: z
+					.object({
+						enabled: z.boolean().optional(),
+						endpoint: z.string().url('OTLP endpoint must be valid URL').optional(),
+						headers: z.record(z.string()).optional(),
+						batchSize: z.number().int().positive().optional(),
+						exportIntervalMs: z.number().int().positive().optional(),
+					})
+					.optional(),
+			})
+			.optional(),
+		tracing: z
+			.object({
+				enabled: z.boolean().optional(),
+				serviceName: z.string().min(1).optional(),
+				samplingRate: z
+					.number()
+					.min(0, 'Sampling rate must be >= 0')
+					.max(1, 'Sampling rate must be <= 1')
+					.optional(),
+				otlp: z
+					.object({
+						endpoint: z.string().url('OTLP endpoint must be valid URL').optional(),
+						headers: z.record(z.string()).optional(),
+						batchSize: z.number().int().positive().optional(),
+						exportIntervalMs: z.number().int().positive().optional(),
+					})
+					.optional(),
+			})
 			.optional(),
 	})
 	.optional()

@@ -89,11 +89,14 @@ export class BunbaseServer {
 
 		// Initialize metrics if enabled
 		const isProduction = process.env.NODE_ENV === 'production'
-		const metricsEnabled = this.observabilityConfig?.enabled ?? isProduction
+		const observabilityEnabled = this.observabilityConfig?.enabled ?? isProduction
+		const metricsConfig = this.observabilityConfig?.metrics
+		const metricsEnabled = observabilityEnabled && (metricsConfig?.enabled ?? true)
+
 		if (metricsEnabled) {
 			this.metrics = getMetricsCollector({
-				latencyBuckets: this.observabilityConfig?.latencyBuckets,
-				includeDefaultMetrics: this.observabilityConfig?.includeDefaultMetrics,
+				latencyBuckets: metricsConfig?.latencyBuckets,
+				includeDefaultMetrics: metricsConfig?.includeDefaultMetrics,
 			})
 		}
 		if (config?.auth) {
@@ -916,7 +919,7 @@ export class BunbaseServer {
 			}
 
 			// Metrics endpoint
-			const metricsPath = this.observabilityConfig?.metricsPath ?? '/_metrics'
+			const metricsPath = this.observabilityConfig?.metrics?.path ?? '/_metrics'
 			if (pathname === metricsPath && method === 'GET') {
 				response = this.handleMetricsExport()
 				return this.addCorsHeaders(req, response)

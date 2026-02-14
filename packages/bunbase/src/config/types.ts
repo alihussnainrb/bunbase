@@ -201,16 +201,68 @@ export interface BunbaseConfig {
 		maxPayloadLength?: number
 	}
 
-	/** Observability configuration */
+	/** Observability configuration (Metrics, Logs, Traces) */
 	observability?: {
-		/** Enable metrics collection (default: true in production, false in dev) */
+		/** Enable observability collection (default: true in production, false in dev) */
 		enabled?: boolean
-		/** Metrics endpoint path (default: /_metrics) */
-		metricsPath?: string
-		/** Include default Node.js metrics (memory, CPU, etc.) (default: true) */
-		includeDefaultMetrics?: boolean
-		/** Histogram buckets for latency in milliseconds (default: [10, 50, 100, 250, 500, 1000, 2500, 5000, 10000]) */
-		latencyBuckets?: number[]
+
+		/** Metrics configuration */
+		metrics?: {
+			/** Enable Prometheus metrics (default: true) */
+			enabled?: boolean
+			/** Metrics endpoint path (default: /_metrics) */
+			path?: string
+			/** Include default Node.js metrics (memory, CPU, etc.) (default: true) */
+			includeDefaultMetrics?: boolean
+			/** Histogram buckets for latency in milliseconds (default: [10, 50, 100, 250, 500, 1000, 2500, 5000, 10000]) */
+			latencyBuckets?: number[]
+		}
+
+		/** Logging configuration */
+		logging?: {
+			/** Log level (default: 'info' in production, 'debug' in dev) */
+			level?: 'debug' | 'info' | 'warn' | 'error' | 'critical'
+			/** Log format (default: 'json') */
+			format?: 'json' | 'pretty' | 'text'
+			/** Enable structured logging (default: true) */
+			structured?: boolean
+			/** Include trace context in logs (default: true) */
+			includeTraceContext?: boolean
+			/** OTLP exporter configuration for logs */
+			otlp?: {
+				/** Enable OTLP log export (default: false) */
+				enabled?: boolean
+				/** OTLP collector endpoint (default: http://localhost:4318/v1/logs) */
+				endpoint?: string
+				/** OTLP headers for authentication */
+				headers?: Record<string, string>
+				/** Batch size for log export (default: 100) */
+				batchSize?: number
+				/** Export interval in milliseconds (default: 5000) */
+				exportIntervalMs?: number
+			}
+		}
+
+		/** Tracing configuration (OpenTelemetry) */
+		tracing?: {
+			/** Enable distributed tracing (default: false) */
+			enabled?: boolean
+			/** Service name for traces (default: 'bunbase') */
+			serviceName?: string
+			/** Trace sampling rate 0.0-1.0 (default: 1.0 = 100%) */
+			samplingRate?: number
+			/** OTLP exporter configuration for traces */
+			otlp?: {
+				/** OTLP collector endpoint (default: http://localhost:4318/v1/traces) */
+				endpoint?: string
+				/** OTLP headers for authentication */
+				headers?: Record<string, string>
+				/** Batch size for trace export (default: 100) */
+				batchSize?: number
+				/** Export interval in milliseconds (default: 5000) */
+				exportIntervalMs?: number
+			}
+		}
 	}
 }
 

@@ -200,6 +200,18 @@ export interface BunbaseConfig {
 		/** Maximum message payload size in bytes (default: 65536) */
 		maxPayloadLength?: number
 	}
+
+	/** Observability configuration */
+	observability?: {
+		/** Enable metrics collection (default: true in production, false in dev) */
+		enabled?: boolean
+		/** Metrics endpoint path (default: /_metrics) */
+		metricsPath?: string
+		/** Include default Node.js metrics (memory, CPU, etc.) (default: true) */
+		includeDefaultMetrics?: boolean
+		/** Histogram buckets for latency in milliseconds (default: [10, 50, 100, 250, 500, 1000, 2500, 5000, 10000]) */
+		latencyBuckets?: number[]
+	}
 }
 
 /**

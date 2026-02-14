@@ -8,6 +8,8 @@ import type { ApiTriggerConfig, WebhookTriggerConfig } from '../core/types.ts'
 import type { DatabaseClient } from '../db/client.ts'
 import type { KVStore } from '../kv/types.ts'
 import type { Logger } from '../logger/index.ts'
+import { getMetricsCollector } from '../observability/metrics.ts'
+import type { MetricsCollector } from '../observability/metrics.ts'
 import {
 	generateOpenAPISpec,
 	generateScalarDocs,
@@ -67,6 +69,8 @@ export class BunbaseServer {
 	private studioConfig?: BunbaseConfig['studio']
 	private corsConfig?: BunbaseConfig['cors']
 	private realtimeConfig?: BunbaseConfig['realtime']
+	private observabilityConfig?: BunbaseConfig['observability']
+	private metrics?: MetricsCollector
 
 	constructor(
 		private readonly registry: ActionRegistry,
@@ -81,6 +85,17 @@ export class BunbaseServer {
 		this.studioConfig = config?.studio
 		this.corsConfig = config?.cors
 		this.realtimeConfig = config?.realtime
+		this.observabilityConfig = config?.observability
+
+		// Initialize metrics if enabled
+		const isProduction = process.env.NODE_ENV === 'production'
+		const metricsEnabled = this.observabilityConfig?.enabled ?? isProduction
+		if (metricsEnabled) {
+			this.metrics = getMetricsCollector({
+				latencyBuckets: this.observabilityConfig?.latencyBuckets,
+				includeDefaultMetrics: this.observabilityConfig?.includeDefaultMetrics,
+			})
+		}
 		if (config?.auth) {
 			this.sessionManager = new SessionManager({
 				secret: config.auth.sessionSecret,
@@ -221,6 +236,64 @@ export class BunbaseServer {
 		}
 
 		return Response.json(response, { status: statusCode })
+	}
+
+	/**
+	 * Export metrics in Prometheus text format
+	 */
+	private handleMetricsExport(): Response {
+		if (!this.metrics) {
+			return new Response('Metrics collection is disabled', { status: 404 })
+		}
+
+		const { contentType, body } = this.metrics.export()
+		return new Response(body, {
+			headers: {
+				'Content-Type': contentType,
+			},
+		})
+	}
+
+	/**
+	 * Record HTTP request metrics
+	 */
+	private recordHttpMetrics(
+		method: string,
+		path: string,
+		status: number,
+		durationMs: number,
+	): void {
+		if (!this.metrics) return
+
+		// Normalize path to avoid high cardinality (replace IDs with placeholders)
+		const normalizedPath = this.normalizePath(path)
+
+		// Increment request counter
+		this.metrics.incrementCounter('bunbase_http_requests_total', 'Total HTTP requests', {
+			labels: { method, path: normalizedPath, status: String(status) },
+		})
+
+		// Record request duration
+		this.metrics.observeHistogram(
+			'bunbase_http_request_duration_ms',
+			'HTTP request duration in milliseconds',
+			durationMs,
+			{ labels: { method, path: normalizedPath } },
+		)
+	}
+
+	/**
+	 * Normalize path to reduce cardinality (replace IDs with placeholders)
+	 */
+	private normalizePath(path: string): string {
+		// Replace UUIDs
+		path = path.replace(
+			/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/gi,
+			':id',
+		)
+		// Replace numeric IDs
+		path = path.replace(/\/\d+(?:\/|$)/g, '/:id$1')
+		return path
 	}
 
 	/**
@@ -732,115 +805,133 @@ export class BunbaseServer {
 		req: Request,
 		server: Server<any>,
 	): Promise<Response> {
+		const startTime = performance.now()
 		const url = new URL(req.url)
 		const method = req.method.toUpperCase()
 		const pathname = url.pathname
+		let response: Response
 
-		// Handle CORS preflight
-		if (method === 'OPTIONS' && this.corsConfig) {
-			return this.handleCorsPreflightRequest(req)
-		}
-
-		// Handle WebSocket upgrade
-		if (this.wsHandler) {
-			if (this.wsHandler.isAtConnectionLimit(req)) {
-				return Response.json(
-					{ error: 'Too many WebSocket connections' },
-					{ status: 503 },
-				)
+		try {
+			// Handle CORS preflight
+			if (method === 'OPTIONS' && this.corsConfig) {
+				response = this.handleCorsPreflightRequest(req)
+				return response
 			}
-			if (this.wsHandler.tryUpgrade(req, server)) {
-				// Upgrade was successful — Bun handles the rest
-				return undefined as any
+
+			// Handle WebSocket upgrade
+			if (this.wsHandler) {
+				if (this.wsHandler.isAtConnectionLimit(req)) {
+					response = Response.json(
+						{ error: 'Too many WebSocket connections' },
+						{ status: 503 },
+					)
+					return response
+				}
+				if (this.wsHandler.tryUpgrade(req, server)) {
+					// Upgrade was successful — Bun handles the rest
+					return undefined as any
+				}
 			}
-		}
 
-		// Try pre-compiled route handler first (O(1) lookup)
-		const routeKey = `${method}:${pathname}`
-		const handler = this.routeHandlers.get(routeKey)
-		if (handler) {
-			const response = await handler(req)
-			return this.addCorsHeaders(req, response)
-		}
-
-		// Try pattern matching for dynamic routes (e.g., /users/:id)
-		for (const route of this.routePatterns) {
-			if (route.method !== method) continue
-
-			const match = this.matchPattern(pathname, route.pattern)
-			if (match) {
-				// Build route handler on-demand for this pattern
-				const handler = this.createRouteHandler(route.action, route.trigger)
-				// Store params on request object for extraction in createRouteHandler
-				;(req as any).params = match.params
-				const response = await handler(req)
+			// Try pre-compiled route handler first (O(1) lookup)
+			const routeKey = `${method}:${pathname}`
+			const handler = this.routeHandlers.get(routeKey)
+			if (handler) {
+				response = await handler(req)
 				return this.addCorsHeaders(req, response)
 			}
-		}
 
-		// Check special routes (OpenAPI, Studio)
-		if (this.openapiConfig?.enabled) {
-			const specPath = this.openapiConfig.path ?? '/api/openapi.json'
-			const docsPath = '/api/docs'
+			// Try pattern matching for dynamic routes (e.g., /users/:id)
+			for (const route of this.routePatterns) {
+				if (route.method !== method) continue
 
-			if (pathname === specPath && method === 'GET') {
-				const spec = generateOpenAPISpec(this.registry, {
-					title: this.openapiConfig.title,
-					version: this.openapiConfig.version,
-				})
-				return this.addCorsHeaders(req, Response.json(spec))
+				const match = this.matchPattern(pathname, route.pattern)
+				if (match) {
+					// Build route handler on-demand for this pattern
+					const handler = this.createRouteHandler(route.action, route.trigger)
+					// Store params on request object for extraction in createRouteHandler
+					;(req as any).params = match.params
+					response = await handler(req)
+					return this.addCorsHeaders(req, response)
+				}
 			}
 
-			if (pathname === docsPath && method === 'GET') {
-				const spec = generateOpenAPISpec(this.registry, {
-					title: this.openapiConfig.title,
-					version: this.openapiConfig.version,
-				})
-				const html = generateScalarDocs(spec)
-				return this.addCorsHeaders(
-					req,
-					new Response(html, {
+			// Check special routes (OpenAPI, Studio)
+			if (this.openapiConfig?.enabled) {
+				const specPath = this.openapiConfig.path ?? '/api/openapi.json'
+				const docsPath = '/api/docs'
+
+				if (pathname === specPath && method === 'GET') {
+					const spec = generateOpenAPISpec(this.registry, {
+						title: this.openapiConfig.title,
+						version: this.openapiConfig.version,
+					})
+					response = Response.json(spec)
+					return this.addCorsHeaders(req, response)
+				}
+
+				if (pathname === docsPath && method === 'GET') {
+					const spec = generateOpenAPISpec(this.registry, {
+						title: this.openapiConfig.title,
+						version: this.openapiConfig.version,
+					})
+					const html = generateScalarDocs(spec)
+					response = new Response(html, {
 						headers: { 'Content-Type': 'text/html' },
-					}),
-				)
+					})
+					return this.addCorsHeaders(req, response)
+				}
 			}
-		}
 
-		// Bunbase schema endpoint (for React typegen)
-		if (pathname === '/_bunbase/schema' && method === 'GET') {
-			const schema = generateBunbaseSchema(this.registry)
-			return this.addCorsHeaders(req, Response.json(schema))
-		}
+			// Bunbase schema endpoint (for React typegen)
+			if (pathname === '/_bunbase/schema' && method === 'GET') {
+				const schema = generateBunbaseSchema(this.registry)
+				response = Response.json(schema)
+				return this.addCorsHeaders(req, response)
+			}
 
-		// Studio dashboard UI
-		if (this.studioConfig?.enabled) {
-			const studioPath = this.studioConfig.path ?? '/_studio'
-			if (pathname === studioPath || pathname === `${studioPath}/`) {
-				return this.addCorsHeaders(
-					req,
-					new Response('Studio Dashboard - Coming Soon', {
+			// Studio dashboard UI
+			if (this.studioConfig?.enabled) {
+				const studioPath = this.studioConfig.path ?? '/_studio'
+				if (pathname === studioPath || pathname === `${studioPath}/`) {
+					response = new Response('Studio Dashboard - Coming Soon', {
 						headers: { 'Content-Type': 'text/html' },
-					}),
-				)
+					})
+					return this.addCorsHeaders(req, response)
+				}
+			}
+
+			// Health check endpoints
+			if (pathname === '/_health' && method === 'GET') {
+				response = await this.handleHealthCheck('full')
+				return this.addCorsHeaders(req, response)
+			}
+			if (pathname === '/_health/live' && method === 'GET') {
+				response = await this.handleHealthCheck('live')
+				return this.addCorsHeaders(req, response)
+			}
+			if (pathname === '/_health/ready' && method === 'GET') {
+				response = await this.handleHealthCheck('ready')
+				return this.addCorsHeaders(req, response)
+			}
+
+			// Metrics endpoint
+			const metricsPath = this.observabilityConfig?.metricsPath ?? '/_metrics'
+			if (pathname === metricsPath && method === 'GET') {
+				response = this.handleMetricsExport()
+				return this.addCorsHeaders(req, response)
+			}
+
+			// Not found
+			response = Response.json({ error: 'Not Found', path: pathname }, { status: 404 })
+			return this.addCorsHeaders(req, response)
+		} finally {
+			// Record HTTP metrics (if enabled and response is set)
+			if (this.metrics && response!) {
+				const duration = performance.now() - startTime
+				this.recordHttpMetrics(method, pathname, response.status, duration)
 			}
 		}
-
-		// Health check endpoints
-		if (pathname === '/_health' && method === 'GET') {
-			return this.addCorsHeaders(req, await this.handleHealthCheck('full'))
-		}
-		if (pathname === '/_health/live' && method === 'GET') {
-			return this.addCorsHeaders(req, await this.handleHealthCheck('live'))
-		}
-		if (pathname === '/_health/ready' && method === 'GET') {
-			return this.addCorsHeaders(req, await this.handleHealthCheck('ready'))
-		}
-
-		// Not found
-		return this.addCorsHeaders(
-			req,
-			Response.json({ error: 'Not Found', path: pathname }, { status: 404 }),
-		)
 	}
 
 	/**

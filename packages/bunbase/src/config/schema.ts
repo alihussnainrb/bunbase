@@ -235,6 +235,21 @@ const realtimeSchema = z
 	})
 	.optional()
 
+// Observability schema
+const observabilitySchema = z
+	.object({
+		enabled: z.boolean().optional(),
+		metricsPath: z
+			.string()
+			.startsWith('/', 'Metrics path must start with /')
+			.optional(),
+		includeDefaultMetrics: z.boolean().optional(),
+		latencyBuckets: z
+			.array(z.number().positive('Latency bucket must be positive'))
+			.optional(),
+	})
+	.optional()
+
 // Main config schema
 export const bunbaseConfigSchema: z.ZodObject<any> = z.object({
 	port: portSchema.optional(),
@@ -255,6 +270,7 @@ export const bunbaseConfigSchema: z.ZodObject<any> = z.object({
 	openapi: openapiSchema,
 	studio: studioSchema,
 	realtime: realtimeSchema,
+	observability: observabilitySchema,
 })
 
 export type ValidatedBunbaseConfig = z.infer<typeof bunbaseConfigSchema>

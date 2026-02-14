@@ -1,4 +1,4 @@
-import { action, t, triggers } from 'bunbase'
+import { action, t, triggers, BadRequest, NotFound } from 'bunbase'
 
 export const deleteFramework = action(
 	{
@@ -18,7 +18,7 @@ export const deleteFramework = action(
 		// TODO: Implement password verification against super admin user
 		// For now, we'll just check if password is provided
 		if (!input.password || input.password.length < 8) {
-			throw new Error('Invalid password')
+			throw new BadRequest('Invalid password')
 		}
 
 		// Check if framework exists
@@ -28,7 +28,7 @@ export const deleteFramework = action(
 			.single()
 
 		if (!framework) {
-			throw new Error('Framework not found')
+			throw new NotFound('Framework not found')
 		}
 
 		// Delete framework (CASCADE will delete versions)

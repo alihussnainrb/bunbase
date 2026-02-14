@@ -1,4 +1,4 @@
-import { action, t, triggers } from 'bunbase'
+import { action, t, triggers, NotFound, BadRequest, InternalError } from 'bunbase'
 
 export const reactivateLicense = action(
 	{
@@ -21,11 +21,11 @@ export const reactivateLicense = action(
 		const license = await ctx.db.from('licenses').eq('id', input.id).single()
 
 		if (!license) {
-			throw new Error('License not found')
+			throw new NotFound('License not found')
 		}
 
 		if (license.status === 'Active') {
-			throw new Error('License is already active')
+			throw new BadRequest('License is already active')
 		}
 
 		// Calculate new validity period
@@ -50,7 +50,7 @@ export const reactivateLicense = action(
 			.single()
 
 		if (!updated) {
-			throw new Error('Failed to reactivate license')
+			throw new InternalError('Failed to reactivate license')
 		}
 
 		ctx.logger.info('License reactivated', { licenseId: input.id })

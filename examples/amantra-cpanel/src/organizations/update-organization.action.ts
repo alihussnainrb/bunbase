@@ -1,4 +1,4 @@
-import { action, t, triggers } from 'bunbase'
+import { action, t, triggers, BadRequest, NotFound } from 'bunbase'
 
 export const updateOrganization = action(
 	{
@@ -33,7 +33,7 @@ export const updateOrganization = action(
 		if (input.type) updates.type = input.type
 
 		if (Object.keys(updates).length === 0) {
-			throw new Error('No fields to update')
+			throw new BadRequest('No fields to update')
 		}
 
 		updates.updated_at = new Date().toISOString()
@@ -46,7 +46,7 @@ export const updateOrganization = action(
 			.single()
 
 		if (!organization) {
-			throw new Error('Organization not found')
+			throw new NotFound('Organization not found')
 		}
 
 		ctx.logger.info('Organization updated', { organizationId: organization.id })

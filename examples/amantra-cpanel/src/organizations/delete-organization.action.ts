@@ -1,4 +1,4 @@
-import { action, t, triggers } from 'bunbase'
+import { action, t, triggers, BadRequest, NotFound } from 'bunbase'
 
 export const deleteOrganization = action(
 	{
@@ -17,7 +17,7 @@ export const deleteOrganization = action(
 	async (input, ctx) => {
 		// TODO: Implement password verification against super admin user
 		if (!input.password || input.password.length < 8) {
-			throw new Error('Invalid password')
+			throw new BadRequest('Invalid password')
 		}
 
 		const organization = await ctx.db
@@ -26,7 +26,7 @@ export const deleteOrganization = action(
 			.single()
 
 		if (!organization) {
-			throw new Error('Organization not found')
+			throw new NotFound('Organization not found')
 		}
 
 		// Delete organization (CASCADE will delete admins, licenses, notifications)

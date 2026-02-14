@@ -1,4 +1,4 @@
-import { action, t, triggers } from 'bunbase'
+import { action, t, triggers, NotFound } from 'bunbase'
 
 export const getVersion = action(
 	{
@@ -27,7 +27,7 @@ export const getVersion = action(
 			.single()
 
 		if (!version) {
-			throw new Error('Product version not found')
+			throw new NotFound('Product version not found')
 		}
 
 		return {

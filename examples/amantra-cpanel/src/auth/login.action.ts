@@ -1,4 +1,4 @@
-import { action, t, triggers } from 'bunbase'
+import { action, t, triggers, BadRequest, verifyPassword } from 'bunbase'
 
 export const login = action(
 	{
@@ -26,14 +26,14 @@ export const login = action(
 			.maybeSingle()
 
 		if (!user) {
-			throw new Error('Invalid credentials')
+			throw new BadRequest('Invalid credentials')
 		}
 
-		// TODO: Implement proper password hashing with bcrypt
-		// For now, we'll just check if password is provided
-		// In production, use: await bcrypt.compare(input.password, user.password_hash)
-		if (!input.password) {
-			throw new Error('Invalid credentials')
+		// Verify password using Bun's Argon2id hashing
+		const isValid = await verifyPassword(input.password, user.password_hash)
+
+		if (!isValid) {
+			throw new BadRequest('Invalid credentials')
 		}
 
 		// Create session

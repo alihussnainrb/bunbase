@@ -1,4 +1,4 @@
-import { action, t, triggers } from 'bunbase'
+import { action, t, triggers, BadRequest, NotFound } from 'bunbase'
 
 export const updateFramework = action(
 	{
@@ -27,7 +27,7 @@ export const updateFramework = action(
 		if (input.status) updates.status = input.status
 
 		if (Object.keys(updates).length === 0) {
-			throw new Error('No fields to update')
+			throw new BadRequest('No fields to update')
 		}
 
 		updates.updated_at = new Date().toISOString()
@@ -40,7 +40,7 @@ export const updateFramework = action(
 			.single()
 
 		if (!framework) {
-			throw new Error('Framework not found')
+			throw new NotFound('Framework not found')
 		}
 
 		ctx.logger.info('Framework updated', { frameworkId: framework.id })

@@ -1,4 +1,4 @@
-import { action, guards, t, triggers } from 'bunbase'
+import { action, guards, t, triggers, Unauthorized, NotFound } from 'bunbase'
 
 export const me = action(
 	{
@@ -13,17 +13,17 @@ export const me = action(
 		triggers: [triggers.api('GET', '/me')],
 		guards: [guards.authenticated()],
 	},
-	async ({ ctx }) => {
+	async (input, ctx) => {
 		const userId = ctx.auth.userId
 
 		if (!userId) {
-			throw new Error('Not authenticated')
+			throw new Unauthorized('Not authenticated')
 		}
 
 		const user = await ctx.db.from('users').eq('id', userId).single()
 
 		if (!user) {
-			throw new Error('User not found')
+			throw new NotFound('User not found')
 		}
 
 		return {

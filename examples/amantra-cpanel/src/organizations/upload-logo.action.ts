@@ -1,4 +1,4 @@
-import { action, t, triggers } from 'bunbase'
+import { action, t, triggers, NotFound, InternalError } from 'bunbase'
 
 export const uploadLogo = action(
 	{
@@ -24,7 +24,7 @@ export const uploadLogo = action(
 			.single()
 
 		if (!organization) {
-			throw new Error('Organization not found')
+			throw new NotFound('Organization not found')
 		}
 
 		// Convert base64 to buffer
@@ -45,7 +45,7 @@ export const uploadLogo = action(
 			.single()
 
 		if (!updated) {
-			throw new Error('Failed to update organization logo')
+			throw new InternalError('Failed to update organization logo')
 		}
 
 		ctx.logger.info('Organization logo uploaded', {

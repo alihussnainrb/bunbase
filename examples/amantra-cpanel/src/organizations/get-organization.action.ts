@@ -1,4 +1,4 @@
-import { action, t, triggers } from 'bunbase'
+import { action, t, triggers, NotFound } from 'bunbase'
 
 export const getOrganization = action(
 	{
@@ -46,7 +46,7 @@ export const getOrganization = action(
 			.single()
 
 		if (!organization) {
-			throw new Error('Organization not found')
+			throw new NotFound('Organization not found')
 		}
 
 		const admins = await ctx.db

@@ -60,7 +60,7 @@ bun run migrate
 
 4. Generate database types:
 ```bash
-bun run typegen
+bun run typegen:db
 ```
 
 5. Start the server:

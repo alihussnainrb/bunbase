@@ -1,4 +1,4 @@
-import { action, t, triggers } from 'bunbase'
+import { action, t, triggers, NotFound, BadRequest, InternalError } from 'bunbase'
 
 export const revokeLicense = action(
 	{
@@ -19,11 +19,11 @@ export const revokeLicense = action(
 		const license = await ctx.db.from('licenses').eq('id', input.id).single()
 
 		if (!license) {
-			throw new Error('License not found')
+			throw new NotFound('License not found')
 		}
 
 		if (license.status === 'Revoked') {
-			throw new Error('License is already revoked')
+			throw new BadRequest('License is already revoked')
 		}
 
 		// Revoke license
@@ -38,7 +38,7 @@ export const revokeLicense = action(
 			.single()
 
 		if (!updated) {
-			throw new Error('Failed to revoke license')
+			throw new InternalError('Failed to revoke license')
 		}
 
 		// Notify organization admins

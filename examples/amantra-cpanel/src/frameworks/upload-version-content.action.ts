@@ -1,4 +1,4 @@
-import { action, t, triggers } from 'bunbase'
+import { action, t, triggers, NotFound, InternalError } from 'bunbase'
 
 export const uploadVersionContent = action(
 	{
@@ -28,7 +28,7 @@ export const uploadVersionContent = action(
 			.single()
 
 		if (!version) {
-			throw new Error('Framework version not found')
+			throw new NotFound('Framework version not found')
 		}
 
 		// Store content as JSONB in database
@@ -43,7 +43,7 @@ export const uploadVersionContent = action(
 			.single()
 
 		if (!updated) {
-			throw new Error('Failed to upload content')
+			throw new InternalError('Failed to upload content')
 		}
 
 		ctx.logger.info('Framework version content uploaded', {

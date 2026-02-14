@@ -1,4 +1,4 @@
-import { action, t, triggers } from 'bunbase'
+import { action, t, triggers, NotFound } from 'bunbase'
 
 export const getFramework = action(
 	{
@@ -32,7 +32,7 @@ export const getFramework = action(
 			.single()
 
 		if (!framework) {
-			throw new Error('Framework not found')
+			throw new NotFound('Framework not found')
 		}
 
 		const versions = await ctx.db

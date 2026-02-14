@@ -19,7 +19,7 @@ export default action(
 			triggers.cron('0 0 * * *'), // Run daily at midnight
 		],
 	},
-	async ({ ctx }) => {
+	async (input, ctx) => {
 		const now = new Date()
 		const sevenDaysFromNow = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000)
 

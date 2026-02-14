@@ -1,4 +1,4 @@
-import { action, t, triggers } from 'bunbase'
+import { action, t, triggers, NotFound, InternalError } from 'bunbase'
 
 export const downloadLicense = action(
 	{
@@ -18,18 +18,18 @@ export const downloadLicense = action(
 		const license = await ctx.db.from('licenses').eq('id', input.id).single()
 
 		if (!license) {
-			throw new Error('License not found')
+			throw new NotFound('License not found')
 		}
 
 		if (!license.license_file_path) {
-			throw new Error('License file not found')
+			throw new NotFound('License file not found')
 		}
 
 		// Get license file from storage
 		const fileBuffer = await ctx.storage.get(license.license_file_path)
 
 		if (!fileBuffer) {
-			throw new Error('Failed to retrieve license file')
+			throw new InternalError('Failed to retrieve license file')
 		}
 
 		// Extract filename from path

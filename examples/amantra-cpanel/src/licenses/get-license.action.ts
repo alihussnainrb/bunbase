@@ -1,4 +1,4 @@
-import { action, t, triggers } from 'bunbase'
+import { action, t, triggers, NotFound } from 'bunbase'
 
 export const getLicense = action(
 	{
@@ -33,7 +33,7 @@ export const getLicense = action(
 		const license = await ctx.db.from('licenses').eq('id', input.id).single()
 
 		if (!license) {
-			throw new Error('License not found')
+			throw new NotFound('License not found')
 		}
 
 		const organization = await ctx.db

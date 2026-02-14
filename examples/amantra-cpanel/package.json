@@ -8,13 +8,9 @@
 		"dev": "bunbase dev",
 		"migrate": "bunbase migrate",
 		"migrate:new": "bunbase migrate new",
-		"typegen": "bunbase typegen"
-	},
-	"devDependencies": {
-		"@types/bun": "latest"
-	},
-	"peerDependencies": {
-		"typescript": "^5"
+		"migrate:status": "bunbase migrate status",
+		"typegen:db": "bunbase typegen:db",
+		"typegen:react": "bunbase typegen:react --url http://localhost:3002"
 	},
 	"dependencies": {
 		"bunbase": "workspace:*"

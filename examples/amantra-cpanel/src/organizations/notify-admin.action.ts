@@ -1,4 +1,4 @@
-import { action, t, triggers } from 'bunbase'
+import { action, t, triggers, NotFound } from 'bunbase'
 
 export const notifyAdmin = action(
 	{
@@ -24,11 +24,16 @@ export const notifyAdmin = action(
 			.single()
 
 		if (!organization) {
-			throw new Error('Organization not found')
+			throw new NotFound('Organization not found')
 		}
 
 		// Get admin(s) to notify
-		let admins: any[]
+		let admins: Array<{
+			id: string
+			name: string
+			email: string
+			organization_id: string
+		}>
 		if (input.admin_id) {
 			const admin = await ctx.db
 				.from('organization_admins')
@@ -37,7 +42,7 @@ export const notifyAdmin = action(
 				.single()
 
 			if (!admin) {
-				throw new Error('Admin not found')
+				throw new NotFound('Admin not found')
 			}
 			admins = [admin]
 		} else {
@@ -48,7 +53,7 @@ export const notifyAdmin = action(
 				.exec()
 
 			if (admins.length === 0) {
-				throw new Error('No admins found for this organization')
+				throw new NotFound('No admins found for this organization')
 			}
 		}
 

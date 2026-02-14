@@ -1,4 +1,4 @@
-import { action, t, triggers } from 'bunbase'
+import { action, t, triggers, BadRequest, NotFound } from 'bunbase'
 
 export const updateVersion = action(
 	{
@@ -34,7 +34,7 @@ export const updateVersion = action(
 		if (input.notes !== undefined) updates.notes = input.notes
 
 		if (Object.keys(updates).length === 0) {
-			throw new Error('No fields to update')
+			throw new BadRequest('No fields to update')
 		}
 
 		const version = await ctx.db
@@ -45,7 +45,7 @@ export const updateVersion = action(
 			.single()
 
 		if (!version) {
-			throw new Error('Product version not found')
+			throw new NotFound('Product version not found')
 		}
 
 		ctx.logger.info('Product version updated', { versionId: version.id })

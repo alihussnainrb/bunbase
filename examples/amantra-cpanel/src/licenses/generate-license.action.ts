@@ -1,5 +1,5 @@
 import { randomBytes } from 'node:crypto'
-import { action, t, triggers } from 'bunbase'
+import { action, t, triggers, NotFound, BadRequest } from 'bunbase'
 
 export const generateLicense = action(
 	{
@@ -31,7 +31,7 @@ export const generateLicense = action(
 			.single()
 
 		if (!organization) {
-			throw new Error('Organization not found')
+			throw new NotFound('Organization not found')
 		}
 
 		// Verify modules exist
@@ -41,7 +41,7 @@ export const generateLicense = action(
 			.exec()
 
 		if (modules.length !== input.module_ids.length) {
-			throw new Error('One or more module IDs are invalid')
+			throw new BadRequest('One or more module IDs are invalid')
 		}
 
 		// Generate unique license key

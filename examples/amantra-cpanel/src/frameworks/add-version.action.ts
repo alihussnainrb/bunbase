@@ -1,4 +1,4 @@
-import { action, t, triggers } from 'bunbase'
+import { action, t, triggers, NotFound, Conflict } from 'bunbase'
 
 export const addVersion = action(
 	{
@@ -26,7 +26,7 @@ export const addVersion = action(
 			.single()
 
 		if (!framework) {
-			throw new Error('Framework not found')
+			throw new NotFound('Framework not found')
 		}
 
 		// Check if version already exists
@@ -37,7 +37,7 @@ export const addVersion = action(
 			.maybeSingle()
 
 		if (existingVersion) {
-			throw new Error(
+			throw new Conflict(
 				`Version ${input.version} already exists for this framework`,
 			)
 		}

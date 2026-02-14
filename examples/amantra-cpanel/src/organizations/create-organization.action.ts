@@ -30,7 +30,7 @@ export const createOrganization = action(
 		}),
 		triggers: [triggers.api('POST', '/')],
 	},
-	async ({ input, ctx }) => {
+	async (input, ctx) => {
 		// Create organization
 		const organization = await ctx.db
 			.insert('organizations', {

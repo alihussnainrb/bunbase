@@ -16,7 +16,7 @@ export const notifyAdmin = action(
 		}),
 		triggers: [triggers.api('POST', '/:id/notify')],
 	},
-	async ({ input, ctx }) => {
+	async (input, ctx) => {
 		// Verify organization exists
 		const organization = await ctx.db
 			.from('organizations')

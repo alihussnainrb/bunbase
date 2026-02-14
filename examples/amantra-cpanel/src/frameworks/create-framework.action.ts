@@ -18,7 +18,7 @@ export const createFramework = action(
 		}),
 		triggers: [triggers.api('POST', '/')],
 	},
-	async ({ input, ctx }) => {
+	async (input, ctx) => {
 		const framework = await ctx.db
 			.insert('frameworks', {
 				name: input.name,

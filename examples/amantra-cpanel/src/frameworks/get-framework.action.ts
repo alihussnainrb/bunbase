@@ -25,7 +25,7 @@ export const getFramework = action(
 		}),
 		triggers: [triggers.api('GET', '/:id')],
 	},
-	async ({ input, ctx }) => {
+	async (input, ctx) => {
 		const framework = await ctx.db
 			.from('frameworks')
 			.eq('id', input.id)

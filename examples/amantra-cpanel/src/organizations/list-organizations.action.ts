@@ -23,7 +23,7 @@ export const listOrganizations = action(
 		}),
 		triggers: [triggers.api('GET', '/')],
 	},
-	async ({ input, ctx }) => {
+	async (input, ctx) => {
 		let query = ctx.db.from('organizations')
 
 		if (input.type) {

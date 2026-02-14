@@ -21,7 +21,7 @@ export const updateVersion = action(
 		}),
 		triggers: [triggers.api('PATCH', '/:id')],
 	},
-	async ({ input, ctx }) => {
+	async (input, ctx) => {
 		const updates: Record<string, any> = {}
 
 		if (input.backend_version !== undefined)

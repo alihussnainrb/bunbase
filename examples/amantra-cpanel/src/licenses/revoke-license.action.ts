@@ -15,7 +15,7 @@ export const revokeLicense = action(
 		}),
 		triggers: [triggers.api('PATCH', '/:id/revoke')],
 	},
-	async ({ input, ctx }) => {
+	async (input, ctx) => {
 		const license = await ctx.db.from('licenses').eq('id', input.id).single()
 
 		if (!license) {

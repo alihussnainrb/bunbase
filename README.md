@@ -158,7 +158,7 @@ triggers.webhook('/webhooks/github', {
 triggers.event('user.created')
 
 // MCP Tool
-triggers.tool('search-users', 'Search for users by email or name')
+triggers.tool({ name: 'search-users', description: 'Search for users by email or name' })
 ```
 
 ### Guards

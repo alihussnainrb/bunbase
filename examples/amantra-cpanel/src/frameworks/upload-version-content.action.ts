@@ -19,7 +19,7 @@ export const uploadVersionContent = action(
 			triggers.api('POST', '/:frameworkId/versions/:versionId/upload'),
 		],
 	},
-	async ({ input, ctx }) => {
+	async (input, ctx) => {
 		// Verify version exists and belongs to framework
 		const version = await ctx.db
 			.from('framework_versions')

@@ -19,7 +19,7 @@ export const updateFramework = action(
 		}),
 		triggers: [triggers.api('PATCH', '/:id')],
 	},
-	async ({ input, ctx }) => {
+	async (input, ctx) => {
 		const updates: Record<string, any> = {}
 
 		if (input.name) updates.name = input.name

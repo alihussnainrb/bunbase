@@ -18,7 +18,7 @@ export const addVersion = action(
 		}),
 		triggers: [triggers.api('POST', '/:frameworkId/versions')],
 	},
-	async ({ input, ctx }) => {
+	async (input, ctx) => {
 		// Check if framework exists
 		const framework = await ctx.db
 			.from('frameworks')

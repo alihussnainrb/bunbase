@@ -33,7 +33,7 @@ export const listLicenses = action(
 		}),
 		triggers: [triggers.api('GET', '/')],
 	},
-	async ({ input, ctx }) => {
+	async (input, ctx) => {
 		let query = ctx.db.from('licenses')
 
 		if (input.organization_id) {

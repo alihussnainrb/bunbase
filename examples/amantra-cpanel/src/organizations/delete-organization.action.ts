@@ -14,7 +14,7 @@ export const deleteOrganization = action(
 		}),
 		triggers: [triggers.api('DELETE', '/:id')],
 	},
-	async ({ input, ctx }) => {
+	async (input, ctx) => {
 		// TODO: Implement password verification against super admin user
 		if (!input.password || input.password.length < 8) {
 			throw new Error('Invalid password')

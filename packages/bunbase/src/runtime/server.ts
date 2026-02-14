@@ -438,8 +438,8 @@ export class BunbaseServer {
 
 				// Apply session actions (set/clear cookies from ctx.auth)
 				if (result.sessionActions && this.sessionManager) {
-					// Use config value if provided, otherwise auto-detect from request protocol
-					const isSecure = this.config?.auth?.cookie?.secure ?? (url.protocol === 'https:')
+					// Use config value if provided, otherwise default to false for localhost dev
+					const isSecure = this.config?.auth?.cookie?.secure ?? false
 
 					for (const sa of result.sessionActions) {
 						if (sa.type === 'create' && sa.token) {

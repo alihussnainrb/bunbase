@@ -76,8 +76,7 @@ export interface BunbaseConfig {
 			/**
 			 * Set Secure flag on session cookies.
 			 * - true: cookies only sent over HTTPS (production)
-			 * - false: cookies sent over HTTP and HTTPS (dev/testing)
-			 * - undefined: auto-detect from request protocol (default)
+			 * - false: cookies sent over HTTP and HTTPS (default for localhost dev)
 			 */
 			secure?: boolean
 		}

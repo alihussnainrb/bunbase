@@ -438,19 +438,22 @@ export class BunbaseServer {
 
 				// Apply session actions (set/clear cookies from ctx.auth)
 				if (result.sessionActions && this.sessionManager) {
+					// Auto-detect secure flag based on request protocol
+					const isSecure = url.protocol === 'https:'
+
 					for (const sa of result.sessionActions) {
 						if (sa.type === 'create' && sa.token) {
 							setCookie(this.sessionManager.getCookieName(), sa.token, {
 								path: '/',
 								httpOnly: true,
-								secure: true,
+								secure: isSecure,
 								sameSite: 'Lax',
 							})
 						} else if (sa.type === 'destroy') {
 							setCookie(this.sessionManager.getCookieName(), '', {
 								path: '/',
 								httpOnly: true,
-								secure: true,
+								secure: isSecure,
 								sameSite: 'Lax',
 								maxAge: 0,
 							})

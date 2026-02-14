@@ -9,6 +9,7 @@ import { Logger } from '../../logger/index.ts'
 import { WriteBuffer } from '../../persistence/write-buffer.ts'
 import { eventBus } from '../../runtime/event-bus.ts'
 import { loadActions } from '../../runtime/loader.ts'
+import { Queue } from '../../runtime/queue.ts'
 import { BunbaseServer } from '../../runtime/server.ts'
 
 export async function devCommand(): Promise<void> {
@@ -145,7 +146,10 @@ export async function devCommand(): Promise<void> {
 	const loadDuration = (performance.now() - startLoad).toFixed(2)
 	logger.info(`Loaded ${registry.size} actions in ${loadDuration}ms`)
 
-	// 7. Start server
+	// 7. Create Queue instance for background jobs
+	const queue = new Queue(sqlPool, logger, writeBuffer)
+
+	// 8. Start server
 	const server = new BunbaseServer(registry, logger, writeBuffer, config, {
 		db,
 		sql: sqlPool,
@@ -155,12 +159,19 @@ export async function devCommand(): Promise<void> {
 		redis,
 	})
 
+	// Set queue on server for ctx.queue support
+	server.setQueue(queue)
+
 	try {
 		server.start({
 			port,
 			hostname,
 			mcp: config.mcp,
 		})
+
+		// Start queue worker for background jobs
+		await queue.start()
+		logger.info('Queue worker started')
 
 		if (config.realtime?.enabled) {
 			const wsPath = config.realtime.path ?? '/ws'
@@ -221,6 +232,7 @@ export async function devCommand(): Promise<void> {
 				watcher.close()
 			}
 			server.stop()
+			await queue.stop()
 			await eventBus.detach()
 			await writeBuffer.shutdown()
 			sqlPool.close()

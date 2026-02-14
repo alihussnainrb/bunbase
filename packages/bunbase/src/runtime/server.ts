@@ -10,6 +10,8 @@ import type { KVStore } from '../kv/types.ts'
 import type { Logger } from '../logger/index.ts'
 import { getMetricsCollector } from '../observability/metrics.ts'
 import type { MetricsCollector } from '../observability/metrics.ts'
+import { getOTLPLogExporter } from '../observability/otlp-log-exporter.ts'
+import type { OTLPLogExporter } from '../observability/otlp-log-exporter.ts'
 import {
 	generateOpenAPISpec,
 	generateScalarDocs,
@@ -71,6 +73,7 @@ export class BunbaseServer {
 	private realtimeConfig?: BunbaseConfig['realtime']
 	private observabilityConfig?: BunbaseConfig['observability']
 	private metrics?: MetricsCollector
+	private otlpLogExporter?: OTLPLogExporter
 
 	constructor(
 		private readonly registry: ActionRegistry,
@@ -87,9 +90,11 @@ export class BunbaseServer {
 		this.realtimeConfig = config?.realtime
 		this.observabilityConfig = config?.observability
 
-		// Initialize metrics if enabled
+		// Initialize observability (metrics, logging, tracing)
 		const isProduction = process.env.NODE_ENV === 'production'
 		const observabilityEnabled = this.observabilityConfig?.enabled ?? isProduction
+
+		// Initialize metrics if enabled
 		const metricsConfig = this.observabilityConfig?.metrics
 		const metricsEnabled = observabilityEnabled && (metricsConfig?.enabled ?? true)
 
@@ -98,6 +103,26 @@ export class BunbaseServer {
 				latencyBuckets: metricsConfig?.latencyBuckets,
 				includeDefaultMetrics: metricsConfig?.includeDefaultMetrics,
 			})
+		}
+
+		// Initialize OTLP log exporter if enabled
+		const loggingConfig = this.observabilityConfig?.logging
+		const otlpLoggingEnabled =
+			observabilityEnabled &&
+			(loggingConfig?.otlp?.enabled ?? false)
+
+		if (otlpLoggingEnabled) {
+			this.otlpLogExporter = getOTLPLogExporter({
+				endpoint: loggingConfig?.otlp?.endpoint,
+				headers: loggingConfig?.otlp?.headers,
+				batchSize: loggingConfig?.otlp?.batchSize,
+				exportIntervalMs: loggingConfig?.otlp?.exportIntervalMs,
+				serviceName: 'bunbase',
+				includeTraceContext: loggingConfig?.includeTraceContext ?? true,
+			})
+
+			// Attach OTLP exporter to logger
+			this.logger.addListener(this.otlpLogExporter.createListener())
 		}
 		if (config?.auth) {
 			this.sessionManager = new SessionManager({
@@ -1118,6 +1143,10 @@ export class BunbaseServer {
 		}
 		if (this.scheduler) {
 			this.scheduler.stop()
+		}
+		// Flush OTLP logs before stopping queue
+		if (this.otlpLogExporter) {
+			await this.otlpLogExporter.stop()
 		}
 		if (this.queue) {
 			await this.queue.stop()

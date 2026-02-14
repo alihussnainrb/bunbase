@@ -168,13 +168,16 @@ export function generateOpenAPISpec(
 					: []
 				const pathParameters = extractPathParameters(expressPath)
 
-				// Deduplicate parameters by name (schema params take precedence over path params)
+				// Deduplicate parameters by (in, name) to allow same name in different locations
+				// E.g., path param 'id' and query param 'id' are both valid
 				const paramMap = new Map<string, any>()
 				for (const param of pathParameters) {
-					paramMap.set(param.name, param)
+					const key = `${param.in}:${param.name}`
+					paramMap.set(key, param)
 				}
 				for (const param of schemaParameters) {
-					paramMap.set(param.name, param)
+					const key = `${param.in}:${param.name}`
+					paramMap.set(key, param)
 				}
 				const allParameters = Array.from(paramMap.values())
 

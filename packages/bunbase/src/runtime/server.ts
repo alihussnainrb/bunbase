@@ -1025,6 +1025,19 @@ export class BunbaseServer {
 			realtime: !!this.wsHandler,
 		})
 
+		// Warn about permissive CORS in production
+		if (
+			process.env.NODE_ENV === 'production' &&
+			this.corsConfig &&
+			(this.corsConfig.origin === true || this.corsConfig.origin === undefined) &&
+			this.corsConfig.credentials !== false
+		) {
+			this.logger.warn(
+				'SECURITY: CORS configured to reflect any origin with credentials enabled. ' +
+					'For production, specify explicit origin list: cors.origin = ["https://yourdomain.com"]',
+			)
+		}
+
 		if (this.wsHandler) {
 			const wsPath = this.realtimeConfig?.path ?? '/ws'
 			this.logger.info(

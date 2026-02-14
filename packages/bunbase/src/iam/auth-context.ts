@@ -304,7 +304,7 @@ export function createAuthContext(opts: CreateAuthContextOptions): AuthContext {
 				.eq('username', data.username)
 				.maybeSingle()
 			if (!user) {
-				throw new Error('Invalid credentials')
+				throw new InvalidCredentialsError()
 			}
 
 			const valid = await verifyPassword(
@@ -312,7 +312,7 @@ export function createAuthContext(opts: CreateAuthContextOptions): AuthContext {
 				(user as any).password_hash,
 			)
 			if (!valid) {
-				throw new Error('Invalid credentials')
+				throw new InvalidCredentialsError()
 			}
 
 			ctx.createSession({
@@ -330,7 +330,7 @@ export function createAuthContext(opts: CreateAuthContextOptions): AuthContext {
 
 			const user = await db.from('users').eq('phone', data.phone).maybeSingle()
 			if (!user) {
-				throw new Error('Invalid credentials')
+				throw new InvalidCredentialsError()
 			}
 
 			const valid = await verifyPassword(
@@ -338,7 +338,7 @@ export function createAuthContext(opts: CreateAuthContextOptions): AuthContext {
 				(user as any).password_hash,
 			)
 			if (!valid) {
-				throw new Error('Invalid credentials')
+				throw new InvalidCredentialsError()
 			}
 
 			ctx.createSession({

@@ -167,7 +167,16 @@ export function generateOpenAPISpec(
 					? extractParameters(config.input as TObject)
 					: []
 				const pathParameters = extractPathParameters(expressPath)
-				const allParameters = [...pathParameters, ...schemaParameters]
+
+				// Deduplicate parameters by name (schema params take precedence over path params)
+				const paramMap = new Map<string, any>()
+				for (const param of pathParameters) {
+					paramMap.set(param.name, param)
+				}
+				for (const param of schemaParameters) {
+					paramMap.set(param.name, param)
+				}
+				const allParameters = Array.from(paramMap.values())
 
 				const operation: OperationObject = {
 					operationId: config.name,

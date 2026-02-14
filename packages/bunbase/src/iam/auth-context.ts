@@ -2,6 +2,7 @@ import { hashPassword, verifyPassword } from '../auth/password.ts'
 import type { SessionManager } from '../auth/session.ts'
 import type { DatabaseClient } from '../db/client.ts'
 import type { Logger } from '../logger/index.ts'
+import { InvalidCredentialsError } from '../platform/core/errors.ts'
 import { CACHE_TTL_MS, permissionCache } from './context.ts'
 import { RoleManager } from './role-manager.ts'
 import type { SessionAction } from './types.ts'
@@ -274,7 +275,7 @@ export function createAuthContext(opts: CreateAuthContextOptions): AuthContext {
 
 			const user = await db.from('users').eq('email', data.email).maybeSingle()
 			if (!user) {
-				throw new Error('Invalid credentials')
+				throw new InvalidCredentialsError()
 			}
 
 			const valid = await verifyPassword(
@@ -282,7 +283,7 @@ export function createAuthContext(opts: CreateAuthContextOptions): AuthContext {
 				(user as any).password_hash,
 			)
 			if (!valid) {
-				throw new Error('Invalid credentials')
+				throw new InvalidCredentialsError()
 			}
 
 			ctx.createSession({

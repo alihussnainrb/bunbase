@@ -22,13 +22,13 @@ export async function loadActions(
 	const moduleGlob = new Glob('**/_module.ts')
 	const moduleFiles: string[] = []
 
-	console.log(`[Loader] Scanning for modules in ${resolvedDir}`)
+	session.info(`Scanning for modules in ${resolvedDir}`)
 
 	for await (const path of moduleGlob.scan({
 		cwd: resolvedDir,
 		absolute: true,
 	})) {
-		console.log(`[Loader] Found module file: ${path}`)
+		session.debug(`Found module file: ${path}`)
 		moduleFiles.push(path)
 	}
 

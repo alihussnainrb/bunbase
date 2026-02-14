@@ -121,6 +121,7 @@ export async function executeAction(
 		logger: Logger
 		writeBuffer: WriteBuffer
 		db?: DatabaseClient
+		sql?: import('bun').SQL
 		storage?: StorageAdapter
 		mailer?: import('../mailer/types.ts').MailerAdapter
 		kv?: KVStore
@@ -200,6 +201,7 @@ export async function executeAction(
 		triggerType: opts.triggerType,
 		request: opts.request,
 		db: opts.db,
+		sql: opts.sql,
 		storage: opts.storage,
 		mailer: opts.mailer,
 		kv: opts.kv,

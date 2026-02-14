@@ -1,6 +1,6 @@
 /**
  * Example admin actions for managing roles and permissions dynamically.
- * These actions demonstrate the new IAM system that allows admins to:
+ * These actions demonstrate the platform RBAC system that allows admins to:
  * - Create/update/delete roles
  * - Create/delete permissions
  * - Assign/revoke permissions to roles
@@ -41,16 +41,13 @@ export const createRole = action(
 		],
 	},
 	async (input, ctx) => {
-		// Use ctx.iam for DB-backed permission management
-		const role = await ctx.iam?.roles.createRole({
+		// Use ctx.platform for DB-backed permission management
+		const role = await ctx.platform.rbac.roles.create({
 			key: input.key,
 			name: input.name,
 			description: input.description,
 			weight: input.weight || 0,
 		})
-
-		// Invalidate cache after creating role
-		ctx.iam.invalidateCache()
 
 		return {
 			id: role.id,
@@ -87,7 +84,7 @@ export const listRoles = action(
 		guards: [guards.authenticated()],
 	},
 	async (_input, ctx) => {
-		const roles = await ctx.iam.roles.getAllRoles()
+		const roles = await ctx.platform.rbac.roles.list()
 
 		return {
 			roles: roles.map((r) => ({
@@ -121,8 +118,7 @@ export const deleteRole = action(
 		guards: [guards.authenticated(), guards.hasRole('org:admin')],
 	},
 	async (input, ctx) => {
-		await ctx.iam.roles.deleteRole(input.key)
-		ctx.iam.invalidateCache(input.key)
+		await ctx.platform.rbac.roles.delete(input.key)
 
 		return { success: true }
 	},
@@ -154,13 +150,11 @@ export const createPermission = action(
 		guards: [guards.authenticated(), guards.hasRole('org:admin')],
 	},
 	async (input, ctx) => {
-		const permission = await ctx.iam.roles.createPermission({
+		const permission = await ctx.platform.rbac.permissions.create({
 			key: input.key,
 			name: input.name,
 			description: input.description,
 		})
-
-		ctx.iam.invalidateCache()
 
 		return {
 			id: permission.id,
@@ -195,7 +189,7 @@ export const listPermissions = action(
 		guards: [guards.authenticated()],
 	},
 	async (_input, ctx) => {
-		const permissions = await ctx.iam.roles.getAllPermissions()
+		const permissions = await ctx.platform.rbac.permissions.list()
 
 		return {
 			permissions: permissions.map((p) => ({
@@ -231,8 +225,10 @@ export const assignPermission = action(
 		guards: [guards.authenticated(), guards.hasRole('org:admin')],
 	},
 	async (input, ctx) => {
-		await ctx.iam.roles.assignPermission(input.roleKey, input.permissionKey)
-		ctx.iam.invalidateCache(input.roleKey)
+		await ctx.platform.rbac.assignments.assign(
+			input.roleKey,
+			input.permissionKey,
+		)
 
 		return { success: true }
 	},
@@ -259,8 +255,10 @@ export const revokePermission = action(
 		guards: [guards.authenticated(), guards.hasRole('org:admin')],
 	},
 	async (input, ctx) => {
-		await ctx.iam.roles.revokePermission(input.roleKey, input.permissionKey)
-		ctx.iam.invalidateCache(input.roleKey)
+		await ctx.platform.rbac.assignments.revoke(
+			input.roleKey,
+			input.permissionKey,
+		)
 
 		return { success: true }
 	},
@@ -287,7 +285,8 @@ export const getRolePermissions = action(
 		guards: [guards.authenticated()],
 	},
 	async (input, ctx) => {
-		const permissions = await ctx.iam.roles.getRolePermissions(input.roleKey)
+		const permissions =
+			await ctx.platform.rbac.assignments.listForRole(input.roleKey)
 
 		return {
 			roleKey: input.roleKey,

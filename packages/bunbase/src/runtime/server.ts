@@ -339,6 +339,7 @@ export class BunbaseServer {
 								logger: this.logger,
 								writeBuffer: this.writeBuffer,
 								db: this.services?.db,
+								sql: this.services?.sql,
 								storage: this.services?.storage,
 								mailer: this.services?.mailer,
 								kv: this.services?.kv,
@@ -600,6 +601,7 @@ export class BunbaseServer {
 					logger: this.logger,
 					writeBuffer: this.writeBuffer,
 					db: this.services?.db,
+					sql: this.services?.sql,
 					storage: this.services?.storage,
 					mailer: this.services?.mailer,
 					kv: this.services?.kv,
@@ -1081,14 +1083,20 @@ export class BunbaseServer {
 
 		const headers: Record<string, string> = {}
 		const origin = req.headers.get('origin')
+		const credentialsEnabled = this.corsConfig.credentials !== false
 
 		// Handle origin
 		if (
 			this.corsConfig.origin === true ||
 			this.corsConfig.origin === undefined
 		) {
-			// Allow all origins
-			headers['Access-Control-Allow-Origin'] = origin || '*'
+			// Allow all origins, but never use '*' with credentials (invalid per CORS spec)
+			if (credentialsEnabled && origin) {
+				headers['Access-Control-Allow-Origin'] = origin
+			} else if (!credentialsEnabled) {
+				headers['Access-Control-Allow-Origin'] = origin || '*'
+			}
+			// If credentials enabled but no origin header, don't set CORS header
 		} else if (this.corsConfig.origin === false) {
 			// Don't set CORS headers
 			return {}
@@ -1102,7 +1110,7 @@ export class BunbaseServer {
 		}
 
 		// Handle credentials
-		if (this.corsConfig.credentials !== false) {
+		if (credentialsEnabled) {
 			headers['Access-Control-Allow-Credentials'] = 'true'
 		}
 

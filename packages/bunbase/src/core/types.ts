@@ -286,6 +286,26 @@ export interface ActionContext {
 	iam: IAMManager
 
 	/**
+	 * Platform Manager — comprehensive authentication and authorization platform.
+	 * Provides access to auth, email, organizations, RBAC, billing, entitlements, and webhooks.
+	 * Only available if database is configured.
+	 *
+	 * @example
+	 * // Password authentication
+	 * const { userId, session } = await ctx.platform.auth.password.signUpPassword({ email, password })
+	 *
+	 * // Organization management
+	 * const org = await ctx.platform.orgs.organizations.create({ name: 'Acme Corp', ownerId })
+	 *
+	 * // Subscription management
+	 * await ctx.platform.billing.subscriptions.create({ userId, planKey: 'pro' })
+	 *
+	 * // Feature entitlements
+	 * const hasFeature = await ctx.platform.entitlements.resolver.hasFeature({ subjectType: 'user', subjectId }, 'api:advanced')
+	 */
+	platform: import('../platform/context.ts').PlatformManager
+
+	/**
 	 * Module context (if action is part of a module)
 	 */
 	module?: {
@@ -314,9 +334,9 @@ export interface ActionContext {
 	/** Action registry for introspection (used by studio actions) */
 	registry?: ActionRegistry
 
-	/** Schedule jobs for background execution */
+	/** Schedule jobs for background execution (number = delay in seconds, Date = specific time) */
 	schedule: (
-		time: number | Date | string,
+		time: number | Date,
 		name: string,
 		data: unknown,
 		opts?: { priority?: number; maxRetries?: number },
@@ -382,7 +402,10 @@ export interface ActionContext {
 	 */
 	channel: (name: string) => import('../realtime/types.ts').ChannelAPI
 
-	withMeta: <T>(data: T, metadata?: TransportMetadata) => ActionOutput<T>
+	withMeta: <T extends object>(
+		data: T,
+		metadata?: TransportMetadata,
+	) => ActionOutput<T>
 
 	/**
 	 * Call another action from within this action (action composition).

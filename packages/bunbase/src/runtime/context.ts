@@ -25,6 +25,7 @@ export interface CreateLazyContextOptions {
 	triggerType: string
 	request?: Request
 	db?: DatabaseClient
+	sql?: import('bun').SQL
 	storage?: StorageAdapter
 	mailer?: MailerAdapter
 	kv?: KVStore
@@ -63,6 +64,7 @@ export function createLazyContext(
 	let _kv: KVStore | null | undefined
 	let _queue: ActionContext['queue'] | undefined
 	let _iam: IAMManager | undefined
+	let _platform: import('../platform/context.ts').PlatformManager | undefined
 
 	const queue = opts.queue
 	const _scheduler = opts.scheduler
@@ -162,6 +164,27 @@ export function createLazyContext(
 				})
 			}
 			return _iam
+		},
+
+		// Lazy Platform manager - only initialized when accessed
+		get platform() {
+			if (_platform === undefined) {
+				const sqlConnection = opts.sql ?? null
+				if (!sqlConnection) {
+					throw new Error(
+						'Platform not available: Database not configured. Add database config to bunbase.config.ts',
+					)
+				}
+
+				// Import dynamically to avoid circular dependency
+				const { createPlatformManager } = require('../platform/context.ts')
+
+				_platform = createPlatformManager({
+					sql: sqlConnection,
+					logger: opts.logger,
+				})
+			}
+			return _platform!
 		},
 
 		// schedule function (lightweight)
@@ -282,7 +305,20 @@ export function createLazyContext(
 		},
 
 		// withMeta helper
-		withMeta: <T>(data: T, metadata?: TransportMetadata): ActionOutput<T> => {
+		withMeta: <T extends object>(
+			data: T,
+			metadata?: TransportMetadata,
+		): ActionOutput<T> => {
+			// Runtime check to ensure data is an object
+			if (
+				typeof data !== 'object' ||
+				data === null ||
+				Array.isArray(data)
+			) {
+				throw new Error(
+					'ctx.withMeta() requires data to be a plain object, not a primitive or array',
+				)
+			}
 			return { ...data, _meta: metadata } as ActionOutput<T>
 		},
 
@@ -322,6 +358,7 @@ export function createLazyContext(
 				logger: opts.logger,
 				writeBuffer: opts.writeBuffer,
 				db: opts.db,
+				sql: opts.sql,
 				storage: opts.storage,
 				mailer: opts.mailer,
 				kv: opts.kv,

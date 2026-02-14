@@ -73,7 +73,6 @@ export class VerificationManager {
 					verified_at: null,
 					created_at: new Date().toISOString(),
 				})
-				.exec()
 
 			// Generate verification URL
 			const verificationUrl = `${this.baseUrl}/auth/verify-email?token=${token}`
@@ -149,20 +148,18 @@ export class VerificationManager {
 			// Mark challenge as verified
 			await this.db
 				.from('auth_challenges')
+				.eq('id', challenge.id)
 				.update({
 					verified_at: new Date().toISOString(),
 				})
-				.eq('id', challenge.id)
-				.exec()
 
 			// Update user email_verified_at
 			await this.db
 				.from('users')
+				.eq('id', userId)
 				.update({
 					email_verified_at: new Date().toISOString(),
 				})
-				.eq('id', userId)
-				.exec()
 
 			this.logger.info('Email verified', { userId, email, challengeId: challenge.id })
 
@@ -194,13 +191,12 @@ export class VerificationManager {
 		// Invalidate previous challenges for this email
 		await this.db
 			.from('auth_challenges')
-			.update({
-				expires_at: new Date().toISOString(), // Expire immediately
-			})
 			.eq('identifier', email.toLowerCase())
 			.eq('type', 'email_verification')
 			.isNull('verified_at')
-			.exec()
+			.update({
+				expires_at: new Date().toISOString(), // Expire immediately
+			})
 
 		// Send new verification email
 		return this.sendVerificationEmail(data)
@@ -257,11 +253,10 @@ export class VerificationManager {
 		try {
 			const result = await this.db
 				.from('auth_challenges')
-				.delete()
 				.eq('type', 'email_verification')
 				.isNull('verified_at')
 				.lt('expires_at', new Date().toISOString())
-				.exec()
+				.delete()
 
 			const count = Array.isArray(result) ? result.length : 0
 			this.logger.debug(`Cleaned up ${count} expired verification challenges`)

@@ -74,7 +74,7 @@ export class OAuthAccountLinker {
 				accessToken,
 				refreshToken,
 				tokenType,
-				expiresAt,
+				expiresAt: expiresAt ?? undefined,
 				scope,
 				idToken,
 				profile,
@@ -91,11 +91,11 @@ export class OAuthAccountLinker {
 				oauthAccount: {
 					...existingAccount,
 					accessToken,
-					refreshToken,
-					tokenType,
-					expiresAt,
-					scope,
-					idToken,
+					refreshToken: refreshToken ?? null,
+					tokenType: tokenType ?? null,
+					expiresAt: expiresAt ?? null,
+					scope: scope ?? null,
+					idToken: idToken ?? null,
 					profile,
 				},
 			}
@@ -136,11 +136,11 @@ export class OAuthAccountLinker {
 			provider,
 			providerAccountId: profile.id,
 			accessToken,
-			refreshToken,
-			tokenType,
-			expiresAt,
-			scope,
-			idToken,
+			refreshToken: refreshToken ?? undefined,
+			tokenType: tokenType ?? undefined,
+			expiresAt: expiresAt ?? undefined,
+			scope: scope ?? undefined,
+			idToken: idToken ?? undefined,
 			profile,
 		})
 
@@ -187,7 +187,6 @@ export class OAuthAccountLinker {
 					created_at: new Date().toISOString(),
 					updated_at: new Date().toISOString(),
 				})
-				.exec()
 
 			return userId
 		} catch (err) {
@@ -245,6 +244,7 @@ export class OAuthAccountLinker {
 		try {
 			const [row] = await this.db
 				.from('oauth_accounts')
+				.returning(['*'])
 				.insert({
 					id,
 					user_id: userId,
@@ -260,8 +260,6 @@ export class OAuthAccountLinker {
 					created_at: new Date().toISOString(),
 					updated_at: new Date().toISOString(),
 				})
-				.returning('*')
-				.exec()
 
 			this.logger.info('OAuth account linked to user', {
 				userId,
@@ -317,10 +315,9 @@ export class OAuthAccountLinker {
 		try {
 			await this.db
 				.from('oauth_accounts')
-				.delete()
 				.eq('user_id', userId)
 				.eq('provider', provider)
-				.exec()
+				.delete()
 
 			this.logger.info('OAuth account unlinked', { userId, provider })
 		} catch (err) {
@@ -377,9 +374,9 @@ export class OAuthAccountLinker {
 	async listAccountsForUser(userId: UserId): Promise<OAuthAccount[]> {
 		const rows = await this.db
 			.from('oauth_accounts')
-			.select('*')
 			.eq('user_id', userId)
-			.orderBy('created_at', 'desc')
+			.orderBy('created_at', 'DESC')
+			.select('*')
 			.exec()
 
 		return rows.map((row) => this.mapRowToAccount(row))
@@ -414,9 +411,8 @@ export class OAuthAccountLinker {
 		try {
 			await this.db
 				.from('oauth_accounts')
-				.update(updateData)
 				.eq('id', accountId)
-				.exec()
+				.update(updateData)
 
 			this.logger.debug('OAuth account updated', { accountId })
 		} catch (err) {

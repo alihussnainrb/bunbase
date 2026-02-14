@@ -245,6 +245,7 @@ export interface Organization {
 	id: OrgId
 	name: string
 	slug: string
+	ownerId: UserId
 	avatarUrl: string | null
 	metadata: Record<string, unknown>
 	createdAt: Date
@@ -414,14 +415,14 @@ export type OverrideType = 'grant' | 'deny' | 'limit'
  */
 export interface EntitlementOverride {
 	id: string
-	principalType: PrincipalType
-	principalId: string
-	featureId: string
-	overrideType: OverrideType
-	value: boolean | number | null
+	subjectType: 'user' | 'org'
+	subjectId: string
+	featureKey: string
+	overrideType: 'grant' | 'deny' | 'limit'
+	limitValue: number | null
 	reason: string | null
+	orgId: string | null
 	createdAt: Date
-	createdBy: UserId | null
 }
 
 /**

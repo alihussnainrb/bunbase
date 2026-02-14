@@ -29,7 +29,7 @@ export class SessionDBManager {
 		logger: Logger,
 		cookieName = 'bunbase_session',
 	) {
-		this.sessionManager = new SessionManager(secret, cookieName)
+		this.sessionManager = new SessionManager({ secret, cookieName })
 		this.db = db
 		this.logger = logger
 	}
@@ -80,7 +80,6 @@ export class SessionDBManager {
 					revoked_at: null,
 					revoke_reason: null,
 				})
-				.exec()
 
 			this.logger.debug(`Session created: ${sessionId}`, { userId, sessionId })
 		} catch (err) {
@@ -101,7 +100,7 @@ export class SessionDBManager {
 	 */
 	async verifySession(token: string): Promise<SessionPayload & { sessionId: SessionId }> {
 		// Verify HMAC signature and expiration
-		const payload = this.sessionManager.verifySession<SessionPayload>(token)
+		const payload = this.sessionManager.verifySession(token)
 		if (!payload) {
 			throw new InvalidSessionError()
 		}
@@ -142,7 +141,7 @@ export class SessionDBManager {
 				})
 			})
 
-			return { ...payload, sessionId }
+			return { userId: payload.userId, sessionId, role: payload.role, exp: payload.exp as number }
 		} catch (err) {
 			if (err instanceof InvalidSessionError || err instanceof SessionRevokedError) {
 				throw err
@@ -161,11 +160,10 @@ export class SessionDBManager {
 	private async updateLastActive(sessionId: SessionId): Promise<void> {
 		await this.db
 			.from('auth_sessions')
+			.eq('id', sessionId)
 			.update({
 				last_active_at: new Date().toISOString(),
 			})
-			.eq('id', sessionId)
-			.exec()
 	}
 
 	// ====================================================================
@@ -179,6 +177,9 @@ export class SessionDBManager {
 		try {
 			const rows = await this.db
 				.from('auth_sessions')
+				.eq('user_id', userId)
+				.isNull('revoked_at')
+				.orderBy('created_at', 'DESC')
 				.select(
 					'id',
 					'user_id',
@@ -191,9 +192,6 @@ export class SessionDBManager {
 					'revoked_at',
 					'revoke_reason',
 				)
-				.eq('user_id', userId)
-				.isNull('revoked_at')
-				.orderBy('created_at', 'desc')
 				.exec()
 
 			return rows.map((row: any) => ({
@@ -225,12 +223,11 @@ export class SessionDBManager {
 		try {
 			await this.db
 				.from('auth_sessions')
+				.eq('id', sessionId)
 				.update({
 					revoked_at: new Date().toISOString(),
 					revoke_reason: reason ?? 'User revoked',
 				})
-				.eq('id', sessionId)
-				.exec()
 
 			this.logger.info(`Session revoked: ${sessionId}`, { sessionId, reason })
 		} catch (err) {
@@ -249,10 +246,6 @@ export class SessionDBManager {
 		try {
 			let query = this.db
 				.from('auth_sessions')
-				.update({
-					revoked_at: new Date().toISOString(),
-					revoke_reason: 'All sessions revoked by user',
-				})
 				.eq('user_id', userId)
 				.isNull('revoked_at')
 
@@ -260,7 +253,10 @@ export class SessionDBManager {
 				query = query.neq('id', exceptSessionId)
 			}
 
-			const result = await query.exec()
+			const result = await query.update({
+				revoked_at: new Date().toISOString(),
+				revoke_reason: 'All sessions revoked by user',
+			})
 
 			const count = Array.isArray(result) ? result.length : 0
 			this.logger.info(`Revoked ${count} sessions for user`, { userId, exceptSessionId })
@@ -281,12 +277,11 @@ export class SessionDBManager {
 		try {
 			await this.db
 				.from('auth_sessions')
+				.eq('token_hash', tokenHash)
 				.update({
 					revoked_at: new Date().toISOString(),
 					revoke_reason: reason ?? 'User logged out',
 				})
-				.eq('token_hash', tokenHash)
-				.exec()
 
 			this.logger.info('Session revoked by token', { reason })
 		} catch (err) {
@@ -307,9 +302,8 @@ export class SessionDBManager {
 		try {
 			const result = await this.db
 				.from('auth_sessions')
-				.delete()
 				.lt('expires_at', new Date().toISOString())
-				.exec()
+				.delete()
 
 			const count = Array.isArray(result) ? result.length : 0
 			this.logger.debug(`Cleaned up ${count} expired sessions`)

@@ -92,7 +92,9 @@ export class TemplateRenderer {
 		const variables = new Set<string>()
 
 		for (const match of matches) {
-			variables.add(match[1])
+			if (match[1]) {
+				variables.add(match[1])
+			}
 		}
 
 		return Array.from(variables)

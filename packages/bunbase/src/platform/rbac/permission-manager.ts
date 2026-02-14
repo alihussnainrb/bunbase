@@ -149,7 +149,7 @@ export class PermissionManager {
 			key: updated.key,
 			name: updated.name,
 			description: updated.description,
-			createdAt: updated.created_at,
+			createdAt: new Date(updated.created_at),
 		}
 	}
 

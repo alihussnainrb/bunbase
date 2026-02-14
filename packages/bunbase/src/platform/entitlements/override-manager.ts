@@ -85,7 +85,7 @@ export class OverrideManager {
 				feature_key,
 				override_type,
 				limit_value,
-				reason,
+				reason: reason ?? null,
 				org_id,
 				created_at
 			)
@@ -109,9 +109,9 @@ export class OverrideManager {
 			featureKey,
 			overrideType: 'grant',
 			limitValue,
-			reason,
+			reason: reason ?? null,
 			orgId,
-			createdAt: new Date().toISOString(),
+			createdAt: new Date(),
 		}
 	}
 
@@ -140,7 +140,7 @@ export class OverrideManager {
 				subject_id,
 				feature_key,
 				override_type,
-				reason,
+				reason: reason ?? null,
 				org_id,
 				created_at
 			)
@@ -162,9 +162,9 @@ export class OverrideManager {
 			subjectId,
 			featureKey,
 			overrideType: 'deny',
-			reason,
+			reason: reason ?? null,
 			orgId,
-			createdAt: new Date().toISOString(),
+			createdAt: new Date(),
 		}
 	}
 
@@ -199,7 +199,7 @@ export class OverrideManager {
 				feature_key,
 				override_type,
 				limit_value,
-				reason,
+				reason: reason ?? null,
 				org_id,
 				created_at
 			)
@@ -223,9 +223,9 @@ export class OverrideManager {
 			featureKey,
 			overrideType: 'limit',
 			limitValue,
-			reason,
+			reason: reason ?? null,
 			orgId,
-			createdAt: new Date().toISOString(),
+			createdAt: new Date(),
 		}
 	}
 
@@ -264,7 +264,7 @@ export class OverrideManager {
 				feature_key as "featureKey",
 				override_type as "overrideType",
 				limit_value as "limitValue",
-				reason,
+				reason: reason ?? null,
 				org_id as "orgId",
 				created_at as "createdAt"
 			FROM entitlement_overrides
@@ -293,7 +293,7 @@ export class OverrideManager {
 				feature_key as "featureKey",
 				override_type as "overrideType",
 				limit_value as "limitValue",
-				reason,
+				reason: reason ?? null,
 				org_id as "orgId",
 				created_at as "createdAt"
 			FROM entitlement_overrides
@@ -341,7 +341,7 @@ export class OverrideManager {
 				feature_key as "featureKey",
 				override_type as "overrideType",
 				limit_value as "limitValue",
-				reason,
+				reason: reason ?? null,
 				org_id as "orgId",
 				created_at as "createdAt"
 			FROM entitlement_overrides

@@ -112,7 +112,6 @@ export class TOTPManager {
 					verified_at: null,
 					created_at: new Date().toISOString(),
 				})
-				.exec()
 
 			// Create pending MFA factor
 			await this.db
@@ -133,7 +132,6 @@ export class TOTPManager {
 					created_at: new Date().toISOString(),
 					updated_at: new Date().toISOString(),
 				})
-				.exec()
 
 			this.logger.info('TOTP enrollment started', {
 				userId,
@@ -179,7 +177,7 @@ export class TOTPManager {
 			.maybeSingle()
 
 		if (!challenge) {
-			throw new InvalidCodeError('Invalid or already verified enrollment')
+			throw new InvalidCodeError({ reason: 'Invalid or already verified enrollment' })
 		}
 
 		// Check expiration
@@ -199,7 +197,7 @@ export class TOTPManager {
 			.maybeSingle()
 
 		if (!factor) {
-			throw new InvalidCodeError('Enrollment factor not found')
+			throw new InvalidCodeError({ reason: 'Enrollment factor not found' })
 		}
 
 		// Verify TOTP code
@@ -218,28 +216,26 @@ export class TOTPManager {
 				userId,
 				factorId: factor.id,
 			})
-			throw new InvalidCodeError('Invalid verification code')
+			throw new InvalidCodeError({ reason: 'Invalid verification code' })
 		}
 
 		// Activate MFA factor
 		await this.db
 			.from('mfa_factors')
+			.eq('id', factor.id)
 			.update({
 				status: 'active',
 				verified_at: new Date().toISOString(),
 				updated_at: new Date().toISOString(),
 			})
-			.eq('id', factor.id)
-			.exec()
 
 		// Mark challenge as verified
 		await this.db
 			.from('auth_challenges')
+			.eq('id', challengeId)
 			.update({
 				verified_at: new Date().toISOString(),
 			})
-			.eq('id', challengeId)
-			.exec()
 
 		// Generate backup codes
 		const backupCodes = await this.generateBackupCodes(userId)
@@ -313,12 +309,11 @@ export class TOTPManager {
 				// Update last used timestamp
 				await this.db
 					.from('mfa_factors')
+					.eq('id', factor.id)
 					.update({
 						last_used_at: new Date().toISOString(),
 						updated_at: new Date().toISOString(),
 					})
-					.eq('id', factor.id)
-					.exec()
 
 				this.logger.info('TOTP verified', {
 					userId,
@@ -333,7 +328,7 @@ export class TOTPManager {
 		}
 
 		this.logger.warn('Invalid TOTP code', { userId })
-		throw new InvalidCodeError('Invalid verification code')
+		throw new InvalidCodeError({ reason: 'Invalid verification code' })
 	}
 
 	// ====================================================================
@@ -359,12 +354,11 @@ export class TOTPManager {
 		// Disable factor
 		await this.db
 			.from('mfa_factors')
+			.eq('id', factorId)
 			.update({
 				status: 'disabled',
 				updated_at: new Date().toISOString(),
 			})
-			.eq('id', factorId)
-			.exec()
 
 		this.logger.info('TOTP disabled', { userId, factorId })
 	}
@@ -380,10 +374,9 @@ export class TOTPManager {
 		// Delete existing unused backup codes
 		await this.db
 			.from('mfa_backup_codes')
-			.delete()
 			.eq('user_id', userId)
 			.isNull('used_at')
-			.exec()
+			.delete()
 
 		const codes: string[] = []
 		const inserts: Array<{
@@ -410,7 +403,7 @@ export class TOTPManager {
 		}
 
 		// Store backup codes
-		await this.db.from('mfa_backup_codes').insert(inserts).exec()
+		await this.db.from('mfa_backup_codes').insert(inserts)
 
 		this.logger.info('Backup codes generated', {
 			userId,
@@ -443,17 +436,16 @@ export class TOTPManager {
 
 		if (!backupCode) {
 			this.logger.warn('Invalid backup code', { userId })
-			throw new InvalidCodeError('Invalid backup code')
+			throw new InvalidCodeError({ reason: 'Invalid backup code' })
 		}
 
 		// Mark as used
 		await this.db
 			.from('mfa_backup_codes')
+			.eq('id', backupCode.id)
 			.update({
 				used_at: new Date().toISOString(),
 			})
-			.eq('id', backupCode.id)
-			.exec()
 
 		// Count remaining codes
 		const remaining = await this.db
@@ -500,9 +492,9 @@ export class TOTPManager {
 	async listFactors(userId: UserId): Promise<MFAFactor[]> {
 		const rows = await this.db
 			.from('mfa_factors')
-			.select('*')
 			.eq('user_id', userId)
-			.orderBy('created_at', 'desc')
+			.orderBy('created_at', 'DESC')
+			.select('*')
 			.exec()
 
 		return rows.map((row) => this.mapRowToFactor(row))
@@ -598,7 +590,7 @@ function generateBackupCode(): string {
 
 	let code = ''
 	for (let i = 0; i < 8; i++) {
-		code += chars[array[i] % chars.length]
+		code += chars[array[i]! % chars.length]
 	}
 
 	return code

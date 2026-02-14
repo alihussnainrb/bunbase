@@ -5,6 +5,7 @@
 
 import type { SQL } from 'bun'
 import type { Logger } from '../logger/index.ts'
+import { createDB } from '../db/client.ts'
 
 // Auth managers
 import { SessionDBManager } from './auth/session-db.ts'
@@ -18,7 +19,7 @@ import { StepUpManager } from './auth/mfa/stepup-manager.ts'
 
 // Email managers
 import { TemplateManager } from './email/template-manager.ts'
-import { TemplateRenderer } from './email/template-renderer.ts'
+import { TemplateRenderer } from './email/renderer.ts'
 import { EmailSender } from './email/sender.ts'
 
 // Organization managers
@@ -122,6 +123,11 @@ export interface PlatformManager {
 export interface CreatePlatformManagerOptions {
 	sql: SQL
 	logger: Logger
+	baseUrl?: string
+	appName?: string
+	oauthProviders?: Map<string, any>
+	mailer?: any // MailerAdapter - optional, will use console logger if not provided
+	fromEmail?: string
 }
 
 /**
@@ -130,21 +136,36 @@ export interface CreatePlatformManagerOptions {
 export function createPlatformManager(
 	opts: CreatePlatformManagerOptions,
 ): PlatformManager {
-	const { sql, logger } = opts
+	const {
+		sql,
+		logger,
+		baseUrl = 'http://localhost:3000',
+		appName = 'Bunbase',
+		oauthProviders = new Map(),
+		mailer = null as any,
+		fromEmail = 'noreply@example.com'
+	} = opts
+
+	// Create database client
+	const db = createDB(sql)
+
+	// Session secret from environment
+	const sessionSecret = process.env.SESSION_SECRET ?? 'dev-secret-change-in-production'
+
+	// Initialize email first (needed by other managers)
+	const templateManager = new TemplateManager(db, logger)
+	const templateRenderer = new TemplateRenderer()
+	const emailSender = new EmailSender(db, mailer, templateManager, templateRenderer, logger, fromEmail)
 
 	// Initialize all managers
-	const sessionDB = new SessionDBManager(sql, logger)
-	const passwordAuth = new PasswordAuthManager(sql, logger)
-	const verification = new VerificationManager(sql, logger)
-	const passwordReset = new PasswordResetManager(sql, logger)
-	const oauth = new OAuthManager(sql, logger)
-	const otp = new OTPManager(sql, logger)
-	const totp = new TOTPManager(sql, logger)
-	const stepUp = new StepUpManager(sql, logger)
-
-	const templateManager = new TemplateManager(sql, logger)
-	const templateRenderer = new TemplateRenderer()
-	const emailSender = new EmailSender(sql, logger)
+	const sessionDB = new SessionDBManager(sessionSecret, db, logger)
+	const passwordAuth = new PasswordAuthManager(db, sessionDB, logger)
+	const verification = new VerificationManager(db, emailSender, logger, baseUrl)
+	const passwordReset = new PasswordResetManager(db, emailSender, passwordAuth, logger, baseUrl)
+	const oauth = new OAuthManager(db, sessionDB, logger, oauthProviders)
+	const otp = new OTPManager(db, emailSender, logger)
+	const totp = new TOTPManager(db, logger, appName)
+	const stepUp = new StepUpManager(db, passwordAuth, totp, logger)
 
 	const orgManager = new OrganizationManager(sql, logger)
 	const membershipManager = new MembershipManager(sql, logger)

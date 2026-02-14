@@ -84,8 +84,9 @@ export class PasswordAuthManager {
 		// Start transaction - create user, credential, and session atomically
 		try {
 			// Create user
-			const [userRow] = await this.db
+			const userRow = await this.db
 				.from('users')
+				.returning(['*'])
 				.insert({
 					id: userId,
 					email: email.toLowerCase(),
@@ -99,8 +100,10 @@ export class PasswordAuthManager {
 					last_sign_in_at: new Date().toISOString(),
 					deleted_at: null,
 				})
-				.returning('*')
-				.exec()
+
+			if (!userRow) {
+				throw new Error('Failed to create user')
+			}
 
 			// Create password credential
 			await this.db
@@ -112,7 +115,6 @@ export class PasswordAuthManager {
 					changed_at: new Date().toISOString(),
 					created_at: new Date().toISOString(),
 				})
-				.exec()
 
 			// Create session
 			const session = await this.sessionManager.createSession(userId, {
@@ -197,11 +199,10 @@ export class PasswordAuthManager {
 		// Update last sign in timestamp
 		await this.db
 			.from('users')
+			.eq('id', userId)
 			.update({
 				last_sign_in_at: new Date().toISOString(),
 			})
-			.eq('id', userId)
-			.exec()
 
 		// Create session
 		const session = await this.sessionManager.createSession(userId, {
@@ -275,12 +276,11 @@ export class PasswordAuthManager {
 		// Update password
 		await this.db
 			.from('credentials_password')
+			.eq('user_id', userId)
 			.update({
 				password_hash: newPasswordHash,
 				changed_at: new Date().toISOString(),
 			})
-			.eq('user_id', userId)
-			.exec()
 
 		// Revoke all other sessions (except current)
 		// Note: Current session needs to be passed separately if you want to keep it
@@ -312,12 +312,11 @@ export class PasswordAuthManager {
 			// Update existing credential
 			await this.db
 				.from('credentials_password')
+				.eq('user_id', userId)
 				.update({
 					password_hash: newPasswordHash,
 					changed_at: new Date().toISOString(),
 				})
-				.eq('user_id', userId)
-				.exec()
 		} else {
 			// Create new credential
 			await this.db
@@ -329,7 +328,6 @@ export class PasswordAuthManager {
 					changed_at: new Date().toISOString(),
 					created_at: new Date().toISOString(),
 				})
-				.exec()
 		}
 
 		// Revoke all sessions

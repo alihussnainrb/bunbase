@@ -80,7 +80,7 @@ export class InvitationManager {
 			  AND expires_at > NOW()
 		`
 		if (existingInvitation.length > 0) {
-			throw new InvalidInvitationError('An active invitation already exists for this email')
+			throw new InvalidInvitationError({ reason: 'An active invitation already exists for this email' })
 		}
 
 		// Generate invitation ID and token
@@ -127,8 +127,8 @@ export class InvitationManager {
 			role,
 			invitedBy,
 			status: 'pending',
-			createdAt: new Date().toISOString(),
-			expiresAt: expiresAt.toISOString(),
+			createdAt: new Date(),
+			expiresAt: expiresAt,
 			token, // Only returned here, never stored plain
 		}
 	}
@@ -166,7 +166,7 @@ export class InvitationManager {
 		`
 
 		if (rows.length === 0) {
-			throw new InvalidInvitationError('Invalid invitation token')
+			throw new InvalidInvitationError({ reason: 'Invalid invitation token' })
 		}
 
 		const invitation = rows[0] as {
@@ -185,12 +185,12 @@ export class InvitationManager {
 
 		// Check if revoked
 		if (invitation.status === 'revoked') {
-			throw new InvalidInvitationError('This invitation has been revoked')
+			throw new InvalidInvitationError({ reason: 'This invitation has been revoked' })
 		}
 
 		// Check expiration
 		if (new Date(invitation.expiresAt) < new Date()) {
-			throw new InvalidInvitationError('This invitation has expired')
+			throw new InvalidInvitationError({ reason: 'This invitation has expired' })
 		}
 
 		// Verify user email matches invitation email
@@ -198,12 +198,12 @@ export class InvitationManager {
 			SELECT email FROM users WHERE id = ${userId}
 		`
 		if (userRows.length === 0) {
-			throw new InvalidInvitationError('User not found')
+			throw new InvalidInvitationError({ reason: 'User not found' })
 		}
 
 		const userEmail = (userRows[0] as { email: string }).email
 		if (userEmail !== invitation.email) {
-			throw new InvalidInvitationError('User email does not match invitation')
+			throw new InvalidInvitationError({ reason: 'User email does not match invitation' })
 		}
 
 		// Check if already a member (race condition protection)
@@ -258,13 +258,13 @@ export class InvitationManager {
 		`
 
 		if (rows.length === 0) {
-			throw new InvalidInvitationError('Invitation not found')
+			throw new InvalidInvitationError({ reason: 'Invitation not found' })
 		}
 
 		const status = (rows[0] as { status: string }).status
 
 		if (status !== 'pending') {
-			throw new InvalidInvitationError(`Cannot revoke ${status} invitation`)
+			throw new InvalidInvitationError({ reason: `Cannot revoke ${status} invitation`, status })
 		}
 
 		// Revoke invitation

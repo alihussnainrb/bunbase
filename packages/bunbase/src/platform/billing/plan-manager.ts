@@ -80,9 +80,11 @@ export class PlanManager {
 				id: planId,
 				key: data.key,
 				name: data.name,
-				priceCents: data.priceCents,
-				description: data.description,
-				createdAt: new Date().toISOString(),
+				description: data.description ?? null,
+				metadata: {},
+				isActive: true,
+				createdAt: new Date(),
+				updatedAt: new Date(),
 			}
 		} catch (err) {
 			this.logger.error('Failed to create plan', { error: err })
@@ -176,16 +178,21 @@ export class PlanManager {
 			name: string
 			price_cents: number
 			description?: string
+			metadata?: Record<string, unknown>
+			is_active?: boolean
 			created_at: string
+			updated_at: string
 		}
 
 		return {
 			id: updated.id as PlanId,
 			key: updated.key,
 			name: updated.name,
-			priceCents: updated.price_cents,
-			description: updated.description,
-			createdAt: updated.created_at,
+			description: updated.description ?? null,
+			metadata: updated.metadata || {},
+			isActive: updated.is_active ?? true,
+			createdAt: new Date(updated.created_at),
+			updatedAt: new Date(updated.updated_at),
 		}
 	}
 

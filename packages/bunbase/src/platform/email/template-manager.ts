@@ -87,7 +87,7 @@ export class TemplateManager {
 				.from('email_templates')
 				.select('*')
 				.eq('is_active', true)
-				.orderBy('name', 'asc')
+				.orderBy('name', 'ASC')
 				.exec()
 
 			return rows.map((row: any) => this.mapRowToTemplate(row))
@@ -105,7 +105,7 @@ export class TemplateManager {
 			const rows = await this.db
 				.from('email_templates')
 				.select('*')
-				.orderBy('name', 'asc')
+				.orderBy('name', 'ASC')
 				.exec()
 
 			return rows.map((row: any) => this.mapRowToTemplate(row))
@@ -155,7 +155,7 @@ export class TemplateManager {
 		const templateId = newTemplateId()
 
 		try {
-			const [row] = await this.db
+			const row = await this.db
 				.from('email_templates')
 				.insert({
 					id: templateId,
@@ -170,8 +170,6 @@ export class TemplateManager {
 					created_at: new Date().toISOString(),
 					updated_at: new Date().toISOString(),
 				})
-				.returning('*')
-				.exec()
 
 			this.logger.info('Email template created', { templateId, key })
 
@@ -218,13 +216,11 @@ export class TemplateManager {
 
 		updateData.updated_at = new Date().toISOString()
 
-		try {
+		try{
 			const [row] = await this.db
 				.from('email_templates')
-				.update(updateData)
 				.eq('id', id)
-				.returning('*')
-				.exec()
+				.update(updateData)
 
 			if (!row) {
 				throw new TemplateNotFoundError(id)
@@ -253,12 +249,11 @@ export class TemplateManager {
 		try {
 			await this.db
 				.from('email_templates')
+				.eq('id', id)
 				.update({
 					is_active: false,
 					updated_at: new Date().toISOString(),
 				})
-				.eq('id', id)
-				.exec()
 
 			this.logger.info('Email template deleted', { id })
 		} catch (err) {
@@ -272,7 +267,7 @@ export class TemplateManager {
 	 */
 	async hardDelete(id: TemplateId): Promise<void> {
 		try {
-			await this.db.from('email_templates').delete().eq('id', id).exec()
+			await this.db.from('email_templates').eq('id', id).delete()
 
 			this.logger.info('Email template permanently deleted', { id })
 		} catch (err) {

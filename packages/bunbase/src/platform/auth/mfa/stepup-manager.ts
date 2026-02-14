@@ -76,7 +76,6 @@ export class StepUpManager {
 				expires_at: expiresAt.toISOString(),
 				created_at: new Date().toISOString(),
 			})
-			.exec()
 
 		this.logger.info('Step-up authentication verified', {
 			userId,
@@ -106,12 +105,12 @@ export class StepUpManager {
 	): Promise<boolean> {
 		const row = await this.db
 			.from('stepup_sessions')
-			.select('*')
 			.eq('user_id', userId)
 			.eq('session_id', sessionId)
 			.gt('expires_at', new Date().toISOString())
-			.orderBy('created_at', 'desc')
+			.orderBy('created_at', 'DESC')
 			.limit(1)
+			.select('*')
 			.maybeSingle()
 
 		if (!row) {
@@ -161,9 +160,8 @@ export class StepUpManager {
 	async revokeStepUp(stepUpSessionId: string): Promise<void> {
 		await this.db
 			.from('stepup_sessions')
-			.delete()
 			.eq('id', stepUpSessionId)
-			.exec()
+			.delete()
 
 		this.logger.debug('Step-up session revoked', { stepUpSessionId })
 	}
@@ -174,9 +172,8 @@ export class StepUpManager {
 	async revokeAllStepUp(userId: UserId): Promise<number> {
 		const result = await this.db
 			.from('stepup_sessions')
-			.delete()
 			.eq('user_id', userId)
-			.exec()
+			.delete()
 
 		const count = Array.isArray(result) ? result.length : 0
 		this.logger.debug('All step-up sessions revoked', { userId, count })
@@ -190,9 +187,8 @@ export class StepUpManager {
 	async revokeAllStepUpForSession(sessionId: string): Promise<number> {
 		const result = await this.db
 			.from('stepup_sessions')
-			.delete()
 			.eq('session_id', sessionId)
-			.exec()
+			.delete()
 
 		const count = Array.isArray(result) ? result.length : 0
 		this.logger.debug('Step-up sessions revoked for session', {
@@ -214,9 +210,8 @@ export class StepUpManager {
 		try {
 			const result = await this.db
 				.from('stepup_sessions')
-				.delete()
 				.lt('expires_at', new Date().toISOString())
-				.exec()
+				.delete()
 
 			const count = Array.isArray(result) ? result.length : 0
 			this.logger.debug(`Cleaned up ${count} expired step-up sessions`)
@@ -240,10 +235,10 @@ export class StepUpManager {
 	async listStepUpSessions(userId: UserId): Promise<StepUpSession[]> {
 		const rows = await this.db
 			.from('stepup_sessions')
-			.select('*')
 			.eq('user_id', userId)
 			.gt('expires_at', new Date().toISOString())
-			.orderBy('created_at', 'desc')
+			.orderBy('created_at', 'DESC')
+			.select('*')
 			.exec()
 
 		return rows.map((row) => this.mapRowToStepUpSession(row))
@@ -273,7 +268,7 @@ export class StepUpManager {
 			}
 
 			// Verify password
-			const { verifyPassword } = await import('../password.ts')
+			const { verifyPassword } = await import('../../../auth/password.ts')
 			return await verifyPassword(password, credential.password_hash as string)
 		} catch (err) {
 			this.logger.error('Step-up password verification failed', {

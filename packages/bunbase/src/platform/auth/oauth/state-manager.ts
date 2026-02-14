@@ -48,6 +48,7 @@ export class OAuthStateManager {
 		try {
 			const [row] = await this.db
 				.from('oauth_states')
+				.returning(['*'])
 				.insert({
 					id,
 					state,
@@ -61,8 +62,6 @@ export class OAuthStateManager {
 					expires_at: expiresAt.toISOString(),
 					created_at: new Date().toISOString(),
 				})
-				.returning('*')
-				.exec()
 
 			this.logger.debug('OAuth state created', {
 				stateId: id,
@@ -117,7 +116,7 @@ export class OAuthStateManager {
 	 */
 	async deleteState(state: string): Promise<void> {
 		try {
-			await this.db.from('oauth_states').delete().eq('state', state).exec()
+			await this.db.from('oauth_states').eq('state', state).delete()
 
 			this.logger.debug('OAuth state deleted', { state: state.substring(0, 8) + '...' })
 		} catch (err) {
@@ -155,9 +154,8 @@ export class OAuthStateManager {
 		try {
 			const result = await this.db
 				.from('oauth_states')
-				.delete()
 				.lt('expires_at', new Date().toISOString())
-				.exec()
+				.delete()
 
 			const count = Array.isArray(result) ? result.length : 0
 			this.logger.debug(`Cleaned up ${count} expired OAuth states`)

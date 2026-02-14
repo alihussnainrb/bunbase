@@ -80,7 +80,6 @@ export class OTPManager {
 					verified_at: null,
 					created_at: new Date().toISOString(),
 				})
-				.exec()
 
 			// Create OTP code record
 			await this.db
@@ -97,7 +96,6 @@ export class OTPManager {
 					verified_at: null,
 					created_at: new Date().toISOString(),
 				})
-				.exec()
 
 			// Send OTP via appropriate channel
 			if (deliveryMethod === 'email') {
@@ -144,7 +142,7 @@ export class OTPManager {
 			.maybeSingle()
 
 		if (!challenge) {
-			throw new InvalidCodeError('Invalid or already used OTP code')
+			throw new InvalidCodeError({ reason: 'Invalid or already used OTP code' })
 		}
 
 		// Check expiration
@@ -164,11 +162,10 @@ export class OTPManager {
 		// Increment attempt count
 		await this.db
 			.from('auth_challenges')
+			.eq('id', challengeId)
 			.update({
 				attempts: attempts + 1,
 			})
-			.eq('id', challengeId)
-			.exec()
 
 		// Verify code (timing-safe comparison)
 		const storedCodeHash = challenge.code_hash as string
@@ -180,25 +177,23 @@ export class OTPManager {
 				challengeId,
 				attemptsRemaining: maxAttempts - attempts - 1,
 			})
-			throw new InvalidCodeError('Invalid OTP code')
+			throw new InvalidCodeError({ reason: 'Invalid OTP code' })
 		}
 
 		// Mark as verified
 		await this.db
 			.from('auth_challenges')
+			.eq('id', challengeId)
 			.update({
 				verified_at: new Date().toISOString(),
 			})
-			.eq('id', challengeId)
-			.exec()
 
 		await this.db
 			.from('otp_codes')
+			.eq('challenge_id', challengeId)
 			.update({
 				verified_at: new Date().toISOString(),
 			})
-			.eq('challenge_id', challengeId)
-			.exec()
 
 		const userId = challenge.user_id as UserId | null
 		const identifier = challenge.identifier as string
@@ -230,13 +225,12 @@ export class OTPManager {
 		// Invalidate previous OTP codes for this identifier
 		await this.db
 			.from('auth_challenges')
-			.update({
-				expires_at: new Date().toISOString(), // Expire immediately
-			})
 			.eq('identifier', identifier.toLowerCase())
 			.eq('type', 'otp_verification')
 			.isNull('verified_at')
-			.exec()
+			.update({
+				expires_at: new Date().toISOString(), // Expire immediately
+			})
 
 		// Request new OTP
 		return this.requestOTP(data)
@@ -287,9 +281,8 @@ export class OTPManager {
 		try {
 			const result = await this.db
 				.from('otp_codes')
-				.delete()
 				.lt('expires_at', new Date().toISOString())
-				.exec()
+				.delete()
 
 			const count = Array.isArray(result) ? result.length : 0
 			this.logger.debug(`Cleaned up ${count} expired OTP codes`)
@@ -350,6 +343,6 @@ export function generateOTPCode(): string {
 	crypto.getRandomValues(array)
 
 	// Generate 6-digit code (000000 to 999999)
-	const code = array[0] % 1000000
+	const code = array[0]! % 1000000
 	return code.toString().padStart(6, '0')
 }

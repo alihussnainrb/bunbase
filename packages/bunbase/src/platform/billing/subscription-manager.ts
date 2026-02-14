@@ -105,14 +105,16 @@ export class SubscriptionManager {
 
 			return {
 				id: subscriptionId,
-				userId: data.userId,
-				orgId: data.orgId,
-				planKey: data.planKey,
+				userId: data.userId ?? null,
+				orgId: data.orgId ?? null,
+				planId: data.planKey as any as PlanId, // TODO: should use planId not planKey
 				status,
-				currentPeriodEnd: currentPeriodEnd.toISOString(),
-				trialEndsAt: data.trialEndsAt?.toISOString(),
-				createdAt: new Date().toISOString(),
-				updatedAt: new Date().toISOString(),
+				currentPeriodStart: new Date(),
+				currentPeriodEnd: new Date(currentPeriodEnd.toISOString()),
+				trialEndsAt: data.trialEndsAt ?? null,
+				canceledAt: null,
+				createdAt: new Date(),
+				updatedAt: new Date(),
 			}
 		} catch (err) {
 			this.logger.error('Failed to create subscription', { error: err })
@@ -206,7 +208,7 @@ export class SubscriptionManager {
 	 */
 	async update(subscriptionId: SubscriptionId, data: UpdateSubscriptionData): Promise<Subscription> {
 		const subscription = await this.get(subscriptionId)
-		if (!subscription) throw new SubscriptionNotFoundError(subscriptionId)
+		if (!subscription) throw new SubscriptionNotFoundError({ subscriptionId })
 
 		const updates: string[] = []
 		const values: unknown[] = []
@@ -251,8 +253,10 @@ export class SubscriptionManager {
 			org_id?: string
 			plan_key: string
 			status: SubscriptionStatus
+			current_period_start?: string
 			current_period_end: string
 			trial_ends_at?: string
+			canceled_at?: string
 			cancel_at_period_end?: boolean
 			created_at: string
 			updated_at: string
@@ -260,15 +264,16 @@ export class SubscriptionManager {
 
 		return {
 			id: updated.id as SubscriptionId,
-			userId: updated.user_id as UserId | undefined,
-			orgId: updated.org_id as OrgId | undefined,
-			planKey: updated.plan_key,
+			userId: (updated.user_id as UserId | undefined) ?? null,
+			orgId: (updated.org_id as OrgId | undefined) ?? null,
+			planId: updated.plan_key as any as PlanId, // TODO: should use planId not planKey
 			status: updated.status,
-			currentPeriodEnd: updated.current_period_end,
-			trialEndsAt: updated.trial_ends_at,
-			cancelAtPeriodEnd: updated.cancel_at_period_end,
-			createdAt: updated.created_at,
-			updatedAt: updated.updated_at,
+			currentPeriodStart: new Date(updated.current_period_start || updated.created_at),
+			currentPeriodEnd: new Date(updated.current_period_end),
+			trialEndsAt: updated.trial_ends_at ? new Date(updated.trial_ends_at) : null,
+			canceledAt: updated.canceled_at ? new Date(updated.canceled_at) : null,
+			createdAt: new Date(updated.created_at),
+			updatedAt: new Date(updated.updated_at),
 		}
 	}
 

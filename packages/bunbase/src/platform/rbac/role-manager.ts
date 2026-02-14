@@ -67,9 +67,10 @@ export class RoleManager {
 				id: roleId,
 				key: data.key,
 				name: data.name,
-				description: data.description,
+				description: data.description ?? null,
 				weight: data.weight || 0,
-				createdAt: new Date().toISOString(),
+				createdAt: new Date(),
+				updatedAt: new Date(),
 			}
 		} catch (err) {
 			this.logger.error('Failed to create role', { error: err })
@@ -172,7 +173,8 @@ export class RoleManager {
 			name: updated.name,
 			description: updated.description,
 			weight: updated.weight,
-			createdAt: updated.created_at,
+			createdAt: new Date(updated.created_at),
+			updatedAt: new Date(updated.updated_at),
 		}
 	}
 

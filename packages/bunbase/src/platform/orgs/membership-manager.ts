@@ -83,18 +83,21 @@ export class MembershipManager {
 		}
 
 		// Add membership
-		await this.sql`
+		const [membership] = await this.sql`
 			INSERT INTO org_memberships (org_id, user_id, role, joined_at)
 			VALUES (${orgId}, ${userId}, ${role}, NOW())
+			RETURNING *
 		`
 
 		this.logger.info('Member added', { orgId, userId, role })
 
 		return {
-			orgId,
-			userId,
-			role,
-			joinedAt: new Date().toISOString(),
+			id: membership.id,
+			orgId: membership.org_id as OrgId,
+			userId: membership.user_id as UserId,
+			role: membership.role,
+			joinedAt: new Date(membership.joined_at),
+			invitedBy: membership.invited_by as UserId | null,
 		}
 	}
 
@@ -115,7 +118,7 @@ export class MembershipManager {
 		`
 
 		if (membership.length === 0) {
-			throw new NotOrgMemberError(orgId, userId)
+			throw new NotOrgMemberError(orgId, { userId })
 		}
 
 		const memberRole = (membership[0] as { role: string }).role
@@ -160,7 +163,7 @@ export class MembershipManager {
 		`
 
 		if (membership.length === 0) {
-			throw new NotOrgMemberError(orgId, userId)
+			throw new NotOrgMemberError(orgId, { userId })
 		}
 
 		const currentRole = (membership[0] as { role: string }).role
@@ -173,19 +176,22 @@ export class MembershipManager {
 		}
 
 		// Update role
-		await this.sql`
+		const [membership] = await this.sql`
 			UPDATE org_memberships
 			SET role = ${role}
 			WHERE org_id = ${orgId} AND user_id = ${userId}
+			RETURNING *
 		`
 
 		this.logger.info('Member role updated', { orgId, userId, from: currentRole, to: role })
 
 		return {
-			orgId,
-			userId,
-			role,
-			joinedAt: new Date().toISOString(), // Would need to fetch actual joinedAt
+			id: membership.id,
+			orgId: membership.org_id as OrgId,
+			userId: membership.user_id as UserId,
+			role: membership.role,
+			joinedAt: new Date(membership.joined_at),
+			invitedBy: membership.invited_by as UserId | null,
 		}
 	}
 

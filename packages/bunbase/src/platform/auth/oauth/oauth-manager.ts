@@ -76,10 +76,10 @@ export class OAuthManager {
 				codeVerifier,
 				codeChallenge,
 				codeChallengeMethod: 'S256',
-				nonce,
+				nonce: nonce ?? undefined,
 				provider,
 				redirectUri,
-				returnTo: options.returnTo,
+				returnTo: options.returnTo ?? undefined,
 				expiresInSeconds: 600, // 10 minutes
 			})
 
@@ -237,7 +237,7 @@ export class OAuthManager {
 				accessToken: tokens.accessToken,
 				refreshToken: tokens.refreshToken,
 				tokenType: tokens.tokenType,
-				expiresAt,
+				expiresAt: expiresAt ?? undefined,
 				scope: tokens.scope,
 				idToken: tokens.idToken,
 				profile,
@@ -345,7 +345,7 @@ export class OAuthManager {
 				accessToken: tokens.accessToken,
 				refreshToken: tokens.refreshToken || account.refreshToken,
 				tokenType: tokens.tokenType,
-				expiresAt,
+				expiresAt: expiresAt ?? undefined,
 				scope: tokens.scope,
 			})
 

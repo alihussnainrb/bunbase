@@ -6,7 +6,7 @@
 import {
 	Google,
 	GitHub,
-	Microsoft,
+	// Microsoft, // Not available in current version of arctic
 	Apple,
 	generateCodeVerifier,
 	generateState as arcticGenerateState,
@@ -79,10 +79,10 @@ export class ArcticProviderWrapper {
 				return new Google(clientId, clientSecret, redirectUri)
 
 			case 'github':
-				return new GitHub(clientId, clientSecret, { redirectURI: redirectUri })
+				return new GitHub(clientId, clientSecret, redirectUri)
 
 			case 'microsoft':
-				return new Microsoft(clientId, clientSecret, redirectUri)
+				throw new Error('Microsoft provider not currently supported by arctic library')
 
 			case 'apple':
 				// Apple requires additional configuration (team ID, key ID, private key)

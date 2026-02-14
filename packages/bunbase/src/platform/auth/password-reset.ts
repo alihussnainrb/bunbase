@@ -98,7 +98,6 @@ export class PasswordResetManager {
 					verified_at: null,
 					created_at: new Date().toISOString(),
 				})
-				.exec()
 
 			// Generate reset URL
 			const resetUrl = `${this.baseUrl}/auth/reset-password?token=${token}`
@@ -204,17 +203,21 @@ export class PasswordResetManager {
 		const { userId, email, challengeId } = await this.verifyResetToken(token)
 
 		// Increment attempt count
+		const challenge = await this.db
+			.from('auth_challenges')
+			.eq('id', challengeId)
+			.select('attempts')
+			.single()
+		if (!challenge) {
+			throw new InvalidTokenError('Challenge not found', { challengeId })
+		}
+		const currentAttempts = challenge.attempts as number
 		await this.db
 			.from('auth_challenges')
-			.update({
-				attempts: (await this.db
-					.from('auth_challenges')
-					.select('attempts')
-					.eq('id', challengeId)
-					.single()).attempts + 1,
-			})
 			.eq('id', challengeId)
-			.exec()
+			.update({
+				attempts: currentAttempts + 1,
+			})
 
 		try {
 			// Set new password (this also revokes all sessions)
@@ -223,11 +226,10 @@ export class PasswordResetManager {
 			// Mark challenge as verified
 			await this.db
 				.from('auth_challenges')
+				.eq('id', challengeId)
 				.update({
 					verified_at: new Date().toISOString(),
 				})
-				.eq('id', challengeId)
-				.exec()
 
 			this.logger.info('Password reset successful', { userId, email, challengeId })
 
@@ -255,13 +257,12 @@ export class PasswordResetManager {
 		// Invalidate previous challenges for this email
 		await this.db
 			.from('auth_challenges')
-			.update({
-				expires_at: new Date().toISOString(), // Expire immediately
-			})
 			.eq('identifier', email.toLowerCase())
 			.eq('type', 'password_reset')
 			.isNull('verified_at')
-			.exec()
+			.update({
+				expires_at: new Date().toISOString(), // Expire immediately
+			})
 
 		// Send new reset email
 		return this.sendPasswordResetEmail(email)
@@ -278,11 +279,10 @@ export class PasswordResetManager {
 		try {
 			const result = await this.db
 				.from('auth_challenges')
-				.delete()
 				.eq('type', 'password_reset')
 				.isNull('verified_at')
 				.lt('expires_at', new Date().toISOString())
-				.exec()
+				.delete()
 
 			const count = Array.isArray(result) ? result.length : 0
 			this.logger.debug(`Cleaned up ${count} expired password reset challenges`)

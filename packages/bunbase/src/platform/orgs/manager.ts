@@ -111,8 +111,8 @@ export class OrganizationManager {
 				name: data.name,
 				slug,
 				ownerId: data.ownerId,
-				createdAt: new Date().toISOString(),
-				updatedAt: new Date().toISOString(),
+				createdAt: new Date(),
+				updatedAt: new Date(),
 			}
 		} catch (err) {
 			this.logger.error('Failed to create organization', { error: err })
@@ -222,8 +222,8 @@ export class OrganizationManager {
 			name: updated.name,
 			slug: updated.slug,
 			ownerId: updated.owner_id as UserId,
-			createdAt: updated.created_at,
-			updatedAt: updated.updated_at,
+			createdAt: new Date(updated.created_at),
+			updatedAt: new Date(updated.updated_at),
 		}
 	}
 
@@ -315,7 +315,7 @@ export class OrganizationManager {
 		`
 
 		if (newOwnerMembership.length === 0) {
-			throw new NotOrgMemberError(orgId, newOwnerId)
+			throw new NotOrgMemberError(orgId, { newOwnerId })
 		}
 
 		await this.sql.begin(async (tx) => {

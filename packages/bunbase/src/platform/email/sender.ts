@@ -76,13 +76,12 @@ export class EmailSender {
 					provider_metadata: null,
 					created_at: new Date().toISOString(),
 				})
-				.exec()
 
 			// Send email
 			try {
-				const result = await this.mailer.send({
+				await this.mailer.send({
 					to: toEmail,
-					from: this.fromEmail,
+					from: { name: 'Bunbase', email: this.fromEmail },
 					subject: rendered.subject,
 					html: rendered.htmlBody,
 					text: rendered.textBody ?? undefined,
@@ -91,23 +90,19 @@ export class EmailSender {
 				// Update message status to sent
 				await this.db
 					.from('email_messages')
+					.eq('id', messageId)
 					.update({
 						status: 'sent',
 						sent_at: new Date().toISOString(),
 						attempts: 1,
-						provider_message_id: result.messageId ?? null,
-						provider_metadata: result.metadata
-							? JSON.stringify(result.metadata)
-							: null,
+						provider_message_id: null,
+						provider_metadata: null,
 					})
-					.eq('id', messageId)
-					.exec()
 
 				this.logger.info('Email sent', {
 					messageId,
 					templateKey,
 					toEmail,
-					providerMessageId: result.messageId,
 				})
 
 				return { messageId }
@@ -115,6 +110,7 @@ export class EmailSender {
 				// Update message status to failed
 				await this.db
 					.from('email_messages')
+					.eq('id', messageId)
 					.update({
 						status: 'failed',
 						failed_at: new Date().toISOString(),
@@ -123,8 +119,6 @@ export class EmailSender {
 						attempts: 1,
 						next_retry_at: this.calculateNextRetry(1),
 					})
-					.eq('id', messageId)
-					.exec()
 
 				this.logger.error('Failed to send email', {
 					error: sendErr,
@@ -196,13 +190,12 @@ export class EmailSender {
 					provider_metadata: null,
 					created_at: new Date().toISOString(),
 				})
-				.exec()
 
 			// Send email
 			try {
-				const result = await this.mailer.send({
+				await this.mailer.send({
 					to: toEmail,
-					from: this.fromEmail,
+					from: { name: 'Bunbase', email: this.fromEmail },
 					subject,
 					html: htmlBody,
 					text: textBody,
@@ -211,22 +204,18 @@ export class EmailSender {
 				// Update message status to sent
 				await this.db
 					.from('email_messages')
+					.eq('id', messageId)
 					.update({
 						status: 'sent',
 						sent_at: new Date().toISOString(),
 						attempts: 1,
-						provider_message_id: result.messageId ?? null,
-						provider_metadata: result.metadata
-							? JSON.stringify(result.metadata)
-							: null,
+						provider_message_id: null,
+						provider_metadata: null,
 					})
-					.eq('id', messageId)
-					.exec()
 
 				this.logger.info('Custom email sent', {
 					messageId,
 					toEmail,
-					providerMessageId: result.messageId,
 				})
 
 				return { messageId }
@@ -234,6 +223,7 @@ export class EmailSender {
 				// Update message status to failed
 				await this.db
 					.from('email_messages')
+					.eq('id', messageId)
 					.update({
 						status: 'failed',
 						failed_at: new Date().toISOString(),
@@ -242,8 +232,6 @@ export class EmailSender {
 						attempts: 1,
 						next_retry_at: this.calculateNextRetry(1),
 					})
-					.eq('id', messageId)
-					.exec()
 
 				this.logger.error('Failed to send custom email', {
 					error: sendErr,
@@ -294,9 +282,9 @@ export class EmailSender {
 			for (const message of failedMessages as any[]) {
 				try {
 					// Retry send
-					const result = await this.mailer.send({
+					await this.mailer.send({
 						to: message.to_email,
-						from: message.from_email,
+						from: { name: 'Bunbase', email: message.from_email },
 						subject: message.subject,
 						html: message.html_body,
 						text: message.text_body,
@@ -305,18 +293,15 @@ export class EmailSender {
 					// Update to sent
 					await this.db
 						.from('email_messages')
+						.eq('id', message.id)
 						.update({
 							status: 'sent',
 							sent_at: new Date().toISOString(),
 							attempts: message.attempts + 1,
-							provider_message_id: result.messageId ?? null,
-							provider_metadata: result.metadata
-								? JSON.stringify(result.metadata)
-								: null,
+							provider_message_id: null,
+							provider_metadata: null,
 							next_retry_at: null,
 						})
-						.eq('id', message.id)
-						.exec()
 
 					retried++
 					this.logger.info('Email retry succeeded', { messageId: message.id })
@@ -326,6 +311,7 @@ export class EmailSender {
 					// Update failure info
 					await this.db
 						.from('email_messages')
+						.eq('id', message.id)
 						.update({
 							failed_at: new Date().toISOString(),
 							error_message:
@@ -334,8 +320,6 @@ export class EmailSender {
 							next_retry_at:
 								newAttempts < 3 ? this.calculateNextRetry(newAttempts) : null,
 						})
-						.eq('id', message.id)
-						.exec()
 
 					this.logger.warn('Email retry failed', {
 						messageId: message.id,
@@ -389,7 +373,7 @@ export class EmailSender {
 				.from('email_messages')
 				.select('*')
 				.eq('user_id', userId)
-				.orderBy('created_at', 'desc')
+				.orderBy('created_at', 'DESC')
 				.limit(limit)
 				.exec()
 
@@ -410,7 +394,7 @@ export class EmailSender {
 	private calculateNextRetry(attempts: number): string {
 		// Exponential backoff: 5min, 30min, 2hr
 		const delays = [5 * 60 * 1000, 30 * 60 * 1000, 2 * 60 * 60 * 1000]
-		const delay = delays[attempts - 1] ?? delays[delays.length - 1]
+		const delay = delays[attempts - 1] ?? delays[delays.length - 1]!
 		return new Date(Date.now() + delay).toISOString()
 	}
 

@@ -57,8 +57,8 @@ export class EntitlementResolver {
 		// Add all plan features
 		for (const [key, feature] of planFeatures) {
 			entitlements[key] = {
-				hasAccess: true,
-				source: 'subscription',
+				enabled: true,
+				source: 'plan',
 			}
 		}
 
@@ -66,19 +66,19 @@ export class EntitlementResolver {
 		for (const override of overrides) {
 			if (override.type === 'grant') {
 				entitlements[override.featureKey] = {
-					hasAccess: true,
+					enabled: true,
 					limit: override.limitValue,
 					source: 'override',
 				}
 			} else if (override.type === 'deny') {
 				entitlements[override.featureKey] = {
-					hasAccess: false,
+					enabled: false,
 					source: 'override',
 				}
 			} else if (override.type === 'limit') {
 				// Keep existing access, just update limit
 				entitlements[override.featureKey] = {
-					hasAccess: entitlements[override.featureKey]?.hasAccess ?? true,
+					enabled: entitlements[override.featureKey]?.enabled ?? true,
 					limit: override.limitValue,
 					source: 'override',
 				}
@@ -97,7 +97,7 @@ export class EntitlementResolver {
 	): Promise<boolean> {
 		const entitlements = await this.resolve(options)
 
-		return entitlements[featureKey]?.hasAccess ?? false
+		return entitlements[featureKey]?.enabled ?? false
 	}
 
 	/**

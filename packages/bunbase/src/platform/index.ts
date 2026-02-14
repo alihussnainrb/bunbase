@@ -14,6 +14,9 @@ export * from './auth/index.ts'
 // Email system
 export * from './email/index.ts'
 
+// Database migrations
+export * from './migrations.ts'
+
 // Re-export key types for convenience
 export type {
 	// Core types

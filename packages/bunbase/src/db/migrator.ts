@@ -2,11 +2,14 @@ import { existsSync } from 'node:fs'
 import { mkdir, readdir, readFile, writeFile } from 'node:fs/promises'
 import { join } from 'node:path'
 import type { SQL } from 'bun'
+import { calculateChecksum, generateRollback } from './sql-parser.ts'
 
 export interface MigrationEntry {
 	id: number
 	name: string
 	applied_at: string
+	rollback_sql: string | null
+	checksum: string | null
 }
 
 export class Migrator {
@@ -21,7 +24,9 @@ export class Migrator {
 			CREATE TABLE IF NOT EXISTS _migrations (
 				id SERIAL PRIMARY KEY,
 				name VARCHAR(255) UNIQUE NOT NULL,
-				applied_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+				applied_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+				rollback_sql TEXT,
+				checksum VARCHAR(64)
 			)
 		`
 	}
@@ -30,7 +35,7 @@ export class Migrator {
 	async getApplied(): Promise<MigrationEntry[]> {
 		await this.ensureTable()
 		const rows = await this.sql`
-			SELECT id, name, applied_at FROM _migrations ORDER BY id ASC
+			SELECT id, name, applied_at, rollback_sql, checksum FROM _migrations ORDER BY id ASC
 		`
 		return rows as MigrationEntry[]
 	}
@@ -67,12 +72,25 @@ export class Migrator {
 			const sqlContent = await readFile(filePath, 'utf-8')
 
 			try {
+				// Generate rollback SQL and calculate checksum
+				const rollbackSql = generateRollback(sqlContent)
+				const checksum = await calculateChecksum(sqlContent)
+
 				// Run migration in a transaction
 				await this.sql.begin(async (tx: any) => {
 					await tx.unsafe(sqlContent)
-					await tx`INSERT INTO _migrations (name) VALUES (${file})`
+					await tx`
+						INSERT INTO _migrations (name, rollback_sql, checksum)
+						VALUES (${file}, ${rollbackSql}, ${checksum})
+					`
 				})
 				applied.push(file)
+
+				if (!rollbackSql) {
+					console.warn(
+						`⚠ Migration ${file} cannot be automatically rolled back. Manual rollback required.`,
+					)
+				}
 			} catch (err) {
 				throw new Error(
 					`Migration ${file} failed: ${err instanceof Error ? err.message : String(err)}`,
@@ -81,6 +99,68 @@ export class Migrator {
 		}
 
 		return { applied, skipped }
+	}
+
+	/**
+	 * Rollback the last N migrations.
+	 * Uses stored rollback SQL to undo migrations in reverse order.
+	 *
+	 * @param steps Number of migrations to rollback (default: 1)
+	 * @returns List of rolled back migration names
+	 */
+	async rollback(steps = 1): Promise<{ rolled_back: string[] }> {
+		const applied = await this.getApplied()
+		const toRollback = applied.slice(-steps).reverse()
+		const rolledBack: string[] = []
+
+		for (const migration of toRollback) {
+			if (!migration.rollback_sql) {
+				throw new Error(
+					`Migration ${migration.name} has no rollback metadata. Manual rollback required.`,
+				)
+			}
+
+			try {
+				await this.sql.begin(async (tx: any) => {
+					// Execute rollback SQL
+					await tx.unsafe(migration.rollback_sql)
+					// Remove from migrations table
+					await tx`DELETE FROM _migrations WHERE name = ${migration.name}`
+				})
+				rolledBack.push(migration.name)
+			} catch (err) {
+				throw new Error(
+					`Rollback of ${migration.name} failed: ${err instanceof Error ? err.message : String(err)}`,
+				)
+			}
+		}
+
+		return { rolled_back: rolledBack }
+	}
+
+	/**
+	 * Reset database by dropping all tables and re-running migrations.
+	 * WARNING: This will delete ALL data in the database!
+	 */
+	async reset(): Promise<void> {
+		// Drop all tables except _migrations
+		const tables = await this.sql`
+			SELECT tablename FROM pg_tables
+			WHERE schemaname = 'public'
+			AND tablename != '_migrations'
+		`
+
+		await this.sql.begin(async (tx: any) => {
+			// Drop all tables
+			for (const { tablename } of tables) {
+				await tx.unsafe(`DROP TABLE IF EXISTS "${tablename}" CASCADE`)
+			}
+			// Clear migrations tracking
+			await tx`DELETE FROM _migrations`
+		})
+
+		// Re-run all migrations from scratch
+		await this.run()
 	}
 
 	/** Create a new migration file */

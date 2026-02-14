@@ -84,7 +84,7 @@ export class BunbaseServer {
 		if (config?.auth) {
 			this.sessionManager = new SessionManager({
 				secret: config.auth.sessionSecret,
-				cookieName: config.auth.cookieName,
+				cookieName: config.auth.cookie?.name,
 				expiresIn: config.auth.expiresIn,
 			})
 		}
@@ -439,7 +439,7 @@ export class BunbaseServer {
 				// Apply session actions (set/clear cookies from ctx.auth)
 				if (result.sessionActions && this.sessionManager) {
 					// Use config value if provided, otherwise auto-detect from request protocol
-					const isSecure = this.config?.auth?.secureCookie ?? (url.protocol === 'https:')
+					const isSecure = this.config?.auth?.cookie?.secure ?? (url.protocol === 'https:')
 
 					for (const sa of result.sessionActions) {
 						if (sa.type === 'create' && sa.token) {

@@ -68,15 +68,19 @@ export interface BunbaseConfig {
 	/** Auth configuration */
 	auth?: {
 		sessionSecret: string
-		cookieName?: string
 		expiresIn?: number
-		/**
-		 * Set Secure flag on session cookies.
-		 * - true: cookies only sent over HTTPS (production)
-		 * - false: cookies sent over HTTP and HTTPS (dev/testing)
-		 * - undefined: auto-detect from request protocol (default)
-		 */
-		secureCookie?: boolean
+		/** Session cookie configuration */
+		cookie?: {
+			/** Cookie name (default: bunbase_session) */
+			name?: string
+			/**
+			 * Set Secure flag on session cookies.
+			 * - true: cookies only sent over HTTPS (production)
+			 * - false: cookies sent over HTTP and HTTPS (dev/testing)
+			 * - undefined: auto-detect from request protocol (default)
+			 */
+			secure?: boolean
+		}
 	}
 
 	/** Guards configuration */

@@ -39,6 +39,16 @@ export type {
 	OAuthProviderConfig,
 	OAuthStartOptions,
 
+	// MFA types
+	MFAFactor,
+	MFAFactorStatus,
+	MFAFactorType,
+	TOTPAlgorithm,
+	OTPDeliveryMethod,
+	StepUpSession,
+	StepUpMethod,
+	UserMFAStatus,
+
 	// Email types
 	EmailMessageStatus,
 

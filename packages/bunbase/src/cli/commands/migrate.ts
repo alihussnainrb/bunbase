@@ -43,36 +43,6 @@ export async function migrateCommand(
 				}
 				break
 			}
-			case 'rollback': {
-				const steps = name ? parseInt(name, 10) : 1
-				if (Number.isNaN(steps) || steps < 1) {
-					console.error('Invalid number of steps. Usage: bunbase migrate rollback [steps]')
-					process.exit(1)
-				}
-				console.log(`Rolling back ${steps} migration(s)...`)
-				const result = await migrator.rollback(steps)
-				if (result.rolled_back.length === 0) {
-					console.log('No migrations to rollback.')
-				} else {
-					for (const rolled of result.rolled_back) {
-						console.log(`  ✓ Rolled back: ${rolled}`)
-					}
-					console.log(`\nRolled back ${result.rolled_back.length} migration(s).`)
-				}
-				break
-			}
-			case 'reset': {
-				console.log('⚠️  WARNING: This will DROP ALL TABLES and re-run migrations!')
-				console.log('This action cannot be undone.')
-				console.log('\nTo confirm, run: bunbase migrate reset --confirm')
-				if (name !== '--confirm') {
-					process.exit(0)
-				}
-				console.log('\nResetting database...')
-				await migrator.reset()
-				console.log('✓ Database reset complete.')
-				break
-			}
 			default: {
 				// Run pending migrations
 				console.log('Running pending migrations...')

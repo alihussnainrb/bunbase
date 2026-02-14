@@ -4,7 +4,7 @@ import { RedisClient } from 'bun'
 import { loadConfig } from '../../config/loader.ts'
 import { ActionRegistry } from '../../core/registry.ts'
 import { createDB } from '../../db/client.ts'
-import { createSQLPool } from '../../db/pool.ts'
+import { ResilientSQLPool } from '../../db/pool.ts'
 import { Logger } from '../../logger/index.ts'
 import { WriteBuffer } from '../../persistence/write-buffer.ts'
 import { eventBus } from '../../runtime/event-bus.ts'
@@ -23,14 +23,39 @@ export async function devCommand(): Promise<void> {
 		level: 'debug',
 	})
 
-	// 2. Create database connection pool
-	const sqlPool = createSQLPool({
+	// 2. Create resilient database connection pool
+	const sqlPool = new ResilientSQLPool({
 		url: config.database?.url,
 		max: config.database?.maxConnections,
 		idleTimeout: config.database?.idleTimeout,
+		retryAttempts: 5,
+		retryDelayMs: 1000,
+		healthCheckIntervalMs: 30000,
+		onConnectionError: (error: Error, attempt: number) => {
+			logger.error(
+				`Database connection failed (attempt ${attempt}/5): ${error.message}`,
+			)
+		},
+		onConnectionRestore: () => {
+			logger.info('✓ Database connection restored')
+		},
+		onHealthCheckFail: (error: Error) => {
+			logger.warn(`Database health check failed: ${error.message}`)
+		},
 	})
 
-	const db = createDB(sqlPool)
+	// Connect to database with retry logic
+	try {
+		logger.info('Connecting to database...')
+		await sqlPool.connect()
+		logger.info('✓ Connected to database')
+	} catch (err) {
+		const message = err instanceof Error ? err.message : String(err)
+		logger.error(`Failed to connect to database: ${message}`)
+		process.exit(1)
+	}
+
+	const db = createDB(sqlPool.getPool())
 
 	// 3. Create write buffer and attach SQL pool
 	const writeBuffer = new WriteBuffer({
@@ -38,7 +63,7 @@ export async function devCommand(): Promise<void> {
 		flushIntervalMs: config.persistence?.flushIntervalMs,
 		maxBufferSize: config.persistence?.maxBufferSize,
 	})
-	writeBuffer.setSql(sqlPool)
+	writeBuffer.setSql(sqlPool.getPool())
 
 	// 4. Auto-run pending migrations in dev mode
 	const migrationsDir = join(
@@ -48,7 +73,7 @@ export async function devCommand(): Promise<void> {
 	if (existsSync(migrationsDir)) {
 		try {
 			const { Migrator } = await import('../../db/migrator.ts')
-			const migrator = new Migrator(sqlPool, migrationsDir)
+			const migrator = new Migrator(sqlPool.getPool(), migrationsDir)
 			const result = await migrator.run()
 			if (result.applied.length > 0) {
 				logger.info(`Applied ${result.applied.length} pending migration(s)`)
@@ -121,7 +146,7 @@ export async function devCommand(): Promise<void> {
 
 	try {
 		const { createKVStore } = await import('../../kv/index.ts')
-		kv = createKVStore(sqlPool, redis)
+		kv = createKVStore(sqlPool.getPool(), redis)
 		if (
 			!redis &&
 			kv &&
@@ -146,13 +171,20 @@ export async function devCommand(): Promise<void> {
 	const loadDuration = (performance.now() - startLoad).toFixed(2)
 	logger.info(`Loaded ${registry.size} actions in ${loadDuration}ms`)
 
+	// Lock registry in production mode to prevent mutations
+	const isProduction = process.env.NODE_ENV === 'production'
+	if (isProduction) {
+		registry.lock()
+		logger.info('Registry locked (production mode)')
+	}
+
 	// 7. Create Queue instance for background jobs
-	const queue = new Queue(sqlPool, logger, writeBuffer)
+	const queue = new Queue(sqlPool.getPool(), logger, writeBuffer)
 
 	// 8. Start server
 	const server = new BunbaseServer(registry, logger, writeBuffer, config, {
 		db,
-		sql: sqlPool,
+		sql: sqlPool.getPool(),
 		storage,
 		mailer,
 		kv,
@@ -180,8 +212,8 @@ export async function devCommand(): Promise<void> {
 
 		// Setup file watcher for hot reload in dev mode
 		let watcher: ReturnType<typeof watch> | null = null
-		if (config.watch !== false) {
-			// Default: enabled
+		if (config.watch !== false && !isProduction) {
+			// Default: enabled in dev mode only
 			let reloadTimeout: Timer | null = null
 			const reloadActions = () => {
 				if (reloadTimeout) clearTimeout(reloadTimeout)
@@ -190,19 +222,29 @@ export async function devCommand(): Promise<void> {
 					const start = performance.now()
 
 					try {
-						// Clear registry
-						registry.clear()
+						// Begin reload (takes snapshot for rollback)
+						registry.beginReload()
 
 						// Reload actions
 						await loadActions(actionsDir, registry, logger)
+
+						// Commit successful reload
+						registry.commitReload()
 
 						// Re-register with server
 						server.refreshRoutes()
 
 						const duration = (performance.now() - start).toFixed(2)
-						logger.info(`Reloaded ${registry.size} actions in ${duration}ms`)
+						logger.info(`✓ Reloaded ${registry.size} actions in ${duration}ms`)
 					} catch (err) {
-						logger.error('Failed to reload actions:', err)
+						// Rollback to snapshot on error
+						try {
+							registry.rollbackReload()
+							logger.error('✗ Reload failed, rolled back to previous state')
+						} catch (rollbackErr) {
+							logger.error('✗ Rollback failed:', rollbackErr)
+						}
+						logger.error('Reload error:', err)
 					}
 				}, 300) // 300ms debounce
 			}
@@ -235,7 +277,7 @@ export async function devCommand(): Promise<void> {
 			await queue.stop()
 			await eventBus.detach()
 			await writeBuffer.shutdown()
-			sqlPool.close()
+			await sqlPool.close()
 			if (redis) {
 				redis.close()
 			}

@@ -6,6 +6,7 @@ import { createSQLPool } from '../../db/pool.ts'
 export async function migrateCommand(
 	subcommand?: string,
 	name?: string,
+	options?: { dryRun?: boolean },
 ): Promise<void> {
 	const config = await loadConfig()
 	const sql = createSQLPool({ url: config.database?.url })
@@ -44,16 +45,53 @@ export async function migrateCommand(
 				break
 			}
 			default: {
-				// Run pending migrations
-				console.log('Running pending migrations...')
-				const result = await migrator.run()
-				if (result.applied.length === 0) {
-					console.log('No pending migrations.')
+				// Run pending migrations (or preview with --dry-run)
+				const isDryRun = options?.dryRun ?? false
+
+				if (isDryRun) {
+					console.log('Preview: Pending migrations (dry-run mode)')
+					console.log('─'.repeat(60))
 				} else {
-					for (const applied of result.applied) {
-						console.log(`  ✓ ${applied}`)
+					console.log('Running pending migrations...')
+				}
+
+				const result = await migrator.run({ dryRun: isDryRun })
+
+				if (isDryRun && result.preview) {
+					// Dry-run mode: show preview
+					if (result.preview.length === 0) {
+						console.log('No pending migrations.')
+					} else {
+						for (const p of result.preview) {
+							console.log(`\n📄 ${p.file}`)
+							console.log('─'.repeat(60))
+							if (p.operations.length > 0) {
+								console.log('Operations:')
+								for (const op of p.operations) {
+									console.log(`  • ${op}`)
+								}
+							} else {
+								console.log('  (No recognized SQL operations)')
+							}
+							console.log('\nSQL:')
+							console.log(p.sql.trim())
+						}
+						console.log('\n─'.repeat(60))
+						console.log(
+							`\n${result.preview.length} migration(s) ready to apply.`,
+						)
+						console.log('Run without --dry-run to execute.')
 					}
-					console.log(`\nApplied ${result.applied.length} migration(s).`)
+				} else {
+					// Normal mode: apply migrations
+					if (result.applied.length === 0) {
+						console.log('No pending migrations.')
+					} else {
+						for (const applied of result.applied) {
+							console.log(`  ✓ ${applied}`)
+						}
+						console.log(`\nApplied ${result.applied.length} migration(s).`)
+					}
 				}
 				break
 			}

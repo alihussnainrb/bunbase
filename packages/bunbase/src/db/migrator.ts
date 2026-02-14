@@ -9,6 +9,16 @@ export interface MigrationEntry {
 	applied_at: string
 }
 
+export interface MigrationPreview {
+	file: string
+	operations: string[]
+	sql: string
+}
+
+export interface MigrationRunOptions {
+	dryRun?: boolean
+}
+
 export class Migrator {
 	constructor(
 		private readonly sql: SQL,
@@ -57,11 +67,33 @@ export class Migrator {
 	}
 
 	/** Run all pending migrations in order */
-	async run(): Promise<{ applied: string[]; skipped: string[] }> {
+	async run(
+		options?: MigrationRunOptions,
+	): Promise<{ applied: string[]; skipped: string[]; preview?: MigrationPreview[] }> {
 		const pending = await this.getPending()
 		const applied: string[] = []
 		const skipped: string[] = []
 
+		// Dry-run mode: preview operations without executing
+		if (options?.dryRun) {
+			const preview: MigrationPreview[] = []
+
+			for (const file of pending) {
+				const filePath = join(this.migrationsDir, file)
+				const sqlContent = await readFile(filePath, 'utf-8')
+				const operations = this.parseSQLOperations(sqlContent)
+
+				preview.push({
+					file,
+					operations,
+					sql: sqlContent,
+				})
+			}
+
+			return { applied: [], skipped: [], preview }
+		}
+
+		// Normal mode: execute migrations
 		for (const file of pending) {
 			const filePath = join(this.migrationsDir, file)
 			const sqlContent = await readFile(filePath, 'utf-8')
@@ -81,6 +113,112 @@ export class Migrator {
 		}
 
 		return { applied, skipped }
+	}
+
+	/**
+	 * Parse SQL content to extract high-level operations.
+	 * Returns a list of operation descriptions (e.g., "CREATE TABLE users", "ALTER TABLE posts ADD COLUMN").
+	 */
+	private parseSQLOperations(sql: string): string[] {
+		const operations: string[] = []
+
+		// Remove comments
+		const cleanedSQL = sql
+			.replace(/--[^\n]*/g, '') // Remove single-line comments
+			.replace(/\/\*[\s\S]*?\*\//g, '') // Remove multi-line comments
+			.trim()
+
+		// Split by semicolons to get individual statements
+		const statements = cleanedSQL
+			.split(';')
+			.map((stmt) => stmt.trim())
+			.filter((stmt) => stmt.length > 0)
+
+		for (const stmt of statements) {
+			// Normalize whitespace
+			const normalized = stmt.replace(/\s+/g, ' ').toUpperCase()
+
+			// Extract operation type and target
+			if (normalized.startsWith('CREATE TABLE')) {
+				const match = normalized.match(/CREATE TABLE (?:IF NOT EXISTS )?(\w+)/)
+				if (match?.[1]) {
+					operations.push(`CREATE TABLE ${match[1].toLowerCase()}`)
+				}
+			} else if (normalized.startsWith('ALTER TABLE')) {
+				const match = normalized.match(/ALTER TABLE (\w+)/)
+				if (match?.[1]) {
+					const tableName = match[1].toLowerCase()
+					if (normalized.includes(' ADD COLUMN ')) {
+						const colMatch = normalized.match(/ ADD COLUMN (\w+)/)
+						if (colMatch?.[1]) {
+							operations.push(
+								`ALTER TABLE ${tableName} ADD COLUMN ${colMatch[1].toLowerCase()}`,
+							)
+						} else {
+							operations.push(`ALTER TABLE ${tableName} ADD COLUMN`)
+						}
+					} else if (normalized.includes(' DROP COLUMN ')) {
+						const colMatch = normalized.match(/ DROP COLUMN (\w+)/)
+						if (colMatch?.[1]) {
+							operations.push(
+								`ALTER TABLE ${tableName} DROP COLUMN ${colMatch[1].toLowerCase()}`,
+							)
+						} else {
+							operations.push(`ALTER TABLE ${tableName} DROP COLUMN`)
+						}
+					} else if (normalized.includes(' RENAME COLUMN ')) {
+						operations.push(`ALTER TABLE ${tableName} RENAME COLUMN`)
+					} else if (normalized.includes(' ADD CONSTRAINT ')) {
+						operations.push(`ALTER TABLE ${tableName} ADD CONSTRAINT`)
+					} else {
+						operations.push(`ALTER TABLE ${tableName}`)
+					}
+				}
+			} else if (normalized.startsWith('DROP TABLE')) {
+				const match = normalized.match(/DROP TABLE (?:IF EXISTS )?(\w+)/)
+				if (match?.[1]) {
+					operations.push(`DROP TABLE ${match[1].toLowerCase()}`)
+				}
+			} else if (normalized.startsWith('CREATE INDEX')) {
+				const match = normalized.match(/CREATE INDEX (?:\w+ )?ON (\w+)/)
+				if (match?.[1]) {
+					operations.push(`CREATE INDEX ON ${match[1].toLowerCase()}`)
+				}
+			} else if (normalized.startsWith('DROP INDEX')) {
+				const match = normalized.match(/DROP INDEX (?:IF EXISTS )?(\w+)/)
+				if (match?.[1]) {
+					operations.push(`DROP INDEX ${match[1].toLowerCase()}`)
+				}
+			} else if (normalized.startsWith('CREATE TYPE')) {
+				const match = normalized.match(/CREATE TYPE (\w+)/)
+				if (match?.[1]) {
+					operations.push(`CREATE TYPE ${match[1].toLowerCase()}`)
+				}
+			} else if (normalized.startsWith('INSERT INTO')) {
+				const match = normalized.match(/INSERT INTO (\w+)/)
+				if (match?.[1]) {
+					operations.push(`INSERT INTO ${match[1].toLowerCase()}`)
+				}
+			} else if (normalized.startsWith('UPDATE ')) {
+				const match = normalized.match(/UPDATE (\w+)/)
+				if (match?.[1]) {
+					operations.push(`UPDATE ${match[1].toLowerCase()}`)
+				}
+			} else if (normalized.startsWith('DELETE FROM')) {
+				const match = normalized.match(/DELETE FROM (\w+)/)
+				if (match?.[1]) {
+					operations.push(`DELETE FROM ${match[1].toLowerCase()}`)
+				}
+			} else {
+				// Generic operation
+				const firstWord = normalized.split(' ')[0]
+				if (firstWord) {
+					operations.push(firstWord.toLowerCase())
+				}
+			}
+		}
+
+		return operations
 	}
 
 	/**

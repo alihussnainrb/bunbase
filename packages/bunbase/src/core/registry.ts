@@ -23,16 +23,29 @@ export interface RegisteredAction {
 }
 
 /**
+ * Registry lifecycle states for managing mutations and hot reload.
+ */
+export type RegistryState = 'loading' | 'locked' | 'reloading'
+
+/**
  * Central registry of all actions and modules.
  * The loader populates this, and the server/scheduler reads from it.
  */
 export class ActionRegistry {
 	private readonly actions = new Map<string, RegisteredAction>()
+	private state: RegistryState = 'loading'
+	private snapshot: Map<string, RegisteredAction> | null = null
 
 	/**
 	 * Register a standalone action (not in a module).
 	 */
 	registerAction(definition: ActionDefinition): void {
+		if (this.state === 'locked') {
+			throw new Error(
+				'Registry is locked. Cannot register actions in production mode.',
+			)
+		}
+
 		const name = definition.config.name
 		if (this.actions.has(name)) {
 			throw new Error(`Action "${name}" is already registered`)
@@ -59,6 +72,12 @@ export class ActionRegistry {
 	 * Register all actions from a module, applying module-level config.
 	 */
 	registerModule(mod: ModuleDefinition): void {
+		if (this.state === 'locked') {
+			throw new Error(
+				'Registry is locked. Cannot register modules in production mode.',
+			)
+		}
+
 		const {
 			name: moduleName,
 			apiPrefix,
@@ -135,6 +154,89 @@ export class ActionRegistry {
 
 	/** Clear all registered actions (used for hot reload) */
 	clear(): void {
+		if (this.state === 'locked') {
+			throw new Error(
+				'Registry is locked. Cannot clear actions in production mode.',
+			)
+		}
 		this.actions.clear()
+	}
+
+	/**
+	 * Lock the registry to prevent further mutations.
+	 * Used in production to prevent accidental modifications after startup.
+	 */
+	lock(): void {
+		if (this.state === 'locked') {
+			return // Already locked
+		}
+		this.state = 'locked'
+	}
+
+	/**
+	 * Begin a reload operation by taking a snapshot of current state.
+	 * Used in dev mode for safe hot reload with rollback support.
+	 */
+	beginReload(): void {
+		if (this.state === 'locked') {
+			throw new Error('Cannot reload in production mode (registry is locked)')
+		}
+
+		// Take snapshot of current registry
+		this.snapshot = new Map(this.actions)
+		this.state = 'reloading'
+
+		// Clear actions for fresh reload
+		this.actions.clear()
+	}
+
+	/**
+	 * Commit a successful reload, discarding the snapshot.
+	 */
+	commitReload(): void {
+		if (this.state !== 'reloading') {
+			throw new Error('No reload in progress')
+		}
+
+		// Discard snapshot
+		this.snapshot = null
+		this.state = 'loading'
+	}
+
+	/**
+	 * Rollback a failed reload, restoring from snapshot.
+	 */
+	rollbackReload(): void {
+		if (this.state !== 'reloading') {
+			throw new Error('No reload in progress')
+		}
+
+		if (!this.snapshot) {
+			throw new Error('No snapshot available for rollback')
+		}
+
+		// Restore from snapshot
+		this.actions.clear()
+		for (const [key, action] of this.snapshot) {
+			this.actions.set(key, action)
+		}
+
+		// Clean up
+		this.snapshot = null
+		this.state = 'loading'
+	}
+
+	/**
+	 * Get current registry state.
+	 */
+	getState(): RegistryState {
+		return this.state
+	}
+
+	/**
+	 * Check if registry is locked.
+	 */
+	isLocked(): boolean {
+		return this.state === 'locked'
 	}
 }

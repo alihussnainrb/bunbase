@@ -14,10 +14,57 @@ import type { RunEntry } from '../persistence/types.ts'
 import type { WriteBuffer } from '../persistence/write-buffer.ts'
 import type { ChannelManager } from '../realtime/channel-manager.ts'
 import type { StorageAdapter } from '../storage/types.ts'
-import { CircularDependencyError, isRetryable } from '../utils/errors.ts'
+import { ActionValidationError } from '../core/action.ts'
+import { GuardError } from '../core/guards/types.ts'
+import {
+	BunbaseError,
+	CircularDependencyError,
+	InternalError,
+	isRetryable,
+	type ErrorContext,
+} from '../utils/errors.ts'
 import { createLazyContext } from './context.ts'
 import type { Queue } from './queue.ts'
 import type { Scheduler } from './scheduler.ts'
+
+/**
+ * Wraps an error with execution context for better debugging.
+ * - GuardError: returned as-is (preserves status code)
+ * - BunbaseError: merges context
+ * - Generic Error: converts to InternalError with context
+ */
+function wrapError(
+	error: unknown,
+	context: ErrorContext,
+): BunbaseError | Error {
+	// Guard errors should be returned as-is, not wrapped
+	// They already have the correct status code (401/403/429)
+	if (error instanceof GuardError) {
+		return error
+	}
+	if (error instanceof BunbaseError) {
+		return error.withContext(context)
+	}
+	if (error instanceof Error) {
+		return new InternalError(error.message, context)
+	}
+	return new InternalError(String(error), context)
+}
+
+/**
+ * Extracts structured validation errors from ActionValidationError.
+ * Returns JSON string of validation errors, or null if not a validation error.
+ */
+function extractValidationError(error: unknown): string | null {
+	if (error instanceof ActionValidationError) {
+		try {
+			return JSON.stringify(error.validationErrors)
+		} catch {
+			return null
+		}
+	}
+	return null
+}
 
 /**
  * Executes a registered action through the full pipeline:
@@ -67,6 +114,14 @@ export async function executeAction(
 	const traceId = generateTraceId()
 	const startedAt = Date.now()
 
+	// Create error context for this execution
+	const errorContext: ErrorContext = {
+		traceId,
+		actionName: action.definition.config.name,
+		moduleName: action.moduleName ?? undefined,
+		userId: opts.auth?.userId,
+	}
+
 	// Create child logger for this action invocation
 	const actionLogger = opts.logger.child({
 		action: action.definition.config.name,
@@ -80,12 +135,18 @@ export async function executeAction(
 	const maxDepth = 50 // Prevent infinite loops while allowing deep legitimate chains
 
 	if (callStack.includes(actionName)) {
-		throw new CircularDependencyError(actionName, callStack)
+		throw new CircularDependencyError(
+			actionName,
+			callStack,
+			undefined,
+			errorContext,
+		)
 	}
 
 	if (callStack.length >= maxDepth) {
-		throw new Error(
+		throw new InternalError(
 			`Maximum action call depth (${maxDepth}) exceeded. Call stack: ${callStack.join(' → ')}`,
+			errorContext,
 		)
 	}
 
@@ -220,10 +281,10 @@ export async function executeAction(
 					sessionActions: pendingSessionActions,
 				}
 			} catch (handlerErr) {
+				// Wrap error with context
+				const wrappedError = wrapError(handlerErr, errorContext)
 				lastError =
-					handlerErr instanceof Error
-						? handlerErr
-						: new Error(String(handlerErr))
+					wrappedError instanceof Error ? wrappedError : new Error(String(wrappedError))
 				const errorMessage = lastError.message
 
 				// Determine if we should retry
@@ -250,6 +311,7 @@ export async function executeAction(
 						output: null,
 						error: errorMessage,
 						error_stack: lastError.stack || null,
+						validation_error: extractValidationError(handlerErr),
 						duration_ms: Date.now() - startedAt,
 						started_at: startedAt,
 						attempt,
@@ -282,6 +344,7 @@ export async function executeAction(
 						output: null,
 						error: errorMessage,
 						error_stack: lastError.stack || null,
+						validation_error: extractValidationError(handlerErr),
 						duration_ms: Date.now() - startedAt,
 						started_at: startedAt,
 						attempt: maxAttempts > 1 ? attempt : null,
@@ -299,7 +362,10 @@ export async function executeAction(
 		}
 
 		// All retries exhausted (safety net)
-		const errorMessage = lastError?.message ?? 'All retry attempts exhausted'
+		const finalError = lastError
+			? wrapError(lastError, errorContext)
+			: new InternalError('All retry attempts exhausted', errorContext)
+		const errorMessage = finalError instanceof Error ? finalError.message : 'All retry attempts exhausted'
 		actionLogger.error(
 			`Action failed after ${maxAttempts} attempts: ${errorMessage}`,
 		)
@@ -307,12 +373,13 @@ export async function executeAction(
 		return {
 			success: false,
 			error: errorMessage,
-			errorObject: lastError ?? new Error(errorMessage),
+			errorObject: finalError,
 		}
 	} catch (err) {
 		// Guard failures land here (outside retry loop)
-		const errorMessage = err instanceof Error ? err.message : String(err)
-		const errorStack = err instanceof Error ? err.stack || null : null
+		const wrappedError = wrapError(err, errorContext)
+		const errorMessage = wrappedError instanceof Error ? wrappedError.message : String(err)
+		const errorStack = wrappedError instanceof Error ? wrappedError.stack || null : null
 		actionLogger.error(`Action failed: ${errorMessage}`)
 
 		const runEntry: RunEntry = {
@@ -326,6 +393,7 @@ export async function executeAction(
 			output: null,
 			error: errorMessage,
 			error_stack: errorStack,
+			validation_error: extractValidationError(err),
 			duration_ms: Date.now() - startedAt,
 			started_at: startedAt,
 			attempt: null,
@@ -336,7 +404,7 @@ export async function executeAction(
 		return {
 			success: false,
 			error: errorMessage,
-			errorObject: err instanceof Error ? err : new Error(String(err)),
+			errorObject: wrappedError,
 		}
 	}
 }

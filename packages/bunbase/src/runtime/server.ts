@@ -148,6 +148,82 @@ export class BunbaseServer {
 	}
 
 	/**
+	 * Handle health check requests.
+	 * @param type - 'live' (server is running), 'ready' (can handle requests), or 'full' (check dependencies)
+	 */
+	private async handleHealthCheck(
+		type: 'live' | 'ready' | 'full',
+	): Promise<Response> {
+		const timestamp = Date.now()
+		const uptime = process.uptime()
+
+		// Liveness check: always returns 200 if server is running
+		if (type === 'live') {
+			return Response.json({
+				status: 'ok',
+				timestamp,
+				uptime: Math.floor(uptime),
+			})
+		}
+
+		// Readiness and full checks: verify dependencies
+		const checks: Record<
+			string,
+			{ status: 'ok' | 'error'; latency?: number; error?: string }
+		> = {}
+
+		// Check database connection
+		if (this.services?.sql) {
+			try {
+				const start = performance.now()
+				await this.services.sql`SELECT 1`
+				const latency = Math.round(performance.now() - start)
+				checks.database = { status: 'ok', latency }
+			} catch (err) {
+				const message = err instanceof Error ? err.message : String(err)
+				checks.database = { status: 'error', error: message }
+			}
+		}
+
+		// Check Redis connection (if configured)
+		if (this.services?.redis && type === 'full') {
+			try {
+				const start = performance.now()
+				await this.services.redis.ping()
+				const latency = Math.round(performance.now() - start)
+				checks.redis = { status: 'ok', latency }
+			} catch (err) {
+				const message = err instanceof Error ? err.message : String(err)
+				checks.redis = { status: 'error', error: message }
+			}
+		}
+
+		// Determine overall status
+		const allHealthy = Object.values(checks).every(
+			(check) => check.status === 'ok',
+		)
+		const status = allHealthy ? 'ok' : 'degraded'
+		const statusCode = allHealthy ? 200 : 503
+
+		const response: Record<string, unknown> = {
+			status,
+			timestamp,
+			uptime: Math.floor(uptime),
+			checks,
+		}
+
+		// Include registry info in full health check
+		if (type === 'full') {
+			response.registry = {
+				actions: this.registry.size,
+				locked: this.registry.isLocked(),
+			}
+		}
+
+		return Response.json(response, { status: statusCode })
+	}
+
+	/**
 	 * Register event listeners for all actions with event triggers.
 	 */
 	registerEventListeners(): void {
@@ -553,7 +629,28 @@ export class BunbaseServer {
 					status = 400
 				}
 
-				return Response.json({ error: errorMessage }, { status, headers })
+				// Include error context in dev mode for debugging
+				const isDev = process.env.NODE_ENV !== 'production'
+				const errorResponse: Record<string, unknown> = {
+					error: errorMessage,
+				}
+
+				// Always include trace ID for tracking
+				if (errorObject instanceof BunbaseError && errorObject.context?.traceId) {
+					errorResponse.traceId = errorObject.context.traceId
+				}
+
+				// In dev mode, include full context and stack
+				if (isDev && errorObject instanceof BunbaseError) {
+					if (errorObject.context) {
+						errorResponse.context = errorObject.context
+					}
+					if (errorObject.stack) {
+						errorResponse.stack = errorObject.stack
+					}
+				}
+
+				return Response.json(errorResponse, { status, headers })
 			} catch (err: unknown) {
 				const errorMessage = err instanceof Error ? err.message : String(err)
 
@@ -565,7 +662,28 @@ export class BunbaseServer {
 					status = (err as any).statusCode
 				}
 
-				return Response.json({ error: errorMessage }, { status })
+				// Include error context in dev mode for debugging
+				const isDev = process.env.NODE_ENV !== 'production'
+				const errorResponse: Record<string, unknown> = {
+					error: errorMessage,
+				}
+
+				// Always include trace ID for tracking
+				if (err instanceof BunbaseError && err.context?.traceId) {
+					errorResponse.traceId = err.context.traceId
+				}
+
+				// In dev mode, include full context and stack
+				if (isDev && err instanceof BunbaseError) {
+					if (err.context) {
+						errorResponse.context = err.context
+					}
+					if (err instanceof Error && err.stack) {
+						errorResponse.stack = err.stack
+					}
+				}
+
+				return Response.json(errorResponse, { status })
 			}
 		}
 	}
@@ -705,6 +823,17 @@ export class BunbaseServer {
 					}),
 				)
 			}
+		}
+
+		// Health check endpoints
+		if (pathname === '/_health' && method === 'GET') {
+			return this.addCorsHeaders(req, await this.handleHealthCheck('full'))
+		}
+		if (pathname === '/_health/live' && method === 'GET') {
+			return this.addCorsHeaders(req, await this.handleHealthCheck('live'))
+		}
+		if (pathname === '/_health/ready' && method === 'GET') {
+			return this.addCorsHeaders(req, await this.handleHealthCheck('ready'))
 		}
 
 		// Not found

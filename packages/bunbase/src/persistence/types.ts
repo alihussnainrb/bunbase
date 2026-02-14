@@ -18,6 +18,8 @@ export interface RunEntry {
 	error: string | null
 	/** Full error stack trace for debugging (null for successful runs) */
 	error_stack: string | null
+	/** Structured validation errors (JSON string) for ActionValidationError */
+	validation_error?: string | null
 	duration_ms: number
 	started_at: number
 	/** Which attempt this run entry represents (1-indexed). Null for actions without retry config. */

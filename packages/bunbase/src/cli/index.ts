@@ -42,8 +42,9 @@ program
 const migrate = program
 	.command('migrate [subcommand] [name]')
 	.description('Run database migrations')
-	.action(async (subcommand?: string, name?: string) => {
-		await migrateCommand(subcommand, name)
+	.option('--dry-run', 'Preview migrations without executing them')
+	.action(async (subcommand?: string, name?: string, opts?: { dryRun?: boolean }) => {
+		await migrateCommand(subcommand, name, opts)
 	})
 
 migrate

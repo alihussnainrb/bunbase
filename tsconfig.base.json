@@ -22,7 +22,6 @@
 	},
 	"include": [
 		"packages/bunbase/src/**/*",
-		"benchmark/**/*",
 	],
 	"exclude": [
 		"node_modules",

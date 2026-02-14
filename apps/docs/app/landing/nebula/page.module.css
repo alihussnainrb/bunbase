@@ -1,0 +1,189 @@
+.page {
+  position: relative;
+  min-height: 100vh;
+  overflow: hidden;
+  color: #f5f8fc;
+  background:
+    radial-gradient(1200px 560px at 50% -20%, rgb(49 119 255 / 24%), transparent 68%),
+    radial-gradient(960px 540px at 6% 12%, rgb(0 224 255 / 21%), transparent 70%),
+    radial-gradient(1100px 620px at 93% 38%, rgb(255 157 63 / 20%), transparent 70%),
+    linear-gradient(180deg, #060913 0%, #0a1020 100%);
+}
+
+.grid {
+  position: absolute;
+  inset: 0;
+  background-image:
+    linear-gradient(to right, rgb(255 255 255 / 6%) 1px, transparent 1px),
+    linear-gradient(to bottom, rgb(255 255 255 / 6%) 1px, transparent 1px);
+  background-size: 74px 74px;
+  mask-image: radial-gradient(circle at center, black 36%, transparent 100%);
+  pointer-events: none;
+}
+
+.glowA,
+.glowB {
+  position: absolute;
+  border-radius: 999px;
+  filter: blur(90px);
+  pointer-events: none;
+}
+
+.glowA {
+  width: 520px;
+  height: 520px;
+  top: -140px;
+  left: -180px;
+  background: rgb(0 170 255 / 30%);
+  animation: driftA 10s ease-in-out infinite alternate;
+}
+
+.glowB {
+  width: 580px;
+  height: 580px;
+  right: -220px;
+  top: 28%;
+  background: rgb(255 147 58 / 24%);
+  animation: driftB 11s ease-in-out infinite alternate;
+}
+
+.beam {
+  position: absolute;
+  left: 50%;
+  top: -420px;
+  width: 520px;
+  height: 920px;
+  transform: translateX(-50%);
+  border-radius: 999px;
+  background: linear-gradient(180deg, rgb(76 201 255 / 24%), transparent 70%);
+  filter: blur(36px);
+  pointer-events: none;
+}
+
+.nav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border: 1px solid rgb(255 255 255 / 12%);
+  border-radius: 999px;
+  padding: 0.72rem 0.9rem;
+  background: rgb(255 255 255 / 4%);
+  backdrop-filter: blur(8px);
+}
+
+.ghostButton {
+  border: 1px solid rgb(255 255 255 / 14%);
+  border-radius: 999px;
+  padding: 0.45rem 0.85rem;
+  font-size: 0.875rem;
+  color: rgb(226 232 240 / 0.92);
+  transition: background-color 180ms ease;
+}
+
+.ghostButton:hover {
+  background: rgb(255 255 255 / 9%);
+}
+
+.primaryButton {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  border-radius: 999px;
+  padding: 0.48rem 0.95rem;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: rgb(4 12 20);
+  background: rgb(126 240 255 / 0.95);
+  transition: background-color 180ms ease;
+}
+
+.primaryButton:hover {
+  background: rgb(173 246 255 / 0.95);
+}
+
+.command {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  border: 1px solid rgb(255 255 255 / 16%);
+  border-radius: 999px;
+  padding: 0.65rem 0.95rem;
+  background: linear-gradient(180deg, rgb(255 255 255 / 10%), rgb(255 255 255 / 3%));
+  box-shadow: 0 20px 40px rgb(3 9 17 / 36%);
+}
+
+.badge {
+  border: 1px solid rgb(34 211 238 / 33%);
+  border-radius: 999px;
+  padding: 0.28rem 0.62rem;
+  font-size: 0.72rem;
+  color: rgb(169 247 255 / 0.98);
+  background: rgb(34 211 238 / 11%);
+}
+
+.card {
+  border: 1px solid rgb(255 255 255 / 12%);
+  border-radius: 1.15rem;
+  padding: 1.3rem;
+  background: linear-gradient(180deg, rgb(255 255 255 / 9%), rgb(255 255 255 / 2%));
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 8%),
+    0 16px 28px rgb(5 10 18 / 30%);
+  transition:
+    transform 220ms ease,
+    border-color 220ms ease,
+    box-shadow 220ms ease;
+}
+
+.card:hover {
+  transform: translateY(-4px);
+  border-color: rgb(34 211 238 / 46%);
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 12%),
+    0 22px 35px rgb(5 10 18 / 42%);
+}
+
+.panel {
+  border: 1px solid rgb(255 255 255 / 12%);
+  border-radius: 1.3rem;
+  background: linear-gradient(180deg, rgb(255 255 255 / 8%), rgb(255 255 255 / 2%));
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 8%),
+    0 24px 42px rgb(4 10 18 / 40%);
+}
+
+.codeBlock {
+  overflow: auto;
+  border: 1px solid rgb(255 255 255 / 14%);
+  border-radius: 0.95rem;
+  padding: 0.95rem;
+  font-size: 0.74rem;
+  line-height: 1.55;
+  color: rgb(224 231 255 / 0.95);
+  background: rgb(2 7 16 / 0.76);
+}
+
+@keyframes driftA {
+  from {
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+  to {
+    transform: translate3d(72px, 24px, 0) scale(1.08);
+  }
+}
+
+@keyframes driftB {
+  from {
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+  to {
+    transform: translate3d(-70px, -24px, 0) scale(1.1);
+  }
+}
+
+@media (max-width: 767px) {
+  .command {
+    border-radius: 1rem;
+    padding: 0.75rem;
+  }
+}

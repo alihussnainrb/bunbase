@@ -1,125 +1,96 @@
 import { Github } from 'lucide-react'
 
+const links = {
+  product: [
+    { label: 'Documentation', href: '/docs' },
+    { label: 'Examples', href: 'https://github.com/alihussnainrb/bunbase/tree/main/examples', external: true },
+    { label: 'API Reference', href: '/docs' },
+  ],
+  community: [
+    { label: 'GitHub', href: 'https://github.com/alihussnainrb/bunbase', external: true },
+    { label: 'Issues', href: 'https://github.com/alihussnainrb/bunbase/issues', external: true },
+    { label: 'Discussions', href: 'https://github.com/alihussnainrb/bunbase/discussions', external: true },
+  ],
+  legal: [
+    { label: 'MIT License', href: 'https://github.com/alihussnainrb/bunbase/blob/main/LICENSE', external: true },
+  ],
+}
+
 export function Footer() {
   return (
-    <footer className="border-t border-white/10 bg-zinc-950 px-6 py-12 md:px-10">
-      <div className="mx-auto max-w-7xl">
-        <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-4">
+    <footer className="relative bg-zinc-950">
+      {/* Top gradient border */}
+      <div className="h-px w-full bg-gradient-to-r from-transparent via-white/[0.08] to-transparent" />
+
+      <div className="mx-auto max-w-7xl px-6 py-16 md:px-10 md:py-20">
+        <div className="grid gap-12 md:grid-cols-2 lg:grid-cols-12">
           {/* Brand */}
-          <div>
-            <div className="mb-4 flex items-center gap-2">
-              <span className="text-2xl">⚡</span>
-              <span className="text-xl font-bold text-zinc-50">bunbase</span>
+          <div className="lg:col-span-5">
+            <div className="mb-4 flex items-center gap-2.5">
+              <span className="text-xl">⚡</span>
+              <span className="font-display text-lg font-bold text-zinc-100">bunbase</span>
             </div>
-            <p className="text-sm text-zinc-500">
-              Type-safe backend framework for Bun
+            <p className="max-w-xs text-sm leading-relaxed text-zinc-600">
+              Type-safe backend framework built for Bun.
+              Actions, Modules, Triggers — everything you need.
             </p>
-          </div>
-
-          {/* Product */}
-          <div>
-            <h3 className="mb-4 text-sm font-semibold text-zinc-50">Product</h3>
-            <ul className="space-y-2 text-sm">
-              <li>
-                <a href="/docs" className="text-zinc-400 hover:text-zinc-200">
-                  Documentation
-                </a>
-              </li>
-              <li>
-                <a href="https://github.com/alihussnainrb/bunbase/tree/main/examples" className="text-zinc-400 hover:text-zinc-200">
-                  Examples
-                </a>
-              </li>
-              <li>
-                <a href="/docs" className="text-zinc-400 hover:text-zinc-200">
-                  API Reference
-                </a>
-              </li>
-            </ul>
-          </div>
-
-          {/* Community */}
-          <div>
-            <h3 className="mb-4 text-sm font-semibold text-zinc-50">Community</h3>
-            <ul className="space-y-2 text-sm">
-              <li>
-                <a
-                  href="https://github.com/alihussnainrb/bunbase"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-zinc-400 hover:text-zinc-200"
-                >
-                  GitHub
-                </a>
-              </li>
-              <li>
-                <a
-                  href="https://github.com/alihussnainrb/bunbase/issues"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-zinc-400 hover:text-zinc-200"
-                >
-                  Issues
-                </a>
-              </li>
-              <li>
-                <a
-                  href="https://github.com/alihussnainrb/bunbase/discussions"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-zinc-400 hover:text-zinc-200"
-                >
-                  Discussions
-                </a>
-              </li>
-            </ul>
-          </div>
-
-          {/* Legal */}
-          <div>
-            <h3 className="mb-4 text-sm font-semibold text-zinc-50">Legal</h3>
-            <ul className="space-y-2 text-sm">
-              <li>
-                <a
-                  href="https://github.com/alihussnainrb/bunbase/blob/main/LICENSE"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-zinc-400 hover:text-zinc-200"
-                >
-                  MIT License
-                </a>
-              </li>
-              <li>
-                <a
-                  href="https://github.com/alihussnainrb/bunbase/blob/main/SECURITY.md"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-zinc-400 hover:text-zinc-200"
-                >
-                  Security
-                </a>
-              </li>
-            </ul>
-          </div>
-        </div>
-
-        {/* Bottom */}
-        <div className="mt-12 flex flex-col items-center justify-between gap-4 border-t border-white/10 pt-8 md:flex-row">
-          <p className="text-sm text-zinc-500">
-            © 2026 Bunbase. All rights reserved.
-          </p>
-          <div className="flex items-center gap-4">
             <a
               href="https://github.com/alihussnainrb/bunbase"
               target="_blank"
               rel="noopener noreferrer"
-              className="text-zinc-400 transition hover:text-zinc-200"
+              className="mt-6 inline-flex items-center gap-2 text-sm text-zinc-500 transition-colors hover:text-zinc-300"
             >
-              <Github className="h-5 w-5" />
+              <Github className="h-4 w-4" />
+              Star on GitHub
             </a>
           </div>
+
+          {/* Links */}
+          <div className="grid grid-cols-3 gap-8 lg:col-span-7">
+            <FooterColumn title="Product" links={links.product} />
+            <FooterColumn title="Community" links={links.community} />
+            <FooterColumn title="Legal" links={links.legal} />
+          </div>
+        </div>
+
+        {/* Bottom */}
+        <div className="mt-16 border-t border-white/[0.05] pt-8">
+          <p className="text-xs text-zinc-700">
+            © {new Date().getFullYear()} Bunbase. MIT Licensed.
+          </p>
         </div>
       </div>
     </footer>
+  )
+}
+
+function FooterColumn({
+  title,
+  links,
+}: {
+  title: string
+  links: { label: string; href: string; external?: boolean }[]
+}) {
+  return (
+    <div>
+      <h3 className="mb-4 text-xs font-semibold uppercase tracking-widest text-zinc-500">
+        {title}
+      </h3>
+      <ul className="space-y-3">
+        {links.map((link) => (
+          <li key={link.label}>
+            <a
+              href={link.href}
+              {...(link.external
+                ? { target: '_blank', rel: 'noopener noreferrer' }
+                : {})}
+              className="text-sm text-zinc-600 transition-colors hover:text-zinc-300"
+            >
+              {link.label}
+            </a>
+          </li>
+        ))}
+      </ul>
+    </div>
   )
 }

@@ -209,6 +209,7 @@ export async function executeAction(
 		scheduler: opts.scheduler,
 		registry: opts.registry,
 		sessionManager: opts.sessionManager,
+		writeBuffer: opts.writeBuffer,
 		auth: { ...opts.auth, _callStack: newCallStack },
 		response: opts.response,
 		moduleName: action.moduleName ?? undefined,

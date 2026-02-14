@@ -33,6 +33,7 @@ export interface CreateLazyContextOptions {
 	scheduler?: Scheduler
 	registry?: ActionRegistry
 	sessionManager?: SessionManager
+	writeBuffer?: import('../persistence/write-buffer.ts').WriteBuffer
 	auth?: {
 		userId?: string
 		role?: string
@@ -283,6 +284,62 @@ export function createLazyContext(
 		// withMeta helper
 		withMeta: <T>(data: T, metadata?: TransportMetadata): ActionOutput<T> => {
 			return { ...data, _meta: metadata } as ActionOutput<T>
+		},
+
+		// Action composition - call another action from within this action
+		action: async <TOutput = unknown>(
+			actionName: string,
+			input: unknown,
+		): Promise<TOutput> => {
+			if (!opts.registry) {
+				throw new Error(
+					'Action registry not available. Cannot call actions from this context.',
+				)
+			}
+
+			if (!opts.writeBuffer) {
+				throw new Error(
+					'WriteBuffer not available. Cannot call actions from this context.',
+				)
+			}
+
+			const registeredAction = opts.registry.get(actionName)
+			if (!registeredAction) {
+				throw new Error(
+					`Action "${actionName}" not found in registry. Available actions: ${opts.registry
+						.getAll()
+						.map((a) => a.registryKey)
+						.join(', ')}`,
+				)
+			}
+
+			// Import executeAction dynamically to avoid circular dependency
+			const { executeAction } = await import('./executor.ts')
+
+			// Execute the action with the current context's dependencies
+			const result = await executeAction(registeredAction, input, {
+				triggerType: 'action', // Internal action call
+				logger: opts.logger,
+				writeBuffer: opts.writeBuffer,
+				db: opts.db,
+				storage: opts.storage,
+				mailer: opts.mailer,
+				kv: opts.kv,
+				redis: opts.redis,
+				channelManager: opts.channelManager,
+				queue: opts.queue,
+				scheduler: opts.scheduler,
+				registry: opts.registry,
+				sessionManager: opts.sessionManager,
+				auth: opts.auth, // Pass current auth context (includes _callStack)
+				response: opts.response,
+			})
+
+			if (!result.success) {
+				throw new Error(result.error || 'Action execution failed')
+			}
+
+			return result.data as TOutput
 		},
 	}
 }

@@ -383,6 +383,30 @@ export interface ActionContext {
 	channel: (name: string) => import('../realtime/types.ts').ChannelAPI
 
 	withMeta: <T>(data: T, metadata?: TransportMetadata) => ActionOutput<T>
+
+	/**
+	 * Call another action from within this action (action composition).
+	 * Enables building complex workflows by chaining actions together.
+	 * Circular dependencies are automatically detected and prevented.
+	 *
+	 * @param actionName - Name of the action to call (supports module namespacing: "module.action")
+	 * @param input - Input data for the action
+	 * @returns The action's output data
+	 * @throws {CircularDependencyError} If a circular action dependency is detected
+	 * @throws {Error} If the action is not found in the registry
+	 *
+	 * @example
+	 * // Call a helper action
+	 * const result = await ctx.action('calculateSum', { a: 10, b: 20 })
+	 *
+	 * @example
+	 * // Call a module action
+	 * const user = await ctx.action('auth.getUser', { userId: '123' })
+	 */
+	action: <TOutput = unknown>(
+		actionName: string,
+		input: unknown,
+	) => Promise<TOutput>
 }
 
 // ── Action Config ────────────────────────────────────────

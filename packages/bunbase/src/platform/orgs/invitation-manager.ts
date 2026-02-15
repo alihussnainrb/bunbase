@@ -86,7 +86,7 @@ export class InvitationManager {
 		// Generate invitation ID and token
 		const invitationId = newInvitationId()
 		const token = generateInvitationToken()
-		const tokenHash = hashToken(token)
+		const tokenHash = await hashToken(token)
 
 		// Calculate expiration
 		const expiresAt = new Date()
@@ -125,10 +125,13 @@ export class InvitationManager {
 			orgId,
 			email,
 			role,
+			tokenHash,
 			invitedBy,
-			status: 'pending',
-			createdAt: new Date(),
 			expiresAt: expiresAt,
+			acceptedAt: null,
+			acceptedBy: null,
+			revokedAt: null,
+			createdAt: new Date(),
 			token, // Only returned here, never stored plain
 		}
 	}

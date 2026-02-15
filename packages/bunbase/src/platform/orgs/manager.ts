@@ -77,7 +77,7 @@ export class OrganizationManager {
 				throw new OrgSlugTakenError(slug)
 			}
 			// Auto-generate unique slug
-			slug = await generateUniqueSlug(this.sql, 'organizations', slug)
+			slug = generateUniqueSlug(slug)
 		}
 
 		const orgId = newOrgId()
@@ -111,8 +111,11 @@ export class OrganizationManager {
 				name: data.name,
 				slug,
 				ownerId: data.ownerId,
+				avatarUrl: null,
+				metadata: {},
 				createdAt: new Date(),
 				updatedAt: new Date(),
+				deletedAt: null,
 			}
 		} catch (err) {
 			this.logger.error('Failed to create organization', { error: err })
@@ -222,8 +225,11 @@ export class OrganizationManager {
 			name: updated.name,
 			slug: updated.slug,
 			ownerId: updated.owner_id as UserId,
+			avatarUrl: null,
+			metadata: {},
 			createdAt: new Date(updated.created_at),
 			updatedAt: new Date(updated.updated_at),
+			deletedAt: null,
 		}
 	}
 

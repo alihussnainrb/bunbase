@@ -8,7 +8,7 @@ import type { OAuthProviderConfig } from '../types.ts'
 /**
  * Default GitHub OAuth scopes
  */
-export const GITHUB_DEFAULT_SCOPES = ['user:email']
+export const GITHUB_DEFAULT_SCOPES = ['user:email'] as const
 
 /**
  * Create GitHub OAuth configuration
@@ -23,7 +23,7 @@ export function createGitHubConfig(config: {
 		clientId: config.clientId,
 		clientSecret: config.clientSecret,
 		redirectUri: config.redirectUri,
-		scopes: config.scopes || GITHUB_DEFAULT_SCOPES,
+		scopes: config.scopes || [...GITHUB_DEFAULT_SCOPES],
 	}
 }
 

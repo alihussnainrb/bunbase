@@ -72,7 +72,7 @@ export function createTestServer(opts: TestServerOptions = {}): TestServer {
 
 	const server = new BunbaseServer(registry, logger, writeBuffer, config, {
 		db,
-		sql: sqlPool.getPool(),
+		sql: sqlPool,
 	})
 
 	const { port } = server.start({

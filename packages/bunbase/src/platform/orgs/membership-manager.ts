@@ -176,7 +176,7 @@ export class MembershipManager {
 		}
 
 		// Update role
-		const [membership] = await this.sql`
+		const [updated] = await this.sql`
 			UPDATE org_memberships
 			SET role = ${role}
 			WHERE org_id = ${orgId} AND user_id = ${userId}
@@ -186,12 +186,12 @@ export class MembershipManager {
 		this.logger.info('Member role updated', { orgId, userId, from: currentRole, to: role })
 
 		return {
-			id: membership.id,
-			orgId: membership.org_id as OrgId,
-			userId: membership.user_id as UserId,
-			role: membership.role,
-			joinedAt: new Date(membership.joined_at),
-			invitedBy: membership.invited_by as UserId | null,
+			id: updated.id,
+			orgId: updated.org_id as OrgId,
+			userId: updated.user_id as UserId,
+			role: updated.role,
+			joinedAt: new Date(updated.joined_at),
+			invitedBy: updated.invited_by as UserId | null,
 		}
 	}
 

@@ -8,7 +8,7 @@ import type { OAuthProviderConfig } from '../types.ts'
 /**
  * Default Microsoft OAuth scopes
  */
-export const MICROSOFT_DEFAULT_SCOPES = ['openid', 'profile', 'email']
+export const MICROSOFT_DEFAULT_SCOPES = ['openid', 'profile', 'email'] as const
 
 /**
  * Create Microsoft OAuth configuration
@@ -26,7 +26,7 @@ export function createMicrosoftConfig(config: {
 		clientId: config.clientId,
 		clientSecret: config.clientSecret,
 		redirectUri: config.redirectUri,
-		scopes: config.scopes || MICROSOFT_DEFAULT_SCOPES,
+		scopes: config.scopes || [...MICROSOFT_DEFAULT_SCOPES],
 	}
 }
 
@@ -34,9 +34,9 @@ export function createMicrosoftConfig(config: {
  * Microsoft OAuth endpoints
  */
 export const MICROSOFT_ENDPOINTS = {
-	authorization: (tenant = 'common') =>
+	authorization: (tenant: string = 'common'): string =>
 		`https://login.microsoftonline.com/${tenant}/oauth2/v2.0/authorize`,
-	token: (tenant = 'common') =>
+	token: (tenant: string = 'common'): string =>
 		`https://login.microsoftonline.com/${tenant}/oauth2/v2.0/token`,
 	userInfo: 'https://graph.microsoft.com/v1.0/me',
 	userPhoto: 'https://graph.microsoft.com/v1.0/me/photo/$value',

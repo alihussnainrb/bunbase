@@ -78,18 +78,21 @@ export class OverrideManager {
 		})
 
 		// Create new grant override
+		const id = crypto.randomUUID()
 		await this.sql`
 			INSERT INTO entitlement_overrides (
+				id,
 				subject_type,
 				subject_id,
 				feature_key,
 				override_type,
 				limit_value,
-				reason: reason ?? null,
+				reason,
 				org_id,
 				created_at
 			)
 			VALUES (
+				${id},
 				${subjectType},
 				${subjectId},
 				${featureKey},
@@ -104,13 +107,14 @@ export class OverrideManager {
 		this.logger.info('Feature access granted', { subjectType, subjectId, featureKey })
 
 		return {
+			id,
 			subjectType,
 			subjectId,
 			featureKey,
 			overrideType: 'grant',
-			limitValue,
+			limitValue: limitValue ?? null,
 			reason: reason ?? null,
-			orgId,
+			orgId: orgId ?? null,
 			createdAt: new Date(),
 		}
 	}
@@ -134,17 +138,20 @@ export class OverrideManager {
 		})
 
 		// Create new deny override
+		const id = crypto.randomUUID()
 		await this.sql`
 			INSERT INTO entitlement_overrides (
+				id,
 				subject_type,
 				subject_id,
 				feature_key,
 				override_type,
-				reason: reason ?? null,
+				reason,
 				org_id,
 				created_at
 			)
 			VALUES (
+				${id},
 				${subjectType},
 				${subjectId},
 				${featureKey},
@@ -158,12 +165,14 @@ export class OverrideManager {
 		this.logger.info('Feature access denied', { subjectType, subjectId, featureKey })
 
 		return {
+			id,
 			subjectType,
 			subjectId,
 			featureKey,
 			overrideType: 'deny',
+			limitValue: null,
 			reason: reason ?? null,
-			orgId,
+			orgId: orgId ?? null,
 			createdAt: new Date(),
 		}
 	}
@@ -192,18 +201,21 @@ export class OverrideManager {
 		})
 
 		// Create new limit override
+		const id = crypto.randomUUID()
 		await this.sql`
 			INSERT INTO entitlement_overrides (
+				id,
 				subject_type,
 				subject_id,
 				feature_key,
 				override_type,
 				limit_value,
-				reason: reason ?? null,
+				reason,
 				org_id,
 				created_at
 			)
 			VALUES (
+				${id},
 				${subjectType},
 				${subjectId},
 				${featureKey},
@@ -218,13 +230,14 @@ export class OverrideManager {
 		this.logger.info('Feature limit set', { subjectType, subjectId, featureKey, limitValue })
 
 		return {
+			id,
 			subjectType,
 			subjectId,
 			featureKey,
 			overrideType: 'limit',
 			limitValue,
 			reason: reason ?? null,
-			orgId,
+			orgId: orgId ?? null,
 			createdAt: new Date(),
 		}
 	}

@@ -165,6 +165,7 @@ export class RoleManager {
 			description: string
 			weight: number
 			created_at: string
+			updated_at: string
 		}
 
 		return {

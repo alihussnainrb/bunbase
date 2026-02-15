@@ -3,11 +3,21 @@
  * Built-in templates for common authentication flows
  */
 
+interface EmailTemplate {
+	key: string
+	name: string
+	description: string
+	subject: string
+	htmlBody: string
+	textBody: string
+	variables: readonly string[]
+}
+
 /**
  * Email verification template
  * Variables: userName, verificationUrl, expiresIn
  */
-export const AUTH_VERIFY_EMAIL = {
+export const AUTH_VERIFY_EMAIL: EmailTemplate = {
 	key: 'auth-verify-email',
 	name: 'Email Verification',
 	description: 'Email verification for new user signups',
@@ -29,14 +39,14 @@ Thank you for signing up! Please verify your email address by clicking the link 
 This link will expire in {{expiresIn}}.
 
 If you didn't create an account, you can safely ignore this email.`,
-	variables: ['userName', 'verificationUrl', 'expiresIn'],
+	variables: ['userName', 'verificationUrl', 'expiresIn'] as const,
 }
 
 /**
  * Password reset template
  * Variables: userName, resetUrl, expiresIn
  */
-export const AUTH_PASSWORD_RESET = {
+export const AUTH_PASSWORD_RESET: EmailTemplate = {
 	key: 'auth-password-reset',
 	name: 'Password Reset',
 	description: 'Password reset request email',
@@ -58,10 +68,13 @@ We received a request to reset your password. Click the link below to create a n
 This link will expire in {{expiresIn}}.
 
 If you didn't request a password reset, you can safely ignore this email. Your password will remain unchanged.`,
-	variables: ['userName', 'resetUrl', 'expiresIn'],
+	variables: ['userName', 'resetUrl', 'expiresIn'] as const,
 }
 
 /**
  * All default templates
  */
-export const DEFAULT_TEMPLATES = [AUTH_VERIFY_EMAIL, AUTH_PASSWORD_RESET]
+export const DEFAULT_TEMPLATES: readonly EmailTemplate[] = [
+	AUTH_VERIFY_EMAIL,
+	AUTH_PASSWORD_RESET,
+] as const

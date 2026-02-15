@@ -28,7 +28,7 @@ export async function loadActions(
 		cwd: resolvedDir,
 		absolute: true,
 	})) {
-		session.debug(`Found module file: ${path}`)
+		session.info(`Found module file: ${path}`)
 		moduleFiles.push(path)
 	}
 

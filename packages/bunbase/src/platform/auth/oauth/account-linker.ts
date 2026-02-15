@@ -242,7 +242,7 @@ export class OAuthAccountLinker {
 		const id = crypto.randomUUID()
 
 		try {
-			const [row] = await this.db
+			const row = await this.db
 				.from('oauth_accounts')
 				.returning(['*'])
 				.insert({

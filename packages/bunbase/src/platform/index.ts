@@ -49,24 +49,6 @@ export type {
 	// Credential types
 	PasswordCredential,
 
-	// OAuth types
-	OAuthProvider,
-	OAuthAccount,
-	OAuthProfile,
-	OAuthTokens,
-	OAuthProviderConfig,
-	OAuthStartOptions,
-
-	// MFA types
-	MFAFactor,
-	MFAFactorStatus,
-	MFAFactorType,
-	TOTPAlgorithm,
-	OTPDeliveryMethod,
-	StepUpSession,
-	StepUpMethod,
-	UserMFAStatus,
-
 	// Email types
 	EmailMessageStatus,
 
@@ -108,6 +90,28 @@ export type {
 	PaginatedResult,
 	PaginationOptions,
 } from './core/types.ts'
+
+// Re-export OAuth types from auth/oauth module
+export type {
+	OAuthProvider,
+	OAuthAccount,
+	OAuthProfile,
+	OAuthTokens,
+	OAuthProviderConfig,
+	OAuthStartOptions,
+} from './auth/oauth/types.ts'
+
+// Re-export MFA types from auth/mfa module
+export type {
+	MFAFactor,
+	MFAFactorStatus,
+	MFAFactorType,
+	TOTPAlgorithm,
+	OTPDeliveryMethod,
+	StepUpSession,
+	StepUpMethod,
+	UserMFAStatus,
+} from './auth/mfa/types.ts'
 
 // Re-export key error classes for convenience
 export {

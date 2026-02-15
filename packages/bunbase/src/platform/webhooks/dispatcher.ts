@@ -111,7 +111,7 @@ export class WebhookDispatcher {
 				headers: {
 					'Content-Type': 'application/json',
 					'X-Webhook-Signature': signature,
-					'X-Webhook-Event': event.eventName,
+					'X-Webhook-Event': event.event,
 					'X-Webhook-Event-ID': eventId,
 				},
 				body: JSON.stringify(event.payload),
@@ -208,7 +208,7 @@ export class WebhookDispatcher {
 			60 * 60 * 1000, // 1 hour
 		]
 
-		return delays[attempt - 1] || delays[delays.length - 1]
+		return delays[attempt - 1] ?? delays[delays.length - 1]!
 	}
 
 	/**
@@ -267,7 +267,7 @@ export class WebhookDispatcher {
 
 		const rows = await query
 
-		return rows.map((row) => {
+		return rows.map((row: Record<string, unknown>) => {
 			const r = row as {
 				id: string
 				orgId?: string
@@ -337,40 +337,50 @@ export class WebhookDispatcher {
 			SELECT
 				id,
 				webhook_id as "webhookId",
-				event_name as "eventName",
+				event_name as "event",
 				payload,
 				status,
 				attempts,
-				response_code as "responseCode",
-				response_body as "responseBody",
-				error,
-				created_at as "createdAt",
-				last_attempt_at as "lastAttemptAt",
-				delivered_at as "deliveredAt"
+				max_attempts as "maxAttempts",
+				next_retry_at as "nextRetryAt",
+				delivered_at as "deliveredAt",
+				failed_at as "failedAt",
+				error as "errorMessage",
+				created_at as "createdAt"
 			FROM webhook_events
 			WHERE id = ${eventId}
 		`
 
 		if (rows.length === 0) return null
 
-		const event = rows[0] as {
+		const row = rows[0] as {
 			id: string
 			webhookId: string
-			eventName: string
+			event: string
 			payload: string
 			status: WebhookEventStatus
 			attempts: number
-			responseCode?: number
-			responseBody?: string
-			error?: string
+			maxAttempts: number
+			nextRetryAt: string | null
+			deliveredAt: string | null
+			failedAt: string | null
+			errorMessage: string | null
 			createdAt: string
-			lastAttemptAt?: string
-			deliveredAt?: string
 		}
 
 		return {
-			...event,
-			payload: JSON.parse(event.payload),
+			id: row.id,
+			webhookId: row.webhookId,
+			event: row.event,
+			payload: JSON.parse(row.payload),
+			status: row.status,
+			attempts: row.attempts,
+			maxAttempts: row.maxAttempts,
+			nextRetryAt: row.nextRetryAt ? new Date(row.nextRetryAt) : null,
+			deliveredAt: row.deliveredAt ? new Date(row.deliveredAt) : null,
+			failedAt: row.failedAt ? new Date(row.failedAt) : null,
+			errorMessage: row.errorMessage,
+			createdAt: new Date(row.createdAt),
 		}
 	}
 

@@ -46,7 +46,7 @@ export class OAuthStateManager {
 		const expiresAt = new Date(Date.now() + expiresInSeconds * 1000)
 
 		try {
-			const [row] = await this.db
+			const row = await this.db
 				.from('oauth_states')
 				.returning(['*'])
 				.insert({

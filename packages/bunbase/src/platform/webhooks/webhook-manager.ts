@@ -246,7 +246,7 @@ export class WebhookManager {
 			OFFSET ${offset}
 		`
 
-		return rows.map((row) => {
+		return rows.map((row: Record<string, unknown>) => {
 			const r = row as {
 				id: string
 				orgId?: string
@@ -296,7 +296,7 @@ export class WebhookManager {
 
 		const rows = await query
 
-		return rows.map((row) => {
+		return rows.map((row: Record<string, unknown>) => {
 			const r = row as {
 				id: string
 				orgId?: string

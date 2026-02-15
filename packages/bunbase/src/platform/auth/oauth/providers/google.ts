@@ -8,7 +8,7 @@ import type { OAuthProviderConfig } from '../types.ts'
 /**
  * Default Google OAuth scopes
  */
-export const GOOGLE_DEFAULT_SCOPES = ['openid', 'profile', 'email']
+export const GOOGLE_DEFAULT_SCOPES = ['openid', 'profile', 'email'] as const
 
 /**
  * Create Google OAuth configuration
@@ -23,7 +23,7 @@ export function createGoogleConfig(config: {
 		clientId: config.clientId,
 		clientSecret: config.clientSecret,
 		redirectUri: config.redirectUri,
-		scopes: config.scopes || GOOGLE_DEFAULT_SCOPES,
+		scopes: config.scopes || [...GOOGLE_DEFAULT_SCOPES],
 	}
 }
 

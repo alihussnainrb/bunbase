@@ -75,8 +75,8 @@ export class MembershipManager {
 
 		// Check if already a member
 		const existing = await this.sql`
-			SELECT id FROM org_memberships
-			WHERE org_id = ${orgId} AND user_id = ${userId}
+			SELECT id FROM organization_memberships
+			WHERE organization_id = ${orgId} AND user_id = ${userId}
 		`
 		if (existing.length > 0) {
 			throw new UserAlreadyExistsError('User is already a member of this organization')
@@ -84,7 +84,7 @@ export class MembershipManager {
 
 		// Add membership
 		const [membership] = await this.sql`
-			INSERT INTO org_memberships (org_id, user_id, role, joined_at)
+			INSERT INTO organization_memberships (organization_id, user_id, role_id, joined_at)
 			VALUES (${orgId}, ${userId}, ${role}, NOW())
 			RETURNING *
 		`
@@ -93,9 +93,9 @@ export class MembershipManager {
 
 		return {
 			id: membership.id,
-			orgId: membership.org_id as OrgId,
+			orgId: membership.organization_id as OrgId,
 			userId: membership.user_id as UserId,
-			role: membership.role,
+			role: membership.role_id,
 			joinedAt: new Date(membership.joined_at),
 			invitedBy: membership.invited_by as UserId | null,
 		}
@@ -113,21 +113,21 @@ export class MembershipManager {
 
 		// Check if member exists
 		const membership = await this.sql`
-			SELECT role FROM org_memberships
-			WHERE org_id = ${orgId} AND user_id = ${userId}
+			SELECT role_id FROM organization_memberships
+			WHERE organization_id = ${orgId} AND user_id = ${userId}
 		`
 
 		if (membership.length === 0) {
 			throw new NotOrgMemberError(orgId, { userId })
 		}
 
-		const memberRole = (membership[0] as { role: string }).role
+		const memberRole = (membership[0] as { role_id: string }).role_id
 
 		// Prevent removing last owner
-		if (memberRole === 'owner') {
+		if (memberRole === 'role_org_owner') {
 			const ownerCount = await this.sql`
-				SELECT COUNT(*) as count FROM org_memberships
-				WHERE org_id = ${orgId} AND role = 'owner'
+				SELECT COUNT(*) as count FROM organization_memberships
+				WHERE organization_id = ${orgId} AND role_id = 'role_org_owner'
 			`
 			const count = (ownerCount[0] as { count: number }).count
 
@@ -138,8 +138,8 @@ export class MembershipManager {
 
 		// Remove membership
 		await this.sql`
-			DELETE FROM org_memberships
-			WHERE org_id = ${orgId} AND user_id = ${userId}
+			DELETE FROM organization_memberships
+			WHERE organization_id = ${orgId} AND user_id = ${userId}
 		`
 
 		this.logger.info('Member removed', { orgId, userId })
@@ -158,18 +158,18 @@ export class MembershipManager {
 
 		// Get current membership
 		const membership = await this.sql`
-			SELECT role FROM org_memberships
-			WHERE org_id = ${orgId} AND user_id = ${userId}
+			SELECT role_id FROM organization_memberships
+			WHERE organization_id = ${orgId} AND user_id = ${userId}
 		`
 
 		if (membership.length === 0) {
 			throw new NotOrgMemberError(orgId, { userId })
 		}
 
-		const currentRole = (membership[0] as { role: string }).role
+		const currentRole = (membership[0] as { role_id: string }).role_id
 
 		// Prevent changing owner role directly
-		if (currentRole === 'owner' || role === 'owner') {
+		if (currentRole === 'role_org_owner' || role === 'role_org_owner') {
 			throw new InsufficientOrgRoleError(
 				'Cannot change owner role directly. Use transferOwnership instead.',
 			)
@@ -177,9 +177,9 @@ export class MembershipManager {
 
 		// Update role
 		const [updated] = await this.sql`
-			UPDATE org_memberships
-			SET role = ${role}
-			WHERE org_id = ${orgId} AND user_id = ${userId}
+			UPDATE organization_memberships
+			SET role_id = ${role}
+			WHERE organization_id = ${orgId} AND user_id = ${userId}
 			RETURNING *
 		`
 
@@ -187,9 +187,9 @@ export class MembershipManager {
 
 		return {
 			id: updated.id,
-			orgId: updated.org_id as OrgId,
+			orgId: updated.organization_id as OrgId,
 			userId: updated.user_id as UserId,
-			role: updated.role,
+			role: updated.role_id,
 			joinedAt: new Date(updated.joined_at),
 			invitedBy: updated.invited_by as UserId | null,
 		}
@@ -204,23 +204,23 @@ export class MembershipManager {
 
 		let query = this.sql`
 			SELECT
-				org_id as "orgId",
+				organization_id as "orgId",
 				user_id as "userId",
-				role,
+				role_id as "role",
 				joined_at as "joinedAt"
-			FROM org_memberships
-			WHERE org_id = ${orgId}
+			FROM organization_memberships
+			WHERE organization_id = ${orgId}
 		`
 
 		if (options.role) {
 			query = this.sql`
 				SELECT
-					org_id as "orgId",
+					organization_id as "orgId",
 					user_id as "userId",
-					role,
+					role_id as "role",
 					joined_at as "joinedAt"
-				FROM org_memberships
-				WHERE org_id = ${orgId} AND role = ${options.role}
+				FROM organization_memberships
+				WHERE organization_id = ${orgId} AND role_id = ${options.role}
 			`
 		}
 
@@ -239,8 +239,8 @@ export class MembershipManager {
 	 */
 	async getMemberCount(orgId: OrgId): Promise<number> {
 		const rows = await this.sql`
-			SELECT COUNT(*) as count FROM org_memberships
-			WHERE org_id = ${orgId}
+			SELECT COUNT(*) as count FROM organization_memberships
+			WHERE organization_id = ${orgId}
 		`
 
 		return (rows[0] as { count: number }).count
@@ -255,15 +255,15 @@ export class MembershipManager {
 	): Promise<(OrgMembership & { email: string; name?: string }) | null> {
 		const rows = await this.sql`
 			SELECT
-				m.org_id as "orgId",
+				m.organization_id as "orgId",
 				m.user_id as "userId",
-				m.role,
+				m.role_id as "role",
 				m.joined_at as "joinedAt",
 				u.email,
 				u.name
-			FROM org_memberships m
+			FROM organization_memberships m
 			INNER JOIN users u ON u.id = m.user_id
-			WHERE m.org_id = ${orgId} AND m.user_id = ${userId}
+			WHERE m.organization_id = ${orgId} AND m.user_id = ${userId}
 		`
 
 		if (rows.length === 0) return null
@@ -283,16 +283,16 @@ export class MembershipManager {
 
 		const rows = await this.sql`
 			SELECT
-				m.org_id as "orgId",
+				m.organization_id as "orgId",
 				m.user_id as "userId",
-				m.role,
+				m.role_id as "role",
 				m.joined_at as "joinedAt",
 				u.email,
 				u.name
-			FROM org_memberships m
+			FROM organization_memberships m
 			INNER JOIN users u ON u.id = m.user_id
-			WHERE m.org_id = ${orgId}
-			${options.role ? this.sql`AND m.role = ${options.role}` : this.sql``}
+			WHERE m.organization_id = ${orgId}
+			${options.role ? this.sql`AND m.role_id = ${options.role}` : this.sql``}
 			ORDER BY m.joined_at ASC
 			LIMIT ${limit}
 			OFFSET ${offset}
@@ -329,13 +329,13 @@ export class MembershipManager {
 
 		const rows = await this.sql`
 			SELECT
-				m.org_id as "orgId",
-				m.role,
+				m.organization_id as "orgId",
+				m.role_id as "role",
 				m.joined_at as "joinedAt",
 				o.name as "orgName",
 				o.slug as "orgSlug"
-			FROM org_memberships m
-			INNER JOIN organizations o ON o.id = m.org_id
+			FROM organization_memberships m
+			INNER JOIN organizations o ON o.id = m.organization_id
 			WHERE m.user_id = ${userId}
 			ORDER BY m.joined_at DESC
 			LIMIT ${limit}

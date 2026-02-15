@@ -99,8 +99,8 @@ export class OrganizationManager {
 
 				// Create owner membership
 				await tx`
-					INSERT INTO org_memberships (org_id, user_id, role, joined_at)
-					VALUES (${orgId}, ${data.ownerId}, 'owner', NOW())
+					INSERT INTO organization_memberships (organization_id, user_id, role_id, joined_at)
+					VALUES (${orgId}, ${data.ownerId}, 'role_org_owner', NOW())
 				`
 			})
 
@@ -264,7 +264,7 @@ export class OrganizationManager {
 				o.created_at as "createdAt",
 				o.updated_at as "updatedAt"
 			FROM organizations o
-			INNER JOIN org_memberships m ON m.org_id = o.id
+			INNER JOIN organization_memberships m ON m.organization_id = o.id
 			WHERE m.user_id = ${userId}
 			ORDER BY o.created_at DESC
 			LIMIT ${limit}
@@ -316,8 +316,8 @@ export class OrganizationManager {
 
 		// Check if new owner is a member
 		const newOwnerMembership = await this.sql`
-			SELECT id FROM org_memberships
-			WHERE org_id = ${orgId} AND user_id = ${newOwnerId}
+			SELECT id FROM organization_memberships
+			WHERE organization_id = ${orgId} AND user_id = ${newOwnerId}
 		`
 
 		if (newOwnerMembership.length === 0) {
@@ -334,16 +334,16 @@ export class OrganizationManager {
 
 			// Update new owner's membership role
 			await tx`
-				UPDATE org_memberships
-				SET role = 'owner'
-				WHERE org_id = ${orgId} AND user_id = ${newOwnerId}
+				UPDATE organization_memberships
+				SET role_id = 'role_org_owner'
+				WHERE organization_id = ${orgId} AND user_id = ${newOwnerId}
 			`
 
 			// Downgrade previous owner to admin
 			await tx`
-				UPDATE org_memberships
-				SET role = 'admin'
-				WHERE org_id = ${orgId} AND user_id = ${currentOwnerId}
+				UPDATE organization_memberships
+				SET role_id = 'role_org_admin'
+				WHERE organization_id = ${orgId} AND user_id = ${currentOwnerId}
 			`
 		})
 
@@ -355,8 +355,8 @@ export class OrganizationManager {
 	 */
 	async isMember(orgId: OrgId, userId: UserId): Promise<boolean> {
 		const rows = await this.sql`
-			SELECT id FROM org_memberships
-			WHERE org_id = ${orgId} AND user_id = ${userId}
+			SELECT id FROM organization_memberships
+			WHERE organization_id = ${orgId} AND user_id = ${userId}
 		`
 
 		return rows.length > 0
@@ -367,13 +367,13 @@ export class OrganizationManager {
 	 */
 	async getUserRole(orgId: OrgId, userId: UserId): Promise<string | null> {
 		const rows = await this.sql`
-			SELECT role FROM org_memberships
-			WHERE org_id = ${orgId} AND user_id = ${userId}
+			SELECT role_id FROM organization_memberships
+			WHERE organization_id = ${orgId} AND user_id = ${userId}
 		`
 
 		if (rows.length === 0) return null
 
-		return (rows[0] as { role: string }).role
+		return (rows[0] as { role_id: string }).role_id
 	}
 
 	/**

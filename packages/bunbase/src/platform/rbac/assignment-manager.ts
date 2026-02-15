@@ -54,7 +54,8 @@ export class AssignmentManager {
 			WHERE principal_type = ${principalType}
 			  AND principal_id = ${principalId}
 			  AND role_id = ${roleId}
-			  AND org_id IS NOT DISTINCT FROM ${orgId || null}
+			  AND context_type IS NOT DISTINCT FROM ${orgId ? 'organization' : null}
+			  AND context_id IS NOT DISTINCT FROM ${orgId || null}
 		`
 
 		if (existing.length > 0) {
@@ -64,11 +65,12 @@ export class AssignmentManager {
 
 		// Assign role
 		await this.sql`
-			INSERT INTO principal_roles (principal_type, principal_id, role_id, org_id, assigned_at)
+			INSERT INTO principal_roles (principal_type, principal_id, role_id, context_type, context_id, granted_at)
 			VALUES (
 				${principalType},
 				${principalId},
 				${roleId},
+				${orgId ? 'organization' : null},
 				${orgId || null},
 				NOW()
 			)
@@ -90,7 +92,8 @@ export class AssignmentManager {
 			WHERE principal_type = ${principalType}
 			  AND principal_id = ${principalId}
 			  AND role_id = ${roleId}
-			  AND org_id IS NOT DISTINCT FROM ${orgId || null}
+			  AND context_type IS NOT DISTINCT FROM ${orgId ? 'organization' : null}
+			  AND context_id IS NOT DISTINCT FROM ${orgId || null}
 		`
 
 		this.logger.info('Role removed', { principalType, principalId, roleId, orgId })
@@ -117,13 +120,13 @@ export class AssignmentManager {
 				r.key as "roleKey",
 				r.name as "roleName",
 				r.weight as "roleWeight",
-				pr.org_id as "orgId",
-				pr.assigned_at as "assignedAt"
+				pr.context_id as "orgId",
+				pr.granted_at as "assignedAt"
 			FROM principal_roles pr
 			INNER JOIN roles r ON r.id = pr.role_id
 			WHERE pr.principal_type = ${principalType}
 			  AND pr.principal_id = ${principalId}
-			  ${orgId ? this.sql`AND (pr.org_id = ${orgId} OR pr.org_id IS NULL)` : this.sql`AND pr.org_id IS NULL`}
+			  ${orgId ? this.sql`AND ((pr.context_type = 'organization' AND pr.context_id = ${orgId}) OR pr.context_type IS NULL)` : this.sql`AND pr.context_type IS NULL`}
 			ORDER BY r.weight DESC
 		`
 
@@ -153,7 +156,7 @@ export class AssignmentManager {
 			INNER JOIN permissions p ON p.id = rp.permission_id
 			WHERE pr.principal_type = ${principalType}
 			  AND pr.principal_id = ${principalId}
-			  ${orgId ? this.sql`AND (pr.org_id = ${orgId} OR pr.org_id IS NULL)` : this.sql`AND pr.org_id IS NULL`}
+			  ${orgId ? this.sql`AND ((pr.context_type = 'organization' AND pr.context_id = ${orgId}) OR pr.context_type IS NULL)` : this.sql`AND pr.context_type IS NULL`}
 			ORDER BY p.key
 		`
 
@@ -177,7 +180,7 @@ export class AssignmentManager {
 			WHERE pr.principal_type = ${principalType}
 			  AND pr.principal_id = ${principalId}
 			  AND p.key = ${permissionKey}
-			  ${orgId ? this.sql`AND (pr.org_id = ${orgId} OR pr.org_id IS NULL)` : this.sql`AND pr.org_id IS NULL`}
+			  ${orgId ? this.sql`AND ((pr.context_type = 'organization' AND pr.context_id = ${orgId}) OR pr.context_type IS NULL)` : this.sql`AND pr.context_type IS NULL`}
 			LIMIT 1
 		`
 
@@ -203,7 +206,7 @@ export class AssignmentManager {
 			WHERE pr.principal_type = ${principalType}
 			  AND pr.principal_id = ${principalId}
 			  AND p.key = ANY(${permissionKeys})
-			  ${orgId ? this.sql`AND (pr.org_id = ${orgId} OR pr.org_id IS NULL)` : this.sql`AND pr.org_id IS NULL`}
+			  ${orgId ? this.sql`AND ((pr.context_type = 'organization' AND pr.context_id = ${orgId}) OR pr.context_type IS NULL)` : this.sql`AND pr.context_type IS NULL`}
 			LIMIT 1
 		`
 
@@ -229,7 +232,7 @@ export class AssignmentManager {
 			WHERE pr.principal_type = ${principalType}
 			  AND pr.principal_id = ${principalId}
 			  AND p.key = ANY(${permissionKeys})
-			  ${orgId ? this.sql`AND (pr.org_id = ${orgId} OR pr.org_id IS NULL)` : this.sql`AND pr.org_id IS NULL`}
+			  ${orgId ? this.sql`AND ((pr.context_type = 'organization' AND pr.context_id = ${orgId}) OR pr.context_type IS NULL)` : this.sql`AND pr.context_type IS NULL`}
 		`
 
 		const grantedKeys = new Set(rows.map((row: { key: string }) => row.key))
@@ -279,7 +282,7 @@ export class AssignmentManager {
 			INNER JOIN roles r ON r.id = pr.role_id
 			WHERE pr.principal_type = ${principalType}
 			  AND pr.principal_id = ${principalId}
-			  ${orgId ? this.sql`AND (pr.org_id = ${orgId} OR pr.org_id IS NULL)` : this.sql`AND pr.org_id IS NULL`}
+			  ${orgId ? this.sql`AND ((pr.context_type = 'organization' AND pr.context_id = ${orgId}) OR pr.context_type IS NULL)` : this.sql`AND pr.context_type IS NULL`}
 		`
 
 		if (rows.length === 0 || rows[0].maxWeight === null) return 0
@@ -301,11 +304,11 @@ export class AssignmentManager {
 			SELECT
 				principal_type as "principalType",
 				principal_id as "principalId",
-				assigned_at as "assignedAt"
+				granted_at as "assignedAt"
 			FROM principal_roles
 			WHERE role_id = ${roleId}
-			  ${orgId ? this.sql`AND org_id = ${orgId}` : this.sql`AND org_id IS NULL`}
-			ORDER BY assigned_at DESC
+			  ${orgId ? this.sql`AND context_type = 'organization' AND context_id = ${orgId}` : this.sql`AND context_type IS NULL`}
+			ORDER BY granted_at DESC
 		`
 
 		return rows as Array<{

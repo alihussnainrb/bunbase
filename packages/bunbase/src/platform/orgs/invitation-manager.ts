@@ -63,9 +63,9 @@ export class InvitationManager {
 		// Check if user is already a member
 		const existingMember = await this.sql`
 			SELECT m.id
-			FROM org_memberships m
+			FROM organization_memberships m
 			INNER JOIN users u ON u.id = m.user_id
-			WHERE m.org_id = ${orgId} AND u.email = ${email}
+			WHERE m.organization_id = ${orgId} AND u.email = ${email}
 		`
 		if (existingMember.length > 0) {
 			throw new UserAlreadyExistsError('User is already a member of this organization')
@@ -73,8 +73,8 @@ export class InvitationManager {
 
 		// Check for pending invitation
 		const existingInvitation = await this.sql`
-			SELECT id FROM org_invitations
-			WHERE org_id = ${orgId}
+			SELECT id FROM organization_invitations
+			WHERE organization_id = ${orgId}
 			  AND email = ${email}
 			  AND status = 'pending'
 			  AND expires_at > NOW()
@@ -94,11 +94,11 @@ export class InvitationManager {
 
 		// Create invitation
 		await this.sql`
-			INSERT INTO org_invitations (
+			INSERT INTO organization_invitations (
 				id,
-				org_id,
+				organization_id,
 				email,
-				role,
+				role_id,
 				invited_by,
 				token_hash,
 				status,
@@ -159,12 +159,12 @@ export class InvitationManager {
 		const rows = await this.sql`
 			SELECT
 				id,
-				org_id as "orgId",
+				organization_id as "orgId",
 				email,
-				role,
+				role_id as "role",
 				status,
 				expires_at as "expiresAt"
-			FROM org_invitations
+			FROM organization_invitations
 			WHERE token_hash = ${tokenHash}
 		`
 
@@ -211,8 +211,8 @@ export class InvitationManager {
 
 		// Check if already a member (race condition protection)
 		const existingMembership = await this.sql`
-			SELECT id FROM org_memberships
-			WHERE org_id = ${invitation.orgId} AND user_id = ${userId}
+			SELECT id FROM organization_memberships
+			WHERE organization_id = ${invitation.orgId} AND user_id = ${userId}
 		`
 		if (existingMembership.length > 0) {
 			throw new UserAlreadyExistsError('User is already a member of this organization')
@@ -222,13 +222,13 @@ export class InvitationManager {
 		await this.sql.begin(async (tx) => {
 			// Create membership
 			await tx`
-				INSERT INTO org_memberships (org_id, user_id, role, joined_at)
+				INSERT INTO organization_memberships (organization_id, user_id, role_id, joined_at)
 				VALUES (${invitation.orgId}, ${userId}, ${invitation.role}, NOW())
 			`
 
 			// Mark invitation as accepted
 			await tx`
-				UPDATE org_invitations
+				UPDATE organization_invitations
 				SET status = 'accepted', accepted_at = NOW()
 				WHERE id = ${invitation.id}
 			`
@@ -256,7 +256,7 @@ export class InvitationManager {
 
 		// Check invitation exists and is pending
 		const rows = await this.sql`
-			SELECT status FROM org_invitations
+			SELECT status FROM organization_invitations
 			WHERE id = ${invitationId}
 		`
 
@@ -272,7 +272,7 @@ export class InvitationManager {
 
 		// Revoke invitation
 		await this.sql`
-			UPDATE org_invitations
+			UPDATE organization_invitations
 			SET status = 'revoked', revoked_at = NOW()
 			WHERE id = ${invitationId}
 		`
@@ -287,16 +287,16 @@ export class InvitationManager {
 		const rows = await this.sql`
 			SELECT
 				id,
-				org_id as "orgId",
+				organization_id as "orgId",
 				email,
-				role,
+				role_id as "role",
 				invited_by as "invitedBy",
 				status,
 				created_at as "createdAt",
 				expires_at as "expiresAt",
 				accepted_at as "acceptedAt",
 				revoked_at as "revokedAt"
-			FROM org_invitations
+			FROM organization_invitations
 			WHERE id = ${invitationId}
 		`
 
@@ -321,9 +321,9 @@ export class InvitationManager {
 		const rows = await this.sql`
 			SELECT
 				i.id,
-				i.org_id as "orgId",
+				i.organization_id as "orgId",
 				i.email,
-				i.role,
+				i.role_id as "role",
 				i.invited_by as "invitedBy",
 				i.status,
 				i.created_at as "createdAt",
@@ -333,8 +333,8 @@ export class InvitationManager {
 				o.name as "orgName",
 				o.slug as "orgSlug",
 				u.name as "inviterName"
-			FROM org_invitations i
-			INNER JOIN organizations o ON o.id = i.org_id
+			FROM organization_invitations i
+			INNER JOIN organizations o ON o.id = i.organization_id
 			LEFT JOIN users u ON u.id = i.invited_by
 			WHERE i.token_hash = ${tokenHash}
 		`
@@ -361,34 +361,34 @@ export class InvitationManager {
 		let query = this.sql`
 			SELECT
 				id,
-				org_id as "orgId",
+				organization_id as "orgId",
 				email,
-				role,
+				role_id as "role",
 				invited_by as "invitedBy",
 				status,
 				created_at as "createdAt",
 				expires_at as "expiresAt",
 				accepted_at as "acceptedAt",
 				revoked_at as "revokedAt"
-			FROM org_invitations
-			WHERE org_id = ${orgId}
+			FROM organization_invitations
+			WHERE organization_id = ${orgId}
 		`
 
 		if (options.status) {
 			query = this.sql`
 				SELECT
 					id,
-					org_id as "orgId",
+					organization_id as "orgId",
 					email,
-					role,
+					role_id as "role",
 					invited_by as "invitedBy",
 					status,
 					created_at as "createdAt",
 					expires_at as "expiresAt",
 					accepted_at as "acceptedAt",
 					revoked_at as "revokedAt"
-				FROM org_invitations
-				WHERE org_id = ${orgId} AND status = ${options.status}
+				FROM organization_invitations
+				WHERE organization_id = ${orgId} AND status = ${options.status}
 			`
 		}
 
@@ -423,9 +423,9 @@ export class InvitationManager {
 		const rows = await this.sql`
 			SELECT
 				i.id,
-				i.org_id as "orgId",
+				i.organization_id as "orgId",
 				i.email,
-				i.role,
+				i.role_id as "role",
 				i.invited_by as "invitedBy",
 				i.status,
 				i.created_at as "createdAt",
@@ -434,8 +434,8 @@ export class InvitationManager {
 				i.revoked_at as "revokedAt",
 				o.name as "orgName",
 				o.slug as "orgSlug"
-			FROM org_invitations i
-			INNER JOIN organizations o ON o.id = i.org_id
+			FROM organization_invitations i
+			INNER JOIN organizations o ON o.id = i.organization_id
 			WHERE i.email = ${email}
 			  AND i.status = 'pending'
 			  AND i.expires_at > NOW()
@@ -458,7 +458,7 @@ export class InvitationManager {
 	 */
 	async cleanupExpiredInvitations(): Promise<number> {
 		const result = await this.sql`
-			UPDATE org_invitations
+			UPDATE organization_invitations
 			SET status = 'expired'
 			WHERE status = 'pending'
 			  AND expires_at <= NOW()

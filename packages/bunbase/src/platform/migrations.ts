@@ -596,6 +596,7 @@ CREATE TABLE IF NOT EXISTS roles (
 	description TEXT,
 	key TEXT NOT NULL,
 	scope TEXT NOT NULL,
+	weight INT NOT NULL DEFAULT 0,
 	organization_id TEXT REFERENCES organizations(id) ON DELETE CASCADE,
 	is_system BOOLEAN NOT NULL DEFAULT FALSE,
 	metadata JSONB NOT NULL DEFAULT '{}',
